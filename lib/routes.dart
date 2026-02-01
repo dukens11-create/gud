@@ -1,15 +1,18 @@
-part of 'app_routes.dart';
-
 import 'package:flutter/material.dart';
+import 'screens/admin/admin_home.dart';
+import 'screens/admin/manage_drivers_screen.dart';
+import 'screens/admin/create_load_screen.dart';
+import 'screens/admin/admin_load_detail.dart';
+import 'screens/driver/driver_home.dart';
+import 'screens/driver/driver_load_detail.dart';
+import 'screens/driver/earnings_screen.dart';
+import 'screens/login_screen.dart';
 
-class AppRoutes {
-  static const String home = '/home';
-  static const String settings = '/settings';
-
-  static Map<String, WidgetBuilder> get routes {
-    return <String, WidgetBuilder>{
-      home: (context) => HomeScreen(),
-      settings: (context) => SettingsScreen(),
-    };
-  }
-}
+final Map<String, WidgetBuilder> appRoutes = {
+  '/login': (context) => const LoginScreen(),
+  '/admin': (context) => const AdminHome(),
+  '/admin/drivers': (context) => const ManageDriversScreen(),
+  '/admin/create-load': (context) => const CreateLoadScreen(),
+  '/driver': (context) => const DriverHome(),
+  '/driver/earnings': (context) => const EarningsScreen(),
+};
