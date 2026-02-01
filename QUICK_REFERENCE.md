@@ -1,83 +1,180 @@
-# Quick Reference Guide
+# Quick Reference Guide (Demo Version)
 
 ## Important Concepts
 
-### User ID vs Driver ID
+### Demo Data
 
-The application uses two different IDs:
+The application uses pre-configured mock data:
 
-1. **User ID (userId)** - Firebase Authentication UID
-   - Used for authentication
-   - Stored in `users` collection as document ID
-   - Stored in `drivers` collection as `userId` field
+**3 Demo Loads:**
+1. **LOAD-001**
+   - Rate: $1,500.00
+   - Status: assigned
+   - Route: Los Angeles → San Francisco
 
-2. **Driver ID (driverId)** - Firestore document ID from drivers collection
-   - Used for load assignments
-   - Stored in `loads` collection as `driverId` field
+2. **LOAD-002**
+   - Rate: $1,200.00
+   - Status: in_transit
+   - Route: San Diego → Sacramento
 
-**Example Flow:**
-```
-1. User logs in → Firebase Auth returns UID (e.g., "abc123")
-2. App queries drivers collection: WHERE userId == "abc123"
-3. Gets driver document with ID (e.g., "driver001")
-4. App queries loads: WHERE driverId == "driver001"
-```
+3. **LOAD-003**
+   - Rate: $950.00
+   - Status: delivered
+   - Route: Oakland → San Jose
 
-### Load Status Flow
+### Load Status Types
 
-Loads progress through these statuses:
+The demo includes these status types:
+- **assigned**: Load has been assigned
+- **in_transit**: Load is currently being transported
+- **delivered**: Load has been delivered (counted in earnings)
 
-```
-assigned → picked_up → in_transit → delivered
-```
+### User Roles
 
-- **assigned**: Admin created and assigned the load
-- **picked_up**: Driver marked as picked up
-- **in_transit**: Driver started the trip (tripStartTime set)
-- **delivered**: Driver ended the trip (tripEndTime set)
-
-### Roles
-
-Two user roles:
-- **admin**: Full access to all features
-- **driver**: Limited to their assigned loads
+Two demo access modes:
+- **Driver**: Views all loads and earnings
+- **Admin**: Views all loads with driver information
 
 ## Common Operations
 
-### Creating a Driver (Admin)
+### Demo Login
 
-1. Create Firebase Auth user (get UID)
-2. Create Firestore user document with role='driver'
-3. In app: Admin → Manage Drivers → Add Driver (use UID as User ID)
+1. Launch the app
+2. Click "Demo Login as Driver" OR "Demo Login as Admin"
+3. Instant access to dashboard (no authentication)
 
-### Assigning a Load (Admin)
+### Viewing Loads (Driver)
 
-1. Admin → Create Load
-2. Select driver from dropdown (automatically populated)
-3. Fill in load details
-4. Load is created with status='assigned'
+1. After demo login as driver
+2. See list of all 3 loads
+3. View details: load number, addresses, rate, status
+4. Exit button returns to login
 
-### Updating Load Status (Driver)
+### Viewing Earnings (Driver)
 
-1. Driver views load in their home screen
-2. Opens load detail
-3. Clicks status update button
-4. Status updates in Firestore
-5. Real-time updates visible to admin and driver
+1. From driver dashboard
+2. (Currently accessible via routes, not yet linked in UI)
+3. Shows total earnings from delivered loads
+4. Calculation: Only delivered loads count ($950.00 total)
 
-### Uploading POD (Driver)
+### Viewing Loads (Admin)
 
-1. Load must be in 'in_transit' or 'delivered' status
-2. Driver clicks "Upload POD"
-3. Captures photo with camera
-4. Adds optional notes
-5. Photo uploads to Firebase Storage
-6. POD document created in Firestore subcollection
+1. After demo login as admin
+2. See list of all 3 loads
+3. View details: load number, driver ID, status, rate
+4. Exit button returns to login
 
 ## File Locations
 
+### Core Files
+- Entry Point: `lib/main.dart`
+- App Widget: `lib/app.dart`
+- Routes: `lib/routes.dart`
+
 ### Models
-- User: `lib/models/app_user.dart`
+- Load: `lib/models/simple_load.dart`
+
+### Services
+- Mock Data: `lib/services/mock_data_service.dart`
+
+### Screens
+- Login: `lib/screens/login_screen.dart`
+- Driver Home: `lib/screens/driver/driver_home.dart`
+- Earnings: `lib/screens/driver/earnings_screen.dart`
+- Admin Home: `lib/screens/admin/admin_home.dart`
+
+### Widgets
+- Loading: `lib/widgets/loading.dart`
+- Button: `lib/widgets/app_button.dart`
+- TextField: `lib/widgets/app_textfield.dart`
+
+## Development Commands
+
+### Running the App
+```bash
+flutter run
+```
+
+### Building for Release
+```bash
+# Android APK
+flutter build apk --release
+
+# Android App Bundle
+flutter build appbundle --release
+```
+
+### Code Quality
+```bash
+# Analyze code
+flutter analyze
+
+# Clean build
+flutter clean
+flutter pub get
+```
+
+## Customization
+
+### Adding More Demo Loads
+
+Edit `lib/services/mock_data_service.dart`:
+
+```dart
+SimpleLoad(
+  id: '4',
+  loadNumber: 'LOAD-004',
+  pickupAddress: 'Your pickup address',
+  deliveryAddress: 'Your delivery address',
+  rate: 1000.00,
+  status: 'assigned', // or 'in_transit' or 'delivered'
+  driverId: 'driver1',
+  createdAt: DateTime.now(),
+)
+```
+
+### Changing Colors
+
+Edit `lib/app.dart`:
+
+```dart
+colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+// Change Colors.blue to your preferred color
+```
+
+## Demo Limitations
+
+This demo version does NOT include:
+- ❌ Real authentication
+- ❌ Data persistence
+- ❌ Backend integration
+- ❌ User management
+- ❌ Load creation/editing
+- ❌ Photo uploads
+- ❌ Real-time synchronization
+- ❌ Status updates
+
+For production use, you would need to:
+1. Add backend service (Firebase, REST API, etc.)
+2. Implement authentication
+3. Add CRUD operations
+4. Implement file uploads
+5. Add proper state management
+
+## Troubleshooting
+
+### App won't build
+```bash
+flutter clean
+flutter pub get
+flutter run
+```
+
+### Import errors
+Make sure all imports use relative paths correctly
+
+### Demo data not showing
+Check that `MockDataService.getDemoLoads()` is being called in screens
 - Driver: `lib/models/driver.dart`
 - Load: `lib/models/load.dart`
 - POD: `lib/models/pod.dart`

@@ -1,12 +1,11 @@
-# GUD Express - Setup Instructions
+# GUD Express - Setup Instructions (Demo Version)
 
-This guide will walk you through setting up the GUD Express trucking management application.
+This guide will walk you through setting up the GUD Express demo application.
 
 ## Prerequisites
 
 - Flutter SDK (version 3.0.0 or higher)
-- Android Studio or Xcode for mobile development
-- A Google/Firebase account
+- Android Studio or VS Code for mobile development
 - Git
 
 ## Step 1: Clone the Repository
@@ -16,38 +15,128 @@ git clone https://github.com/dukens11-create/gud.git
 cd gud
 ```
 
-## Step 2: Create a Firebase Project
+## Step 2: Install Dependencies
 
-1. Go to the [Firebase Console](https://console.firebase.google.com/)
-2. Click "Add project" or "Create a project"
-3. Enter project name: `gud-express` (or your preferred name)
-4. Follow the prompts to complete project creation
+```bash
+flutter pub get
+```
 
-## Step 3: Enable Firebase Services
+## Step 3: Run the Application
 
-In your Firebase Console:
+### For Development
 
-1. **Enable Authentication**
-   - Navigate to Build → Authentication
-   - Click "Get started"
-   - Enable "Email/Password" sign-in method
+```bash
+flutter run
+```
 
-2. **Enable Firestore Database**
-   - Navigate to Build → Firestore Database
-   - Click "Create database"
-   - Start in **test mode** initially (we'll add security rules later)
-   - Choose a location close to your users
+### For Android Release Build
 
-3. **Enable Firebase Storage**
-   - Navigate to Build → Storage
-   - Click "Get started"
-   - Start in **test mode** initially
-   - Use the default location
+```bash
+flutter build apk --release
+```
 
-## Step 4: Register Your Android App
+The APK will be available at: `build/app/outputs/flutter-apk/app-release.apk`
 
-1. In Firebase Console, click the Android icon to add an Android app
-2. Android package name: `com.gudexpress.gud_app`
+### For Android App Bundle
+
+```bash
+flutter build appbundle --release
+```
+
+The AAB will be available at: `build/app/outputs/bundle/release/app-release.aab`
+
+## Using the Demo Application
+
+This is a **demo version** that uses mock data and requires no backend setup:
+
+1. **Launch the app** - You'll see the login screen
+2. **Demo Login as Driver** - Click this button to access the driver dashboard
+3. **Demo Login as Admin** - Click this button to access the admin dashboard
+
+### Demo Data
+
+The application includes 3 pre-configured demo loads:
+
+- **LOAD-001**: $1,500.00 - Assigned
+- **LOAD-002**: $1,200.00 - In Transit
+- **LOAD-003**: $950.00 - Delivered
+
+### Features Available
+
+**Driver Dashboard:**
+- View all assigned loads
+- See pickup and delivery addresses
+- Check load rates and status
+- View total earnings (from delivered loads)
+
+**Admin Dashboard:**
+- View all loads in the system
+- Monitor driver assignments
+- Check load statuses
+- Review load rates
+
+## Development
+
+### Code Structure
+
+```
+lib/
+├── main.dart                 # App entry point
+├── app.dart                  # Root widget
+├── routes.dart               # Named routes
+├── models/
+│   └── simple_load.dart     # Load data model
+├── services/
+│   └── mock_data_service.dart  # Mock data provider
+├── screens/
+│   ├── login_screen.dart    # Demo login
+│   ├── driver/
+│   │   ├── driver_home.dart
+│   │   └── earnings_screen.dart
+│   └── admin/
+│       └── admin_home.dart
+└── widgets/                  # Reusable UI components
+```
+
+### Running Tests
+
+```bash
+flutter test
+```
+
+### Code Analysis
+
+```bash
+flutter analyze
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue**: Dependencies not found
+**Solution**: Run `flutter pub get`
+
+**Issue**: Build fails
+**Solution**: Run `flutter clean` then `flutter pub get`
+
+**Issue**: App doesn't launch
+**Solution**: Ensure your device/emulator is running and detected with `flutter devices`
+
+## Next Steps
+
+This demo version is designed for evaluation and demonstration purposes. For production use, you would need to:
+
+1. Integrate a backend service (Firebase, REST API, etc.)
+2. Implement proper authentication
+3. Add real-time data synchronization
+4. Implement user management
+5. Add proof of delivery upload functionality
+6. Implement proper state management
+
+## Support
+
+For issues or questions, please create an issue in the GitHub repository.
 3. App nickname: `GUD Express` (optional)
 4. Debug signing certificate SHA-1: (optional for now, required for some features)
 5. Click "Register app"

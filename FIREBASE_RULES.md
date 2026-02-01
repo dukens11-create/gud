@@ -1,8 +1,22 @@
-# Firebase Security Rules
+# Firebase Security Rules (Archive)
 
-This document outlines the Firebase Security Rules that should be configured for the GUD Express application.
+> **Note**: This document is archived as the application no longer uses Firebase. It has been converted to a demo application using mock data.
+> 
+> This file is kept for historical reference only.
 
-## Firestore Security Rules
+---
+
+## Historical Context
+
+This document previously outlined the Firebase Security Rules for the GUD Express application when it was integrated with Firebase backend services (Authentication, Firestore, and Storage).
+
+The application has since been refactored to use a mock data service for demonstration purposes and no longer requires Firebase or these security rules.
+
+## If Implementing Firebase
+
+If you choose to re-implement Firebase integration, the following security rules would be applicable:
+
+### Firestore Security Rules
 
 ```javascript
 rules_version = '2';

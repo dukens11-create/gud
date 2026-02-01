@@ -1,29 +1,26 @@
-# GUD Express - Deployment Guide
+# GUD Express - Deployment Guide (Demo Version)
 
-Complete guide to deploying the GUD Express trucking management app.
+Complete guide to building and deploying the GUD Express demo app.
 
 ## 🚀 Deployment Options
 
-### Option 1: Firebase App Distribution (Testing - Recommended First)
+### Option 1: Direct APK Distribution (Testing)
 ### Option 2: Google Play Store (Production)
 ### Option 3: Apple App Store (Production)
 
 ---
 
-## 📱 Option 1: Firebase App Distribution (Internal Testing)
+## 📱 Option 1: Direct APK Distribution (Testing)
 
-Perfect for testing with a small group before public release.
+Perfect for testing and demonstration purposes.
 
 ### Prerequisites
 
-1. **Firebase Project Setup** ✅ (Already configured per SETUP.md)
-2. **Firebase CLI Installation**
-   ```bash
-   npm install -g firebase-tools
-   firebase login
-   ```
+1. **Flutter SDK** installed (version 3.0.0+)
+2. **Android Studio** or Android SDK
+3. **Java Development Kit (JDK)** 17
 
-### Step-by-Step Deployment
+### Step-by-Step Build
 
 #### A. Build the Android APK
 
@@ -43,21 +40,34 @@ flutter build apk --release
 
 **Output location:** `build/app/outputs/flutter-apk/app-release.apk`
 
-#### B. Manual Distribution via Firebase Console
+#### B. Build App Bundle (for Play Store)
 
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your GUD Express project
-3. Navigate to **App Distribution** in left menu
-4. Click **Get Started** (if first time)
-5. Click **Distribute App**
-6. Upload `app-release.apk`
-7. Add tester emails or create tester groups
-8. Add release notes (e.g., "Initial test release")
-9. Click **Distribute**
+```bash
+flutter build appbundle --release
+```
 
-Testers will receive an email with download link!
+**Output location:** `build/app/outputs/bundle/release/app-release.aab`
 
-#### C. Automated Distribution via CLI
+#### C. Distribute the APK
+
+**Method 1: Direct Installation**
+1. Copy `app-release.apk` to device
+2. Enable "Install from Unknown Sources"
+3. Tap APK file to install
+
+**Method 2: Email/Cloud**
+1. Upload APK to cloud storage (Google Drive, Dropbox, etc.)
+2. Share download link with testers
+3. Recipients download and install
+
+**Method 3: GitHub Releases**
+1. Create a new release on GitHub
+2. Upload the APK as a release asset
+3. Share the release link
+
+---
+
+## 🏪 Option 2: Google Play Store (Production)
 
 ```bash
 # Get your Firebase App ID from Firebase Console
