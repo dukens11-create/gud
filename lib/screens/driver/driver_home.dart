@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../services/mock_data_service.dart';
-import '../../models/simple_load.dart';
 
 class DriverHome extends StatelessWidget {
   const DriverHome({super.key});
