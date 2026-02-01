@@ -1,97 +1,65 @@
-# GUD Express - Trucking Management App
+# GUD Express - Trucking Management App (Demo Version)
 
-A comprehensive Flutter-based trucking management system for drivers and dispatchers with Firebase backend.
+A comprehensive Flutter-based trucking management demo app for drivers and dispatchers with mock data.
 
 ## Features
 
 ### Driver Features
-- View assigned loads in real-time
-- Update load status (picked up, in transit, delivered)
-- Start and end trips with timestamps
-- Upload Proof of Delivery (POD) photos
+- View assigned loads
 - Track earnings from completed loads
-- Real-time load updates
+- Simple and intuitive interface
 
 ### Admin Features
 - View all loads across all drivers
-- Create and assign loads to drivers
-- Manage driver profiles
 - Monitor load statuses
-- Manual load status updates
+- Quick overview of operations
 
 ## Technology Stack
 
 - **Frontend**: Flutter 3.0+
-- **Backend**: Firebase
-  - Authentication
-  - Firestore Database
-  - Cloud Storage
-- **State Management**: Stream-based with StreamBuilder
+- **Backend**: Mock data service (no external dependencies)
 - **Design**: Material Design 3
 
 ## Quick Start
 
-See [SETUP.md](SETUP.md) for detailed setup instructions.
-
 ### Prerequisites
 - Flutter SDK 3.0.0+
-- Firebase account
 - Android Studio or VS Code
 
 ### Basic Setup
 1. Clone the repository
-2. Create a Firebase project
-3. Download and place `google-services.json` in `android/app/`
-4. Run `flutter pub get`
-5. Create admin user in Firebase Console
-6. Run `flutter run`
+2. Run `flutter pub get`
+3. Run `flutter run`
+
+## Demo Accounts
+
+This is a **demo version** with no authentication required:
+- Click "Demo Login as Driver" to access the driver dashboard
+- Click "Demo Login as Admin" to access the admin dashboard
 
 ## Project Structure
 
 ```
 lib/
 ├── main.dart                 # App entry point
-├── app.dart                  # Root widget with auth wrapper
+├── app.dart                  # Root widget
 ├── routes.dart               # Named routes configuration
 ├── models/                   # Data models
-│   ├── app_user.dart
-│   ├── driver.dart
-│   ├── load.dart
-│   └── pod.dart
+│   └── simple_load.dart
 ├── services/                 # Business logic layer
-│   ├── auth_service.dart
-│   ├── firestore_service.dart
-│   └── storage_service.dart
+│   └── mock_data_service.dart
 ├── screens/                  # UI screens
 │   ├── login_screen.dart
 │   ├── driver/
 │   │   ├── driver_home.dart
-│   │   ├── driver_load_detail.dart
-│   │   ├── upload_pod_screen.dart
 │   │   └── earnings_screen.dart
 │   └── admin/
-│       ├── admin_home.dart
-│       ├── manage_drivers_screen.dart
-│       ├── create_load_screen.dart
-│       └── admin_load_detail.dart
+│       └── admin_home.dart
 └── widgets/                  # Reusable widgets
     ├── app_button.dart
     ├── app_textfield.dart
     └── loading.dart
 ```
-
-## Documentation
-
-- [Setup Instructions](SETUP.md) - Complete setup guide
-- [Firebase Rules](FIREBASE_RULES.md) - Security rules for Firestore and Storage
-
-## Security
-
-The app implements comprehensive Firebase Security Rules:
-- Role-based access control (admin/driver)
-- Drivers can only access their assigned loads
-- Secure POD photo uploads
-- Authenticated access required for all operations
 
 ## Contributing
 
