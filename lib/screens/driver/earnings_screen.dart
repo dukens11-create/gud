@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/driver.dart';
-import '../../widgets/loading.dart';
 
 class EarningsScreen extends StatelessWidget {
   const EarningsScreen({super.key});

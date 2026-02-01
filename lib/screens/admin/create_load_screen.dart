@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/driver.dart';
-import '../../widgets/app_button.dart';
-import '../../widgets/app_textfield.dart';
 
 class CreateLoadScreen extends StatefulWidget {
   const CreateLoadScreen({super.key});

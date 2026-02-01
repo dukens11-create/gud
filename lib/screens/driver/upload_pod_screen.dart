@@ -1,8 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import '../../widgets/app_button.dart';
-import '../../widgets/app_textfield.dart';
 
 class UploadPodScreen extends StatefulWidget {
   final String loadId;

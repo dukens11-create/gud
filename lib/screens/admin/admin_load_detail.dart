@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../models/load.dart';
-import '../../widgets/app_button.dart';
 
 class AdminLoadDetail extends StatefulWidget {
   final LoadModel load;

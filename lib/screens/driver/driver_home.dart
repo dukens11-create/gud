@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/load.dart';
-import '../../models/driver.dart';
-import '../../widgets/loading.dart';
-import 'driver_load_detail.dart';
 
 class DriverHome extends StatelessWidget {
   const DriverHome({super.key});

@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../models/load.dart';
-import '../../widgets/app_button.dart';
-import 'upload_pod_screen.dart';
 
 class DriverLoadDetail extends StatefulWidget {
   final LoadModel load;

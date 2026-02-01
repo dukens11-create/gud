@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/driver.dart';
-import '../../widgets/app_button.dart';
-import '../../widgets/app_textfield.dart';
-import '../../widgets/loading.dart';
 
 class ManageDriversScreen extends StatefulWidget {
   const ManageDriversScreen({super.key});

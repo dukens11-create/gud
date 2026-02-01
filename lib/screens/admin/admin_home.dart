@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/load.dart';
-import '../../widgets/loading.dart';
-import 'admin_load_detail.dart';
 
 class AdminHome extends StatelessWidget {
   const AdminHome({super.key});
