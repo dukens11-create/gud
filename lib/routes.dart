@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'screens/admin/admin_home.dart';
 import 'screens/admin/manage_drivers_screen.dart';
 import 'screens/admin/create_load_screen.dart';
-import 'screens/admin/admin_load_detail.dart';
 import 'screens/driver/driver_home.dart';
-import 'screens/driver/driver_load_detail.dart';
 import 'screens/driver/earnings_screen.dart';
 import 'screens/login_screen.dart';
 
