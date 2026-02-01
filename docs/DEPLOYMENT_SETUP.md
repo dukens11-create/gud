@@ -107,7 +107,7 @@ After adding both secrets, you should see them listed:
 - ✅ `FIREBASE_APP_ID`
 - ✅ `FIREBASE_SERVICE_ACCOUNT`
 
-![GitHub Secrets Screenshot](https://user-images.githubusercontent.com/placeholder-secrets-list.png)
+> 💡 **Tip:** You can verify your secrets are configured by going to Settings → Secrets and variables → Actions. The secret values will be hidden, but you'll see the secret names listed.
 
 ---
 
