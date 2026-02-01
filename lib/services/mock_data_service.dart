@@ -11,7 +11,7 @@ class MockDataService {
         rate: 1500.00,
         status: 'assigned',
         driverId: 'driver1',
-        createdAt: DateTime.now().subtract(Duration(days: 2)),
+        createdAt: DateTime.now().subtract(const Duration(days: 2)),
       ),
       SimpleLoad(
         id: '2',
@@ -21,7 +21,7 @@ class MockDataService {
         rate: 1200.00,
         status: 'in_transit',
         driverId: 'driver1',
-        createdAt: DateTime.now().subtract(Duration(days: 1)),
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
       ),
       SimpleLoad(
         id: '3',
@@ -31,7 +31,7 @@ class MockDataService {
         rate: 950.00,
         status: 'delivered',
         driverId: 'driver1',
-        createdAt: DateTime.now().subtract(Duration(days: 3)),
+        createdAt: DateTime.now().subtract(const Duration(days: 3)),
       ),
     ];
   }
