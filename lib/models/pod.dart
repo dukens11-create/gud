@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class POD {
   final String id;
   final String loadId;
@@ -20,18 +18,19 @@ class POD {
       'loadId': loadId,
       'imageUrl': imageUrl,
       'notes': notes,
-      'uploadedAt': Timestamp.fromDate(uploadedAt),
+      'uploadedAt': uploadedAt.toIso8601String(),
     };
   }
 
-  factory POD.fromDoc(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory POD.fromMap(Map<String, dynamic> data, String id) {
     return POD(
-      id: doc.id,
+      id: id,
       loadId: data['loadId'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
       notes: data['notes'] ?? '',
-      uploadedAt: data['uploadedAt'] != null ? (data['uploadedAt'] as Timestamp).toDate() : DateTime.now(),
+      uploadedAt: data['uploadedAt'] != null 
+          ? DateTime.parse(data['uploadedAt']) 
+          : DateTime.now(),
     );
   }
 }

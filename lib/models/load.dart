@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class LoadModel {
   final String id;
   final String loadNumber;
@@ -36,16 +34,15 @@ class LoadModel {
       'deliveryAddress': deliveryAddress,
       'rate': rate,
       'status': status,
-      'tripStartTime': tripStartTime != null ? Timestamp.fromDate(tripStartTime!) : null,
-      'tripEndTime': tripEndTime != null ? Timestamp.fromDate(tripEndTime!) : null,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'tripStartTime': tripStartTime?.toIso8601String(),
+      'tripEndTime': tripEndTime?.toIso8601String(),
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 
-  factory LoadModel.fromDoc(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory LoadModel.fromMap(Map<String, dynamic> data, String id) {
     return LoadModel(
-      id: doc.id,
+      id: id,
       loadNumber: data['loadNumber'] ?? '',
       driverId: data['driverId'] ?? '',
       driverName: data['driverName'] ?? '',
@@ -53,9 +50,15 @@ class LoadModel {
       deliveryAddress: data['deliveryAddress'] ?? '',
       rate: (data['rate'] ?? 0).toDouble(),
       status: data['status'] ?? 'assigned',
-      tripStartTime: data['tripStartTime'] != null ? (data['tripStartTime'] as Timestamp).toDate() : null,
-      tripEndTime: data['tripEndTime'] != null ? (data['tripEndTime'] as Timestamp).toDate() : null,
-      createdAt: data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate() : DateTime.now(),
+      tripStartTime: data['tripStartTime'] != null 
+          ? DateTime.parse(data['tripStartTime']) 
+          : null,
+      tripEndTime: data['tripEndTime'] != null 
+          ? DateTime.parse(data['tripEndTime']) 
+          : null,
+      createdAt: data['createdAt'] != null 
+          ? DateTime.parse(data['createdAt']) 
+          : DateTime.now(),
     );
   }
 
