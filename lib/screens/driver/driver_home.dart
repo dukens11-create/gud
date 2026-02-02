@@ -3,13 +3,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/firestore_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/load.dart';
+import 'load_detail_screen.dart';
 
 class DriverHome extends StatelessWidget {
-  const DriverHome({super.key});
+  final String driverId;
+  
+  const DriverHome({super.key, required this.driverId});
 
   @override
   Widget build(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     final firestoreService = FirestoreService();
     final authService = AuthService();
 
@@ -30,7 +32,7 @@ class DriverHome extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<List<LoadModel>>(
-        stream: firestoreService.streamDriverLoads(userId),
+        stream: firestoreService.streamDriverLoads(driverId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -55,6 +57,14 @@ class DriverHome extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.all(8),
                 child: ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => LoadDetailScreen(load: load),
+                      ),
+                    );
+                  },
                   leading: CircleAvatar(
                     child: Text(load.status.isNotEmpty ? load.status[0].toUpperCase() : 'L'),
                   ),

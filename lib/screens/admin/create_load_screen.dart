@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/firestore_service.dart';
 import '../../models/driver.dart';
 import '../../widgets/app_button.dart';
@@ -17,9 +18,31 @@ class _CreateLoadScreenState extends State<CreateLoadScreen> {
   final _pickupController = TextEditingController();
   final _deliveryController = TextEditingController();
   final _rateController = TextEditingController();
+  final _milesController = TextEditingController();
+  final _notesController = TextEditingController();
   String? _selectedDriverId;
+  String? _selectedDriverName;
   bool _isCreating = false;
+  bool _isLoadingNumber = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _generateLoadNumber();
+  }
+
+  Future<void> _generateLoadNumber() async {
+    setState(() => _isLoadingNumber = true);
+    try {
+      final loadNumber = await _firestoreService.generateLoadNumber();
+      _loadNumberController.text = loadNumber;
+    } catch (e) {
+      setState(() => _errorMessage = 'Error generating load number: $e');
+    } finally {
+      setState(() => _isLoadingNumber = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -27,6 +50,8 @@ class _CreateLoadScreenState extends State<CreateLoadScreen> {
     _pickupController.dispose();
     _deliveryController.dispose();
     _rateController.dispose();
+    _milesController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -36,7 +61,7 @@ class _CreateLoadScreenState extends State<CreateLoadScreen> {
         _deliveryController.text.isEmpty ||
         _rateController.text.isEmpty ||
         _selectedDriverId == null) {
-      setState(() => _errorMessage = 'All fields are required');
+      setState(() => _errorMessage = 'All required fields must be filled');
       return;
     }
 
@@ -46,26 +71,29 @@ class _CreateLoadScreenState extends State<CreateLoadScreen> {
       return;
     }
 
+    final miles = _milesController.text.isNotEmpty 
+        ? double.tryParse(_milesController.text) 
+        : null;
+
     setState(() {
       _isCreating = true;
       _errorMessage = null;
     });
 
     try {
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      
       await _firestoreService.createLoad(
         loadNumber: _loadNumberController.text.trim(),
         driverId: _selectedDriverId!,
+        driverName: _selectedDriverName ?? '',
         pickupAddress: _pickupController.text.trim(),
         deliveryAddress: _deliveryController.text.trim(),
         rate: rate,
+        miles: miles,
+        notes: _notesController.text.isNotEmpty ? _notesController.text.trim() : null,
+        createdBy: currentUserId,
       );
-
-      // Clear form
-      _loadNumberController.clear();
-      _pickupController.clear();
-      _deliveryController.clear();
-      _rateController.clear();
-      _selectedDriverId = null;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +104,9 @@ class _CreateLoadScreenState extends State<CreateLoadScreen> {
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {
-      setState(() => _isCreating = false);
+      if (mounted) {
+        setState(() => _isCreating = false);
+      }
     }
   }
 
@@ -89,29 +119,60 @@ class _CreateLoadScreenState extends State<CreateLoadScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppTextField(
-              controller: _loadNumberController,
-              label: 'Load Number',
+            Row(
+              children: [
+                Expanded(
+                  child: AppTextField(
+                    controller: _loadNumberController,
+                    label: 'Load Number',
+                    enabled: !_isLoadingNumber,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: _isLoadingNumber 
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh),
+                  onPressed: _isLoadingNumber ? null : _generateLoadNumber,
+                  tooltip: 'Generate new load number',
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             AppTextField(
               controller: _pickupController,
-              label: 'Pickup Address',
+              label: 'Pickup Address *',
             ),
             const SizedBox(height: 16),
             AppTextField(
               controller: _deliveryController,
-              label: 'Delivery Address',
+              label: 'Delivery Address *',
             ),
             const SizedBox(height: 16),
             AppTextField(
               controller: _rateController,
-              label: 'Rate (\$)',
+              label: 'Rate (\$) *',
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
+            AppTextField(
+              controller: _milesController,
+              label: 'Estimated Miles (optional)',
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            AppTextField(
+              controller: _notesController,
+              label: 'Notes (optional)',
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
             const Text(
-              'Select Driver',
+              'Select Driver *',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -132,26 +193,24 @@ class _CreateLoadScreenState extends State<CreateLoadScreen> {
                   return const Text('No drivers available. Create a driver first.');
                 }
 
-                final availableDrivers = drivers.where((d) => d.status == 'available').toList();
-
-                if (availableDrivers.isEmpty) {
-                  return const Text('No available drivers at the moment.');
-                }
-
                 return DropdownButtonFormField<String>(
                   value: _selectedDriverId,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     hintText: 'Select a driver',
                   ),
-                  items: availableDrivers.map((driver) {
+                  items: drivers.map((driver) {
                     return DropdownMenuItem(
                       value: driver.id,
-                      child: Text('${driver.name} - ${driver.truckNumber}'),
+                      child: Text('${driver.name} - ${driver.truckNumber} (${driver.status})'),
                     );
                   }).toList(),
                   onChanged: (value) {
-                    setState(() => _selectedDriverId = value);
+                    final selectedDriver = drivers.firstWhere((d) => d.id == value);
+                    setState(() {
+                      _selectedDriverId = value;
+                      _selectedDriverName = selectedDriver.name;
+                    });
                   },
                 );
               },
