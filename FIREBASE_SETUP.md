@@ -7,6 +7,30 @@ This guide will help you set up Firebase for the GUD Express Trucking Management
 - Google Account
 - Flutter SDK installed
 - Android Studio (for Android development)
+- FlutterFire CLI (recommended): `dart pub global activate flutterfire_cli`
+
+## Quick Setup with FlutterFire CLI (Recommended)
+
+The fastest way to set up Firebase is using the FlutterFire CLI:
+
+```bash
+# Install FlutterFire CLI (if not already installed)
+dart pub global activate flutterfire_cli
+
+# Configure Firebase for your project
+flutterfire configure
+```
+
+This will:
+1. Prompt you to select or create a Firebase project
+2. Generate platform-specific configuration files
+3. Update `lib/firebase_options.dart` with actual credentials
+
+**Note**: If you use FlutterFire CLI, you can skip Steps 1-3 below and jump to Step 4.
+
+## Manual Setup
+
+If you prefer manual setup or the CLI doesn't work for you, follow these steps:
 
 ## Step 1: Create Firebase Project
 
