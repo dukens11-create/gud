@@ -1,5 +1,15 @@
 # GUD Express - Trucking Management App (Demo Version)
 
+## 🌐 Live Demo
+
+**Try it now:** https://dukens11-create.github.io/gud/
+
+### Install as PWA
+- **Mobile**: Visit link, tap "Add to Home Screen"
+- **Desktop**: Visit link, click install icon in address bar
+
+---
+
 A comprehensive Flutter-based trucking management demo app for drivers and dispatchers with mock data.
 
 ## Features
