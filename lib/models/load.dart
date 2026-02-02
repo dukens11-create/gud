@@ -7,7 +7,7 @@ class LoadModel {
   final String pickupAddress;
   final String deliveryAddress;
   final double rate;
-  final String status; // assigned|picked_up|in_transit|delivered
+  final String status;
   final DateTime? tripStartAt;
   final DateTime? tripEndAt;
   final double miles;
