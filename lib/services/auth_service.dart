@@ -11,6 +11,7 @@ class AuthService {
 
   Future<void> signOut() => _auth.signOut();
 
+  /// Admin creates driver user account.
   Future<UserCredential> createUser(String email, String password) {
     return _auth.createUserWithEmailAndPassword(email: email, password: password);
   }
