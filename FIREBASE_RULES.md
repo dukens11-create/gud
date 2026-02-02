@@ -1,22 +1,15 @@
-# Firebase Security Rules (Archive)
+# Firebase Security Rules
 
-> **Note**: This document is archived as the application no longer uses Firebase. It has been converted to a demo application using mock data.
-> 
-> This file is kept for historical reference only.
+This document outlines the Firebase Security Rules for the GUD Express application for Firestore Database and Firebase Storage.
 
----
+## Firestore Security Rules
 
-## Historical Context
+These rules ensure that:
+- Users can only access data they're authorized to see
+- Drivers can only modify their assigned loads
+- Admins have full access to all data
 
-This document previously outlined the Firebase Security Rules for the GUD Express application when it was integrated with Firebase backend services (Authentication, Firestore, and Storage).
-
-The application has since been refactored to use a mock data service for demonstration purposes and no longer requires Firebase or these security rules.
-
-## If Implementing Firebase
-
-If you choose to re-implement Firebase integration, the following security rules would be applicable:
-
-### Firestore Security Rules
+### Complete Firestore Rules
 
 ```javascript
 rules_version = '2';
@@ -34,17 +27,26 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    // Helper function to check if user is a driver
+    function isDriver() {
+      return request.auth != null &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'driver';
+    }
+    
     // Users collection
     match /users/{userId} {
       // Users can read their own document, admins can read all
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      // Only admins can create/update user documents
-      allow write: if isAdmin();
+      // Only admins can create user documents during registration
+      // Users can update their own profile
+      allow create: if isAdmin();
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
     }
     
     // Drivers collection
     match /drivers/{driverId} {
-      // Drivers can read their own profile, admins can read all
+      // All authenticated users can read driver profiles
       allow read: if isAuthenticated();
       // Only admins can create/update/delete drivers
       allow create, update, delete: if isAdmin();
@@ -59,12 +61,13 @@ service cloud.firestore {
       // Only admins can create loads
       allow create: if isAdmin();
       
-      // Drivers can update specific fields on their loads
+      // Drivers can update status, trip times, and miles on their loads
+      // Admins can update everything
       allow update: if isAuthenticated() && 
                        (isAdmin() || 
                         (resource.data.driverId == request.auth.uid && 
                          request.resource.data.diff(resource.data).affectedKeys()
-                           .hasOnly(['status', 'tripStartTime', 'tripEndTime'])));
+                           .hasOnly(['status', 'tripStartAt', 'tripEndAt', 'miles', 'deliveredAt'])));
       
       // Only admins can delete loads
       allow delete: if isAdmin();
@@ -91,20 +94,53 @@ service cloud.firestore {
 
 ## Firebase Storage Security Rules
 
+These rules control access to files stored in Firebase Storage, including POD images and profile photos.
+
+### Complete Storage Rules
+
 ```javascript
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // POD photos
-    match /pods/{podImage} {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to validate image file
+    function isValidImage() {
+      return request.resource.size < 10 * 1024 * 1024 && // Max 10MB
+             request.resource.contentType.matches('image/.*');
+    }
+    
+    // POD photos directory
+    match /pods/{loadId}/{podImage} {
       // Authenticated users can read POD photos
-      allow read: if request.auth != null;
+      allow read: if isAuthenticated();
       
-      // Authenticated users can upload POD photos
-      allow write: if request.auth != null &&
-                      request.resource.size < 10 * 1024 * 1024 && // Max 10MB
-                      request.resource.contentType.matches('image/.*');
+      // Authenticated users can upload POD photos with size and type restrictions
+      allow create: if isAuthenticated() && isValidImage();
+      
+      // Only the uploader can update their POD photos
+      allow update: if isAuthenticated() && resource.metadata.uploadedBy == request.auth.uid;
+      
+      // Only the uploader can delete their POD photos
+      allow delete: if isAuthenticated();
+    }
+    
+    // Profile photos directory
+    match /profiles/{userId}/{profileImage} {
+      // Anyone can read profile photos (for public display)
+      allow read: if true;
+      
+      // Users can only upload/update their own profile photos
+      allow create, update: if isAuthenticated() && 
+                               request.auth.uid == userId && 
+                               isValidImage();
+      
+      // Users can only delete their own profile photos
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
     }
   }
 }
@@ -117,17 +153,20 @@ service firebase.storage {
 1. **Users Collection**
    - Users can read their own user document
    - Admins can read all user documents
-   - Only admins can create or update user documents
+   - Only admins can create user documents (during driver registration)
+   - Users can update their own profiles
+   - Only admins can delete user documents
 
 2. **Drivers Collection**
-   - All authenticated users can read driver profiles
+   - All authenticated users can read driver profiles (for load assignment)
    - Only admins can create, update, or delete driver profiles
 
 3. **Loads Collection**
    - Drivers can only read loads assigned to them
    - Admins can read all loads
    - Only admins can create new loads
-   - Drivers can update specific fields (status, tripStartTime, tripEndTime) on their assigned loads
+   - Drivers can update specific fields (status, tripStartAt, tripEndAt, miles, deliveredAt) on their assigned loads
+   - Admins can update all fields
    - Only admins can delete loads
 
 4. **POD Subcollection**
@@ -137,25 +176,80 @@ service firebase.storage {
 
 ### Storage Rules
 
-1. **POD Photos**
+1. **POD Photos Directory (`/pods/{loadId}/{podImage}`)**
    - All authenticated users can read POD photos
-   - All authenticated users can upload POD photos
+   - All authenticated users can create POD photos
    - Maximum file size is 10MB
    - Only image file types are allowed
+   - Users can update/delete POD photos they uploaded
 
-## Important Notes
+2. **Profile Photos Directory (`/profiles/{userId}/{profileImage}`)**
+   - Anyone can read profile photos (for public display)
+   - Users can only upload their own profile photos
+   - Maximum file size is 10MB
+   - Only image file types are allowed
+   - Users can only delete their own profile photos
 
-- These rules assume that driver documents have a `userId` field that matches the Firebase Auth UID
-- The load document's `driverId` field should match the driver document ID, not the Firebase Auth UID
-- For the initial setup, you may need to temporarily relax these rules to create the first admin user
-- Always test these rules in the Firebase Console's Rules Playground before deploying to production
+## Important Security Notes
+
+1. **User Role Verification**: The rules check user roles by reading from the `users` collection. Ensure this collection is properly populated during user creation.
+
+2. **Driver ID Mapping**: The `driverId` field in load documents must match the Firebase Auth UID of the driver.
+
+3. **Initial Admin Setup**: For the first admin user, you may need to:
+   - Temporarily relax the rules, OR
+   - Manually create the admin user document in the Firebase Console with `role: 'admin'`
+
+4. **Testing**: Always test rules in the Firebase Console's Rules Playground before deploying to production.
 
 ## Deploying Rules
 
+### Firestore Rules
+
 1. Open your Firebase Console
-2. Navigate to Firestore Database → Rules
-3. Copy and paste the Firestore rules
-4. Click "Publish"
-5. Navigate to Storage → Rules
-6. Copy and paste the Storage rules
-7. Click "Publish"
+2. Navigate to **Firestore Database** → **Rules**
+3. Copy and paste the Firestore rules from above
+4. Click **Publish**
+
+### Storage Rules
+
+1. Open your Firebase Console
+2. Navigate to **Storage** → **Rules**
+3. Copy and paste the Storage rules from above
+4. Click **Publish**
+
+## Testing Rules
+
+After deploying, test the rules with different user types:
+
+1. **As Admin**:
+   - Can create, read, update, and delete all data
+   - Can access all loads and PODs
+   - Can manage drivers
+
+2. **As Driver**:
+   - Can only read own loads
+   - Can update status and timestamps on own loads
+   - Can upload PODs for own loads
+   - Cannot access other drivers' data
+
+3. **Unauthenticated**:
+   - Cannot access any data
+   - Must sign in to use the app
+
+## Common Issues
+
+1. **"Missing or insufficient permissions" error**:
+   - Ensure the user has a document in the `users` collection with a `role` field
+   - Check that the `driverId` in loads matches the Firebase Auth UID
+   - Verify rules are published correctly
+
+2. **Cannot create first admin**:
+   - Manually create the user document in Firebase Console
+   - Set `role: 'admin'` in the document
+   - Then use the app to sign in
+
+3. **Image upload fails**:
+   - Check file size is under 10MB
+   - Ensure file type is an image (JPEG, PNG, etc.)
+   - Verify user is authenticated

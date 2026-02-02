@@ -1,0 +1,45 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to validate image file
+    function isValidImage() {
+      return request.resource.size < 10 * 1024 * 1024 && // Max 10MB
+             request.resource.contentType.matches('image/.*');
+    }
+    
+    // POD photos directory
+    match /pods/{loadId}/{podImage} {
+      // Authenticated users can read POD photos
+      allow read: if isAuthenticated();
+      
+      // Authenticated users can upload POD photos with size and type restrictions
+      allow create: if isAuthenticated() && isValidImage();
+      
+      // Only the uploader can update their POD photos
+      allow update: if isAuthenticated() && resource.metadata.uploadedBy == request.auth.uid;
+      
+      // Only the uploader can delete their POD photos
+      allow delete: if isAuthenticated();
+    }
+    
+    // Profile photos directory
+    match /profiles/{userId}/{profileImage} {
+      // Anyone can read profile photos (for public display)
+      allow read: if true;
+      
+      // Users can only upload/update their own profile photos
+      allow create, update: if isAuthenticated() && 
+                               request.auth.uid == userId && 
+                               isValidImage();
+      
+      // Users can only delete their own profile photos
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+  }
+}

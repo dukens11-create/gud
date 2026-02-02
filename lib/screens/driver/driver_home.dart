@@ -70,6 +70,13 @@ class DriverHome extends StatelessWidget {
                   trailing: Chip(
                     label: Text(load.status),
                   ),
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/driver/load-detail',
+                      arguments: load,
+                    );
+                  },
                 ),
               );
             },
