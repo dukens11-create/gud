@@ -32,24 +32,36 @@
 
 ---
 
-A comprehensive Flutter-based trucking management demo app for drivers and dispatchers with mock data.
+A comprehensive Flutter-based trucking management app for drivers and dispatchers with full Firebase integration.
 
 ## Features
 
 ### Driver Features
-- View assigned loads
+- View assigned loads with real-time updates
+- Track load status (assigned, picked up, in transit, delivered)
+- Upload Proof of Delivery (POD) with camera/gallery
 - Track earnings from completed loads
+- Track and view personal expenses
+- View net earnings (earnings - expenses)
 - Simple and intuitive interface
 
 ### Admin Features
 - View all loads across all drivers
-- Monitor load statuses
+- Create and assign new loads to drivers
+- Monitor load statuses in real-time
+- Manage driver profiles
+- **Expense Management**: Track and manage all expenses
+- **Statistics Dashboard**: View comprehensive analytics
+  - Revenue, expenses, and net profit
+  - Load metrics and delivery rates
+  - Per-driver performance breakdown
+  - Customizable time periods (week, month, quarter, year, custom)
 - Quick overview of operations
 
 ## Technology Stack
 
 - **Frontend**: Flutter 3.0+
-- **Backend**: Mock data service (no external dependencies)
+- **Backend**: Firebase (Firestore, Authentication, Storage)
 - **Design**: Material Design 3
 - **Platforms**: Android, iOS, Web/PWA
 
@@ -80,9 +92,18 @@ For detailed deployment instructions, see [PWA Deployment Guide](docs/PWA_DEPLOY
 
 ## Demo Accounts
 
-This is a **demo version** with no authentication required:
-- Click "Demo Login as Driver" to access the driver dashboard
-- Click "Demo Login as Admin" to access the admin dashboard
+### Firebase Authentication Required
+This app uses Firebase Authentication. To test the app:
+
+**Admin Account:**
+- Email: admin@gud.com
+- Password: admin123
+
+**Driver Account:**
+- Email: driver@gud.com
+- Password: driver123
+
+Or create your own account through the login screen.
 
 ## Project Structure
 
@@ -92,12 +113,33 @@ lib/
 ├── app.dart                  # Root widget
 ├── routes.dart               # Named routes configuration
 ├── models/                   # Data models
-│   └── simple_load.dart
+│   ├── load.dart
+│   ├── driver.dart
+│   ├── expense.dart
+│   ├── statistics.dart
+│   ├── pod.dart
+│   └── app_user.dart
 ├── services/                 # Business logic layer
-│   └── mock_data_service.dart
+│   ├── auth_service.dart
+│   ├── firestore_service.dart
+│   ├── expense_service.dart
+│   ├── statistics_service.dart
+│   └── storage_service.dart
 ├── screens/                  # UI screens
 │   ├── login_screen.dart
 │   ├── driver/
+│   │   ├── driver_home.dart
+│   │   ├── load_detail_screen.dart
+│   │   ├── upload_pod_screen.dart
+│   │   ├── earnings_screen.dart
+│   │   └── driver_expenses_screen.dart
+│   └── admin/
+│       ├── admin_home.dart
+│       ├── create_load_screen.dart
+│       ├── manage_drivers_screen.dart
+│       ├── expenses_screen.dart
+│       ├── add_expense_screen.dart
+│       └── statistics_screen.dart
 │   │   ├── driver_home.dart
 │   │   └── earnings_screen.dart
 │   └── admin/

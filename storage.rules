@@ -1,0 +1,39 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+    
+    // POD images - in loads/{loadId}/pods/{fileName}
+    match /loads/{loadId}/pods/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+        request.resource.contentType.matches('image/.*');
+      allow delete: if isAdmin();
+    }
+    
+    // Receipt images - in receipts/{driverId}/{fileName}
+    match /receipts/{driverId}/{fileName} {
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == driverId);
+      allow write: if isAuthenticated() && 
+        request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+        request.resource.contentType.matches('image/.*');
+      allow delete: if isAdmin();
+    }
+    
+    // Driver documents - in drivers/{driverId}/{fileName}
+    match /drivers/{driverId}/{fileName} {
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == driverId);
+      allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == driverId);
+      allow delete: if isAdmin();
+    }
+  }
+}
