@@ -1,12 +1,36 @@
 # GUD Express - Trucking Management App (Demo Version)
 
-## 🌐 Live Demo
+## 🌐 Live Demo & PWA Installation
 
-**Try it now:** https://dukens11-create.github.io/gud/
+**🚀 Try it now:** https://dukens11-create.github.io/gud/
 
-### Install as PWA
-- **Mobile**: Visit link, tap "Add to Home Screen"
-- **Desktop**: Visit link, click install icon in address bar
+### 📱 Install as Progressive Web App
+
+#### 📱 Android (Chrome/Edge)
+1. Visit the link above
+2. Tap menu (⋮) → **"Install app"** or **"Add to Home Screen"**
+3. The app will appear on your home screen like a native app!
+
+#### 📱 iOS (Safari)
+1. Visit the link above  
+2. Tap Share (⎙) → **"Add to Home Screen"**
+3. Tap **"Add"**
+4. Launch from your home screen!
+
+#### 💻 Desktop (Chrome/Edge)
+1. Visit the link above
+2. Click the **install icon** (⊕) in the address bar
+3. Click **"Install"**
+4. The app opens in its own window!
+
+### ✨ PWA Features
+- ✅ **Works offline** after first visit
+- ✅ **Fast loading** with cached assets
+- ✅ **Installable** on any device
+- ✅ **Automatic updates** when you deploy
+- ✅ **No app store** required
+
+**📖 Full installation guide:** [docs/GITHUB_PAGES_SETUP.md](docs/GITHUB_PAGES_SETUP.md)
 
 ---
 
@@ -30,22 +54,6 @@ A comprehensive Flutter-based trucking management demo app for drivers and dispa
 - **Backend**: Mock data service (no external dependencies)
 - **Design**: Material Design 3
 - **Platforms**: Android, iOS, Web/PWA
-
-## 🌐 Web App / PWA
-
-**Live Demo**: https://dukens11-create.github.io/gud/
-
-### Install as PWA
-- **Android/Chrome**: Visit the link, tap menu (⋮) → "Install app"
-- **iOS/Safari**: Visit the link, tap Share (⎙) → "Add to Home Screen"
-
-### Build Locally
-```bash
-flutter build web --release
-# Output: build/web/
-```
-
-For detailed deployment instructions, see [PWA Deployment Guide](docs/PWA_DEPLOYMENT.md).
 
 ## Quick Start
 
