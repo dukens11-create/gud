@@ -2,6 +2,17 @@
 
 This guide explains how to deploy the GUD Express Flutter app as a Progressive Web App (PWA) to GitHub Pages.
 
+## Important Note
+
+This demo version of the app may require Firebase configuration for full functionality. If you see Firebase initialization errors in the browser console, you'll need to:
+
+1. Create a Firebase project
+2. Enable Firebase for web
+3. Add the Firebase configuration to `web/index.html` or update `lib/main.dart` with proper `FirebaseOptions`
+4. See the **Firebase Configuration** section below for details
+
+For testing the PWA features without Firebase, the app structure and PWA capabilities (install, offline mode) will still work.
+
 ## Prerequisites
 
 - Flutter SDK 3.0.0 or higher installed
