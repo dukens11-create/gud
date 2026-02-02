@@ -89,12 +89,12 @@ class FirestoreService {
     required String loadId,
     required String status,
     DateTime? pickedUpAt,
-    DateTime? tripStartedAt,
+    DateTime? tripStartAt,
     DateTime? deliveredAt,
   }) async {
     final Map<String, dynamic> updates = {'status': status};
     if (pickedUpAt != null) updates['pickedUpAt'] = Timestamp.fromDate(pickedUpAt);
-    if (tripStartedAt != null) updates['tripStartAt'] = Timestamp.fromDate(tripStartedAt);
+    if (tripStartAt != null) updates['tripStartAt'] = Timestamp.fromDate(tripStartAt);
     if (deliveredAt != null) updates['deliveredAt'] = Timestamp.fromDate(deliveredAt);
     await _db.collection('loads').doc(loadId).update(updates);
   }

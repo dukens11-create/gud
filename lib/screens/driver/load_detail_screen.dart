@@ -256,42 +256,45 @@ class LoadDetailScreen extends StatelessWidget {
                             onPressed: () async {
                               // Show dialog to enter miles
                               final milesController = TextEditingController();
-                              final confirmed = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Complete Delivery'),
-                                  content: TextField(
-                                    controller: milesController,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Total Miles',
-                                      border: OutlineInputBorder(),
+                              try {
+                                final confirmed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Complete Delivery'),
+                                    content: TextField(
+                                      controller: milesController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Total Miles',
+                                        border: OutlineInputBorder(),
+                                      ),
                                     ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, true),
+                                        child: const Text('Complete'),
+                                      ),
+                                    ],
                                   ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context, false),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context, true),
-                                      child: const Text('Complete'),
-                                    ),
-                                  ],
-                                ),
-                              );
+                                );
 
-                              if (confirmed == true && context.mounted) {
-                                final miles = double.tryParse(milesController.text) ?? 0.0;
-                                await firestoreService.endTrip(load.id, miles);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Delivery completed')),
-                                  );
-                                  Navigator.pop(context);
+                                if (confirmed == true && context.mounted) {
+                                  final miles = double.tryParse(milesController.text) ?? 0.0;
+                                  await firestoreService.endTrip(load.id, miles);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Delivery completed')),
+                                    );
+                                    Navigator.pop(context);
+                                  }
                                 }
+                              } finally {
+                                milesController.dispose();
                               }
-                              milesController.dispose();
                             },
                             icon: const Icon(Icons.done_all),
                             label: const Text('Complete Delivery'),
