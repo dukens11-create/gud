@@ -4,6 +4,7 @@ class AppTextField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final bool obscureText;
+  final bool isPassword;
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
   final int maxLines;
@@ -13,6 +14,7 @@ class AppTextField extends StatelessWidget {
     required this.label,
     required this.controller,
     this.obscureText = false,
+    this.isPassword = false,
     this.keyboardType = TextInputType.text,
     this.validator,
     this.maxLines = 1,
@@ -22,7 +24,7 @@ class AppTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      obscureText: obscureText,
+      obscureText: obscureText || isPassword,
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,
