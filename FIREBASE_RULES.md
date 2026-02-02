@@ -122,10 +122,10 @@ service firebase.storage {
       // Authenticated users can upload POD photos with size and type restrictions
       allow create: if isAuthenticated() && isValidImage();
       
-      // Only the uploader can update their POD photos
-      allow update: if isAuthenticated() && resource.metadata.uploadedBy == request.auth.uid;
+      // Authenticated users can update POD photos
+      allow update: if isAuthenticated() && isValidImage();
       
-      // Only the uploader can delete their POD photos
+      // Authenticated users can delete POD photos
       allow delete: if isAuthenticated();
     }
     
@@ -181,7 +181,7 @@ service firebase.storage {
    - All authenticated users can create POD photos
    - Maximum file size is 10MB
    - Only image file types are allowed
-   - Users can update/delete POD photos they uploaded
+   - Authenticated users can update/delete POD photos
 
 2. **Profile Photos Directory (`/profiles/{userId}/{profileImage}`)**
    - Anyone can read profile photos (for public display)

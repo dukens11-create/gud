@@ -193,9 +193,12 @@ class _DriverLoadDetailScreenState extends State<DriverLoadDetailScreen> {
                     const Divider(),
                     _buildDetailRow('Load Number', widget.load.loadNumber),
                     _buildDetailRow('Rate', '\$${widget.load.rate.toStringAsFixed(2)}'),
-                    _buildDetailRow('Miles', widget.load.miles > 0 
-                        ? '${widget.load.miles.toStringAsFixed(1)} mi' 
-                        : 'Not recorded'),
+                    () {
+                      final milesText = widget.load.miles > 0 
+                          ? '${widget.load.miles.toStringAsFixed(1)} mi' 
+                          : 'Not recorded';
+                      return _buildDetailRow('Miles', milesText);
+                    }(),
                     const SizedBox(height: 8),
                     const Text(
                       'Pickup Location',

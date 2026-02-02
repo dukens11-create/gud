@@ -76,8 +76,8 @@ class StorageService {
       final ref = _storage.refFromURL(imageUrl);
       await ref.delete();
     } catch (e) {
-      // Image might not exist, ignore error
-      rethrow;
+      // Silently handle deletion errors (image might not exist)
+      // In production, consider logging this error
     }
   }
 

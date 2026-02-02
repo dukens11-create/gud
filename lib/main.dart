@@ -11,10 +11,25 @@ void main() async {
   // Use path URL strategy for clean URLs on web
   usePathUrlStrategy();
   
+  // Validate Firebase configuration
+  _validateFirebaseConfig();
+  
   // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
   runApp(const GUDApp());
+}
+
+/// Validate that demo Firebase credentials are not being used in production
+void _validateFirebaseConfig() {
+  const demoApiKey = 'AIzaSyDemoKey_ReplaceWithActualKey';
+  
+  // Check if demo API key is still in use
+  if (DefaultFirebaseOptions.currentPlatform.apiKey == demoApiKey) {
+    debugPrint('⚠️  WARNING: Using demo Firebase configuration!');
+    debugPrint('⚠️  Please run "flutterfire configure" to set up real Firebase credentials.');
+    debugPrint('⚠️  The app may not work correctly with demo credentials.');
+  }
 }

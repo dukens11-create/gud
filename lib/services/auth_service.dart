@@ -53,7 +53,9 @@ class AuthService {
   }) async {
     final user = _auth.currentUser;
     if (user != null) {
-      await user.updateDisplayName(displayName);
+      if (displayName != null) {
+        await user.updateDisplayName(displayName);
+      }
       if (photoURL != null) {
         await user.updatePhotoURL(photoURL);
       }
