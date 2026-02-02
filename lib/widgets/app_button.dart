@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 class AppButton extends StatelessWidget {
-  final String text;
+  final String label;
   final VoidCallback onPressed;
   final bool isLoading;
   final Color? color;
 
   const AppButton({
     super.key,
-    required this.text,
+    required this.label,
     required this.onPressed,
     this.isLoading = false,
     this.color,
@@ -38,7 +38,7 @@ class AppButton extends StatelessWidget {
                 ),
               )
             : Text(
-                text,
+                label,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
