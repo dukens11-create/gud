@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:your_app/screens/manage_drivers_screen.dart';
-import 'package:your_app/screens/create_load_screen.dart';
+import 'screens/login_screen.dart';
 
-class Routes {
-  static const String manageDrivers = '/admin/drivers';
-  static const String createLoad = '/admin/create-load';
-  
-  static Route<dynamic> generateRoute(RouteSettings settings) {
-    switch (settings.name) {
-      case manageDrivers:
-        return MaterialPageRoute(builder: (_) => ManageDriversScreen());
-      case createLoad:
-        return MaterialPageRoute(builder: (_) => CreateLoadScreen());
-      default:
-        return MaterialPageRoute(builder: (_) => UnknownScreen());
-    }
-  }
-}
+import 'screens/admin/admin_home.dart';
+import 'screens/admin/manage_drivers_screen.dart';
+import 'screens/admin/create_load_screen.dart';
+
+import 'screens/driver/driver_home.dart';
+import 'screens/driver/earnings_screen.dart';
+
+final Map<String, WidgetBuilder> routes = {
+  '/login': (_) => const LoginScreen(),
+  '/admin': (_) => const AdminHome(),
+  '/admin/drivers': (_) => const ManageDriversScreen(),
+  '/admin/create-load': (_) => const CreateLoadScreen(),
+  '/driver': (_) => const DriverHome(),
+  '/driver/earnings': (_) => const EarningsScreen(),
+};
