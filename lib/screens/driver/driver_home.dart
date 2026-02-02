@@ -20,6 +20,10 @@ class DriverHome extends StatelessWidget {
         title: const Text('My Loads'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.receipt_long),
+            onPressed: () => Navigator.pushNamed(context, '/driver/expenses'),
+          ),
+          IconButton(
             icon: const Icon(Icons.attach_money),
             onPressed: () => Navigator.pushNamed(context, '/driver/earnings'),
           ),

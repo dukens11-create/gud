@@ -64,6 +64,18 @@ class AdminHome extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           FloatingActionButton(
+            heroTag: 'statistics',
+            onPressed: () => Navigator.pushNamed(context, '/admin/statistics'),
+            child: const Icon(Icons.bar_chart),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            heroTag: 'expenses',
+            onPressed: () => Navigator.pushNamed(context, '/admin/expenses'),
+            child: const Icon(Icons.receipt_long),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
             heroTag: 'drivers',
             onPressed: () => Navigator.pushNamed(context, '/admin/drivers'),
             child: const Icon(Icons.people),
