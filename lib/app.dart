@@ -14,7 +14,7 @@ class GUDApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'GUD',
+      title: 'GUD Express',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true),
       routes: routes,

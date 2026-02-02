@@ -192,7 +192,7 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: ListTile(
                         leading: CircleAvatar(
-                          child: Text(driver.name[0].toUpperCase()),
+                          child: Text(driver.name.isNotEmpty ? driver.name[0].toUpperCase() : 'D'),
                         ),
                         title: Text(driver.name),
                         subtitle: Text(

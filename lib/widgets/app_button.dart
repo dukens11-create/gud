@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class AppButton extends StatelessWidget {
-  final String text;
   final String label;
   final VoidCallback onPressed;
   final bool isLoading;
@@ -9,8 +8,7 @@ class AppButton extends StatelessWidget {
 
   const AppButton({
     super.key,
-    this.text = '',
-    this.label = '',
+    required this.label,
     required this.onPressed,
     this.isLoading = false,
     this.color,
@@ -18,8 +16,6 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttonText = text.isNotEmpty ? text : label;
-    
     return SizedBox(
       width: double.infinity,
       height: 50,
@@ -42,7 +38,7 @@ class AppButton extends StatelessWidget {
                 ),
               )
             : Text(
-                buttonText,
+                label,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

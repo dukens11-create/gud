@@ -56,7 +56,7 @@ class DriverHome extends StatelessWidget {
                 margin: const EdgeInsets.all(8),
                 child: ListTile(
                   leading: CircleAvatar(
-                    child: Text(load.status[0].toUpperCase()),
+                    child: Text(load.status.isNotEmpty ? load.status[0].toUpperCase() : 'L'),
                   ),
                   title: Text(load.loadNumber),
                   subtitle: Column(

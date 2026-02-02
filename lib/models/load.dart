@@ -43,7 +43,7 @@ class LoadModel {
 
   static LoadModel fromDoc(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
-    DateTime? _dt(dynamic v) => v == null ? null : (v as Timestamp).toDate();
+    DateTime? _parseTimestamp(dynamic v) => v == null ? null : (v as Timestamp).toDate();
 
     return LoadModel(
       id: doc.id,
@@ -53,10 +53,10 @@ class LoadModel {
       deliveryAddress: (d['deliveryAddress'] ?? '') as String,
       rate: (d['rate'] ?? 0).toDouble(),
       status: (d['status'] ?? 'assigned') as String,
-      tripStartAt: _dt(d['tripStartAt']),
-      tripEndAt: _dt(d['tripEndAt']),
+      tripStartAt: _parseTimestamp(d['tripStartAt']),
+      tripEndAt: _parseTimestamp(d['tripEndAt']),
       miles: (d['miles'] ?? 0).toDouble(),
-      deliveredAt: _dt(d['deliveredAt']),
+      deliveredAt: _parseTimestamp(d['deliveredAt']),
     );
   }
 }

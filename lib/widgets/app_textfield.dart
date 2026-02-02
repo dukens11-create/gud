@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 class AppTextField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
-  final bool obscureText;
   final bool isPassword;
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
@@ -13,7 +12,6 @@ class AppTextField extends StatelessWidget {
     super.key,
     required this.label,
     required this.controller,
-    this.obscureText = false,
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
     this.validator,
@@ -24,7 +22,7 @@ class AppTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      obscureText: obscureText || isPassword,
+      obscureText: isPassword,
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,
