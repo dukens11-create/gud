@@ -34,6 +34,43 @@ class FirestoreService {
     );
   }
 
+  Future<void> updateDriver({
+    required String driverId,
+    String? name,
+    String? phone,
+    String? truckNumber,
+    String? status,
+    bool? isActive,
+  }) async {
+    final Map<String, dynamic> updates = {};
+    if (name != null) updates['name'] = name;
+    if (phone != null) updates['phone'] = phone;
+    if (truckNumber != null) updates['truckNumber'] = truckNumber;
+    if (status != null) updates['status'] = status;
+    if (isActive != null) updates['isActive'] = isActive;
+    
+    if (updates.isNotEmpty) {
+      await _db.collection('drivers').doc(driverId).update(updates);
+    }
+  }
+
+  Future<Driver?> getDriver(String driverId) async {
+    final doc = await _db.collection('drivers').doc(driverId).get();
+    if (!doc.exists) return null;
+    return Driver.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+  }
+
+  Future<void> updateDriverStats({
+    required String driverId,
+    required double earnings,
+    required int completedLoads,
+  }) async {
+    await _db.collection('drivers').doc(driverId).update({
+      'totalEarnings': FieldValue.increment(earnings),
+      'completedLoads': FieldValue.increment(completedLoads),
+    });
+  }
+
   // Loads
   Future<String> createLoad({
     required String loadNumber,
@@ -115,9 +152,32 @@ class FirestoreService {
     });
   }
 
+  Future<int> getDriverCompletedLoads(String driverId) async {
+    final snapshot = await _db
+        .collection('loads')
+        .where('driverId', isEqualTo: driverId)
+        .where('status', whereIn: ['delivered', 'completed'])
+        .get();
+    
+    return snapshot.docs.length;
+  }
+
+  Stream<Map<String, dynamic>> streamDashboardStats() {
+    return _db.collection('loads').snapshots().map((snapshot) {
+      final loads = snapshot.docs;
+      return {
+        'totalLoads': loads.length,
+        'assignedLoads': loads.where((d) => d.data()['status'] == 'assigned').length,
+        'inTransitLoads': loads.where((d) => d.data()['status'] == 'in_transit').length,
+        'deliveredLoads': loads.where((d) => d.data()['status'] == 'delivered').length,
+        'totalRevenue': loads.fold(0.0, (sum, doc) => sum + ((doc.data()['rate'] ?? 0) as num).toDouble()),
+      };
+    });
+  }
+
   Future<void> deleteLoad(String loadId) async {
-    // Delete all PODs for this load
-    final pods = await _db.collection('loads').doc(loadId).collection('pods').get();
+    // Delete all PODs for this load from top-level collection
+    final pods = await _db.collection('pods').where('loadId', isEqualTo: loadId).get();
     for (var doc in pods.docs) {
       await doc.reference.delete();
     }
@@ -125,30 +185,34 @@ class FirestoreService {
     await _db.collection('loads').doc(loadId).delete();
   }
 
-  // POD
-  Future<void> addPod({
+  // POD - Using top-level pods collection
+  Future<String> addPod({
     required String loadId,
     required String imageUrl,
     String? notes,
     required String uploadedBy,
   }) async {
-    await _db.collection('loads').doc(loadId).collection('pods').add({
+    final docRef = await _db.collection('pods').add({
       'loadId': loadId,
       'imageUrl': imageUrl,
       if (notes != null) 'notes': notes,
       'uploadedBy': uploadedBy,
       'uploadedAt': FieldValue.serverTimestamp(),
     });
+    return docRef.id;
   }
 
   Stream<List<POD>> streamPods(String loadId) {
     return _db
-        .collection('loads')
-        .doc(loadId)
         .collection('pods')
+        .where('loadId', isEqualTo: loadId)
         .orderBy('uploadedAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => POD.fromDoc(doc)).toList());
+  }
+
+  Future<void> deletePod(String podId) async {
+    await _db.collection('pods').doc(podId).delete();
   }
 
   // Earnings
