@@ -19,6 +19,23 @@ A comprehensive Flutter-based trucking management demo app for drivers and dispa
 - **Frontend**: Flutter 3.0+
 - **Backend**: Mock data service (no external dependencies)
 - **Design**: Material Design 3
+- **Platforms**: Android, iOS, Web/PWA
+
+## 🌐 Web App / PWA
+
+**Live Demo**: https://dukens11-create.github.io/gud/
+
+### Install as PWA
+- **Android/Chrome**: Visit the link, tap menu (⋮) → "Install app"
+- **iOS/Safari**: Visit the link, tap Share (⎙) → "Add to Home Screen"
+
+### Build Locally
+```bash
+flutter build web --release
+# Output: build/web/
+```
+
+For detailed deployment instructions, see [PWA Deployment Guide](docs/PWA_DEPLOYMENT.md).
 
 ## Quick Start
 

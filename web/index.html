@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="GUD Express Trucking Management">
+  <meta name="theme-color" content="#2196F3">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GUD Express">
+  
+  <title>GUD Express</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+  <script>
+    var serviceWorkerVersion = null;
+    var scriptLoaded = false;
+    function loadMainDartJs() {
+      if (scriptLoaded) return;
+      scriptLoaded = true;
+      var scriptTag = document.createElement('script');
+      scriptTag.src = 'main.dart.js';
+      scriptTag.type = 'application/javascript';
+      document.body.append(scriptTag);
+    }
+
+    if ('serviceWorker' in navigator) {
+      var serviceWorkerUrl = 'flutter_service_worker.js?v=' + serviceWorkerVersion;
+      navigator.serviceWorker.register(serviceWorkerUrl)
+        .then((reg) => {
+          console.log('Service worker registered');
+          loadMainDartJs();
+        });
+    } else {
+      loadMainDartJs();
+    }
+  </script>
+</body>
+</html>
