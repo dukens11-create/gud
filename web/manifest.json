@@ -1,12 +1,12 @@
 {
   "name": "GUD Express - Trucking Management",
   "short_name": "GUD Express",
-  "description": "Trucking load management and driver tracking",
+  "description": "Demo trucking load management and driver tracking app",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#2196F3",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "icons": [
     {
       "src": "icons/icon-192.png",
