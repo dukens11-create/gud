@@ -10,6 +10,16 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  firebase_storage: ^12.3.4
+  
+  # Utilities
+  image_picker: ^1.1.2
+  intl: ^0.19.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
