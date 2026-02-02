@@ -12,8 +12,8 @@ class EarningsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Earnings')),
-      body: FutureBuilder<double>(
-        future: firestoreService.getDriverEarnings(userId),
+      body: StreamBuilder<double>(
+        stream: firestoreService.streamDriverEarnings(userId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
