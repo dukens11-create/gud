@@ -2,6 +2,14 @@
 
 A comprehensive Flutter-based trucking management system for drivers and dispatchers with Firebase backend.
 
+## 📦 Download APK
+
+**🚀 [DOWNLOAD APK NOW](https://github.com/dukens11-create/gud/actions/runs/21572746265)** ⬅️ Click here!
+
+Or see [DOWNLOAD_APK.md](DOWNLOAD_APK.md) for detailed download instructions.
+
+---
+
 ## Features
 
 ### Driver Features
