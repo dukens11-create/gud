@@ -1,7 +1,19 @@
 # PWA Setup and Deployment
 
 ## Live Demo
-https://dukens11-create.github.io/gud/
+**🚀 Try it now:** https://dukens11-create.github.io/gud/
+
+This is a demo version using mock data - no backend required!
+
+## Demo Credentials
+
+**Admin Account:**
+- Email: admin@gud.com
+- Password: admin123
+
+**Driver Account:**
+- Email: driver@gud.com
+- Password: driver123
 
 ## Install as PWA
 
@@ -9,16 +21,20 @@ https://dukens11-create.github.io/gud/
 1. Visit the web app URL
 2. Tap menu (⋮)
 3. Select "Install app" or "Add to Home Screen"
+4. App appears on home screen like a native app
 
 ### iOS (Safari)
 1. Visit the web app URL
 2. Tap Share button (⎙)
 3. Select "Add to Home Screen"
+4. Tap "Add"
+5. Launch from home screen
 
-### Desktop (Chrome/Edge)
+### Desktop (Chrome/Edge/Firefox)
 1. Visit the web app URL
-2. Click install icon in address bar
-3. App opens in standalone window
+2. Click install icon (⊕) in address bar
+3. Click "Install"
+4. App opens in standalone window
 
 ## Local Development
 
@@ -34,22 +50,54 @@ python3 -m http.server 8000
 # Visit http://localhost:8000
 ```
 
+Or use Flutter's built-in web server:
+```bash
+flutter run -d chrome
+```
+
 ## Deployment
 
 ### Automatic (GitHub Pages)
-- Push to main branch
-- GitHub Actions builds and deploys automatically
-- Live at https://dukens11-create.github.io/gud/
+The repository includes a GitHub Actions workflow that automatically:
+- Builds the web app on push to main
+- Deploys to GitHub Pages
+- Available at https://dukens11-create.github.io/gud/
 
-### Manual
+### Enabling GitHub Pages
+1. Go to repository Settings
+2. Navigate to "Pages" section
+3. Source: GitHub Actions
+4. The workflow will deploy on next push to main
+
+### Manual Deployment
 ```bash
 flutter build web --release --base-href /gud/
 # Upload build/web/* to your web server
 ```
 
-## Features
+## PWA Features
 - ✅ Offline support (service worker)
 - ✅ Installable on all platforms
 - ✅ Responsive design
-- ✅ Fast loading
+- ✅ Fast loading (cached assets)
 - ✅ No app store required
+- ✅ Works without backend (demo mode)
+
+## Troubleshooting
+
+### PWA not installing
+- Ensure you're using HTTPS (GitHub Pages provides this)
+- Check that manifest.json is accessible
+- Verify service worker is registered (check browser console)
+
+### Build fails
+```bash
+flutter clean
+flutter pub get
+flutter build web --release
+```
+
+### App shows blank screen
+- Check browser console for errors
+- Verify base-href matches deployment path
+- Clear browser cache and reload
