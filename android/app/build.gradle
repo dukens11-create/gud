@@ -2,7 +2,7 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
-    id "com.google.gms.google-services"
+    // Google services plugin applied conditionally at the end of the file
 }
 
 def localProperties = new Properties()
@@ -63,4 +63,13 @@ flutter {
 dependencies {
     implementation platform('com.google.firebase:firebase-bom:33.5.1')
     implementation 'com.google.firebase:firebase-analytics'
+}
+
+// Only apply google-services plugin if file exists
+def googleServicesFile = file('google-services.json')
+if (googleServicesFile.exists()) {
+    apply plugin: 'com.google.gms.google-services'
+    println '✅ google-services.json found - Firebase enabled'
+} else {
+    println '⚠️ google-services.json not found - Running without Firebase'
 }
