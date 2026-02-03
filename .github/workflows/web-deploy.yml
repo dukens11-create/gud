@@ -17,8 +17,10 @@ concurrency:
 
 jobs:
   build:
+    outputs:
+      pages_enabled: ${{ steps.pages.outcome == 'success' }}
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,6 +28,19 @@ jobs:
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v4
+        continue-on-error: true
+
+      - name: Check Pages Configuration
+        if: steps.pages.outcome == 'failure'
+        run: |
+          echo "⚠️ GitHub Pages is not enabled or configured for this repository."
+          echo "📝 To enable GitHub Pages:"
+          echo "   1. Go to repository Settings"
+          echo "   2. Navigate to Pages section (left sidebar)"
+          echo "   3. Set Source to 'GitHub Actions'"
+          echo "   4. Save and re-run this workflow"
+          echo ""
+          echo "✅ The web build will still complete, but deployment will be skipped."
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -49,6 +64,7 @@ jobs:
           path: 'build/web'
 
   deploy:
+    if: needs.build.outputs.pages_enabled == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
