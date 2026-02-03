@@ -47,6 +47,53 @@ A comprehensive Flutter-based trucking management app for drivers and dispatcher
 - Monitor load statuses
 - Quick overview of operations
 
+## 📸 Screenshots
+
+### Mobile Views
+
+<table>
+  <tr>
+    <td><img src="screenshots/mobile/login.png" width="200" alt="Login Screen"/></td>
+    <td><img src="screenshots/mobile/driver-dashboard.png" width="200" alt="Driver Dashboard"/></td>
+    <td><img src="screenshots/mobile/admin-dashboard.png" width="200" alt="Admin Dashboard"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Login</b></td>
+    <td align="center"><b>Driver Dashboard</b></td>
+    <td align="center"><b>Admin Dashboard</b></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td><img src="screenshots/mobile/upload-pod.png" width="200" alt="Upload POD"/></td>
+    <td><img src="screenshots/mobile/admin-statistics.png" width="200" alt="Statistics"/></td>
+    <td><img src="screenshots/mobile/admin-expenses.png" width="200" alt="Expenses"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Upload POD</b></td>
+    <td align="center"><b>Statistics</b></td>
+    <td align="center"><b>Expense Tracking</b></td>
+  </tr>
+</table>
+
+### Desktop Views
+
+<table>
+  <tr>
+    <td><img src="screenshots/desktop/admin-dashboard-desktop.png" width="400" alt="Desktop Admin Dashboard"/></td>
+    <td><img src="screenshots/desktop/statistics-desktop.png" width="400" alt="Desktop Statistics"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Admin Dashboard (Desktop)</b></td>
+    <td align="center"><b>Statistics Dashboard (Desktop)</b></td>
+  </tr>
+</table>
+
+> 📱 **Note**: Screenshots will be added after initial deployment. See [Screenshot Guide](screenshots/README.md) for details.
+
+---
+
 ## Demo Credentials
 
 **Admin Account:**
