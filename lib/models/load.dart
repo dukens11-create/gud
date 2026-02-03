@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class LoadModel {
   final String id;
   final String loadNumber;
@@ -45,22 +43,21 @@ class LoadModel {
     'deliveryAddress': deliveryAddress,
     'rate': rate,
     'status': status,
-    'createdAt': Timestamp.fromDate(createdAt),
-    if (pickedUpAt != null) 'pickedUpAt': Timestamp.fromDate(pickedUpAt!),
-    if (tripStartAt != null) 'tripStartAt': Timestamp.fromDate(tripStartAt!),
-    if (tripEndAt != null) 'tripEndAt': Timestamp.fromDate(tripEndAt!),
+    'createdAt': createdAt.toIso8601String(),
+    if (pickedUpAt != null) 'pickedUpAt': pickedUpAt!.toIso8601String(),
+    if (tripStartAt != null) 'tripStartAt': tripStartAt!.toIso8601String(),
+    if (tripEndAt != null) 'tripEndAt': tripEndAt!.toIso8601String(),
     'miles': miles,
-    if (deliveredAt != null) 'deliveredAt': Timestamp.fromDate(deliveredAt!),
+    if (deliveredAt != null) 'deliveredAt': deliveredAt!.toIso8601String(),
     if (notes != null) 'notes': notes,
     'createdBy': createdBy,
   };
 
-  static LoadModel fromDoc(DocumentSnapshot doc) {
-    final d = doc.data() as Map<String, dynamic>;
-    DateTime? _parseTimestamp(dynamic v) => v == null ? null : (v as Timestamp).toDate();
+  static LoadModel fromMap(String id, Map<String, dynamic> d) {
+    DateTime? _parseDateTime(dynamic v) => v == null ? null : DateTime.parse(v as String);
 
     return LoadModel(
-      id: doc.id,
+      id: id,
       loadNumber: (d['loadNumber'] ?? '') as String,
       driverId: (d['driverId'] ?? '') as String,
       driverName: d['driverName'] as String?,
@@ -68,12 +65,12 @@ class LoadModel {
       deliveryAddress: (d['deliveryAddress'] ?? '') as String,
       rate: (d['rate'] ?? 0).toDouble(),
       status: (d['status'] ?? 'assigned') as String,
-      createdAt: _parseTimestamp(d['createdAt']),
-      pickedUpAt: _parseTimestamp(d['pickedUpAt']),
-      tripStartAt: _parseTimestamp(d['tripStartAt']),
-      tripEndAt: _parseTimestamp(d['tripEndAt']),
+      createdAt: _parseDateTime(d['createdAt']),
+      pickedUpAt: _parseDateTime(d['pickedUpAt']),
+      tripStartAt: _parseDateTime(d['tripStartAt']),
+      tripEndAt: _parseDateTime(d['tripEndAt']),
       miles: (d['miles'] ?? 0).toDouble(),
-      deliveredAt: _parseTimestamp(d['deliveredAt']),
+      deliveredAt: _parseDateTime(d['deliveredAt']),
       notes: d['notes'] as String?,
       createdBy: (d['createdBy'] ?? '') as String,
     );

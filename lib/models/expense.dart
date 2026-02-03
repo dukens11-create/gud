@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class Expense {
   final String id;
   final double amount;
@@ -29,29 +27,28 @@ class Expense {
     'amount': amount,
     'category': category,
     'description': description,
-    'date': Timestamp.fromDate(date),
+    'date': date.toIso8601String(),
     if (driverId != null) 'driverId': driverId,
     if (loadId != null) 'loadId': loadId,
     if (receiptUrl != null) 'receiptUrl': receiptUrl,
     'createdBy': createdBy,
-    'createdAt': Timestamp.fromDate(createdAt),
+    'createdAt': createdAt.toIso8601String(),
   };
 
-  static Expense fromDoc(DocumentSnapshot doc) {
-    final d = doc.data() as Map<String, dynamic>;
-    DateTime? _parseTimestamp(dynamic v) => v == null ? null : (v as Timestamp).toDate();
+  static Expense fromMap(String id, Map<String, dynamic> d) {
+    DateTime? _parseDateTime(dynamic v) => v == null ? null : DateTime.parse(v as String);
 
     return Expense(
-      id: doc.id,
+      id: id,
       amount: (d['amount'] ?? 0).toDouble(),
       category: (d['category'] ?? 'other') as String,
       description: (d['description'] ?? '') as String,
-      date: _parseTimestamp(d['date']) ?? DateTime.now(),
+      date: _parseDateTime(d['date']) ?? DateTime.now(),
       driverId: d['driverId'] as String?,
       loadId: d['loadId'] as String?,
       receiptUrl: d['receiptUrl'] as String?,
       createdBy: (d['createdBy'] ?? '') as String,
-      createdAt: _parseTimestamp(d['createdAt']),
+      createdAt: _parseDateTime(d['createdAt']),
     );
   }
 }

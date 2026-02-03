@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class Statistics {
   final double totalRevenue;
   final double totalExpenses;
@@ -36,14 +34,13 @@ class Statistics {
     'totalMiles': totalMiles,
     'averageRate': averageRate,
     'ratePerMile': ratePerMile,
-    'periodStart': Timestamp.fromDate(periodStart),
-    'periodEnd': Timestamp.fromDate(periodEnd),
+    'periodStart': periodStart.toIso8601String(),
+    'periodEnd': periodEnd.toIso8601String(),
     'driverStats': driverStats,
   };
 
-  static Statistics fromDoc(DocumentSnapshot doc) {
-    final d = doc.data() as Map<String, dynamic>;
-    DateTime? _parseTimestamp(dynamic v) => v == null ? null : (v as Timestamp).toDate();
+  static Statistics fromMap(Map<String, dynamic> d) {
+    DateTime? _parseDateTime(dynamic v) => v == null ? null : DateTime.parse(v as String);
 
     return Statistics(
       totalRevenue: (d['totalRevenue'] ?? 0).toDouble(),
@@ -54,8 +51,8 @@ class Statistics {
       totalMiles: (d['totalMiles'] ?? 0).toDouble(),
       averageRate: (d['averageRate'] ?? 0).toDouble(),
       ratePerMile: (d['ratePerMile'] ?? 0).toDouble(),
-      periodStart: _parseTimestamp(d['periodStart']) ?? DateTime.now(),
-      periodEnd: _parseTimestamp(d['periodEnd']) ?? DateTime.now(),
+      periodStart: _parseDateTime(d['periodStart']) ?? DateTime.now(),
+      periodEnd: _parseDateTime(d['periodEnd']) ?? DateTime.now(),
       driverStats: (d['driverStats'] ?? {}) as Map<String, dynamic>,
     );
   }
