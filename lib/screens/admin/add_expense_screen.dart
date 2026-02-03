@@ -1,32 +1,54 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/expense_service.dart';
-import '../../services/firestore_service.dart';
-import '../../models/driver.dart';
-import '../../widgets/app_textfield.dart';
-import '../../widgets/app_button.dart';
 
-class AddExpenseScreen extends StatefulWidget {
+class AddExpenseScreen extends StatelessWidget {
   const AddExpenseScreen({super.key});
 
   @override
-  State<AddExpenseScreen> createState() => _AddExpenseScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Add Expense'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.receipt,
+                size: 100,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Add Expense',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'This feature is disabled in demo mode',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Back'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
-
-class _AddExpenseScreenState extends State<AddExpenseScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _expenseService = ExpenseService();
-  final _firestoreService = FirestoreService();
-  
-  final _amountController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  
-  String _selectedCategory = 'fuel';
-  DateTime _selectedDate = DateTime.now();
-  String? _selectedDriverId;
-  bool _isSubmitting = false;
-  
-  final List<String> _categories = ['fuel', 'maintenance', 'tolls', 'insurance', 'other'];
 
   @override
   void dispose() {

@@ -1,33 +1,45 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
-import '../../services/expense_service.dart';
-import '../../models/expense.dart';
-import 'add_expense_screen.dart';
 
-class ExpensesScreen extends StatefulWidget {
+class ExpensesScreen extends StatelessWidget {
   const ExpensesScreen({super.key});
 
   @override
-  State<ExpensesScreen> createState() => _ExpensesScreenState();
-}
-
-class _ExpensesScreenState extends State<ExpensesScreen> {
-  final _expenseService = ExpenseService();
-  String? _selectedCategory;
-  
-  final List<String> _categories = ['All', 'fuel', 'maintenance', 'tolls', 'insurance', 'other'];
-
-  @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('MMM dd, yyyy');
-    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Expense Management'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.receipt_long, size: 80, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'No expenses recorded',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'This feature is disabled in demo mode',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Expense tracking is disabled in demo mode'),
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
             onPressed: _showFilterDialog,
           ),
         ],

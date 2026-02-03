@@ -1,43 +1,64 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/firestore_service.dart';
-import '../../models/driver.dart';
-import '../../widgets/app_button.dart';
-import '../../widgets/app_textfield.dart';
+import '../../services/mock_data_service.dart';
 
-class CreateLoadScreen extends StatefulWidget {
+class CreateLoadScreen extends StatelessWidget {
   const CreateLoadScreen({super.key});
 
   @override
-  State<CreateLoadScreen> createState() => _CreateLoadScreenState();
-}
-
-class _CreateLoadScreenState extends State<CreateLoadScreen> {
-  final _firestoreService = FirestoreService();
-  final _loadNumberController = TextEditingController();
-  final _pickupController = TextEditingController();
-  final _deliveryController = TextEditingController();
-  final _rateController = TextEditingController();
-  final _milesController = TextEditingController();
-  final _notesController = TextEditingController();
-  String? _selectedDriverId;
-  String? _selectedDriverName;
-  bool _isCreating = false;
-  bool _isLoadingNumber = false;
-  String? _errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _generateLoadNumber();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Create Load'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.local_shipping,
+                size: 100,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Load Creation',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'This feature is disabled in demo mode',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'View the 3 pre-loaded demo loads on the admin dashboard',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Back to Dashboard'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
-
-  Future<void> _generateLoadNumber() async {
-    setState(() => _isLoadingNumber = true);
-    try {
-      final loadNumber = await _firestoreService.generateLoadNumber();
-      _loadNumberController.text = loadNumber;
-    } catch (e) {
+}
       setState(() => _errorMessage = 'Error generating load number: $e');
     } finally {
       setState(() => _isLoadingNumber = false);

@@ -1,52 +1,79 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
-import '../../services/firestore_service.dart';
+import '../../services/mock_data_service.dart';
 import '../../models/driver.dart';
-import '../../widgets/app_button.dart';
-import '../../widgets/app_textfield.dart';
 
-class ManageDriversScreen extends StatefulWidget {
+class ManageDriversScreen extends StatelessWidget {
   const ManageDriversScreen({super.key});
 
   @override
-  State<ManageDriversScreen> createState() => _ManageDriversScreenState();
-}
+  Widget build(BuildContext context) {
+    final mockService = MockDataService();
 
-class _ManageDriversScreenState extends State<ManageDriversScreen> {
-  final _authService = AuthService();
-  final _firestoreService = FirestoreService();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _truckNumberController = TextEditingController();
-  bool _isCreating = false;
-  String? _errorMessage;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Manage Drivers'),
+      ),
+      body: FutureBuilder<List<Driver>>(
+        future: mockService.getDrivers(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _nameController.dispose();
-    _phoneController.dispose();
-    _truckNumberController.dispose();
-    super.dispose();
+          final drivers = snapshot.data ?? [];
+
+          return ListView.builder(
+            itemCount: drivers.length,
+            itemBuilder: (context, index) {
+              final driver = drivers[index];
+              return Card(
+                margin: const EdgeInsets.all(8),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    child: Text(driver.name[0]),
+                  ),
+                  title: Text(driver.name),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Phone: ${driver.phone}'),
+                      Text('Truck: ${driver.truckNumber}'),
+                      Text('Status: ${driver.status}'),
+                    ],
+                  ),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '\$${driver.totalEarnings.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text('${driver.completedLoads} loads'),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Driver management is disabled in demo mode'),
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
   }
-
-  Future<void> _createDriver() async {
-    if (_emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _nameController.text.isEmpty ||
-        _phoneController.text.isEmpty ||
-        _truckNumberController.text.isEmpty) {
-      setState(() => _errorMessage = 'All fields are required');
-      return;
-    }
-
-    setState(() {
-      _isCreating = true;
-      _errorMessage = null;
-    });
+}
 
     try {
       // Create Firebase Auth user

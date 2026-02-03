@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/load.dart';
-import '../../services/storage_service.dart';
-import '../../services/firestore_service.dart';
+import '../../services/mock_data_service.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_textfield.dart';
 
@@ -18,8 +16,7 @@ class UploadPODScreen extends StatefulWidget {
 }
 
 class _UploadPODScreenState extends State<UploadPODScreen> {
-  final _storageService = StorageService();
-  final _firestoreService = FirestoreService();
+  final _mockService = MockDataService();
   final _notesController = TextEditingController();
   File? _selectedImage;
   bool _isUploading = false;
@@ -32,12 +29,17 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final image = await _storageService.pickImage(source: source);
-    if (image != null) {
-      setState(() {
-        _selectedImage = image;
-        _errorMessage = null;
-      });
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: source);
+      if (pickedFile != null) {
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+          _errorMessage = null;
+        });
+      }
+    } catch (e) {
+      setState(() => _errorMessage = 'Error picking image: $e');
     }
   }
 
@@ -53,25 +55,13 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
     });
 
     try {
-      final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      // Simulate upload delay
+      await Future.delayed(const Duration(seconds: 1));
 
-      // Upload image to Firebase Storage
-      final imageUrl = await _storageService.uploadPodImage(
-        loadId: widget.load.id,
-        file: _selectedImage!,
-      );
-
-      // Save POD to Firestore
-      await _firestoreService.addPod(
-        loadId: widget.load.id,
-        imageUrl: imageUrl,
-        notes: _notesController.text.isNotEmpty ? _notesController.text.trim() : null,
-        uploadedBy: currentUserId,
-      );
-
+      // In demo mode, just show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('POD uploaded successfully')),
+          const SnackBar(content: Text('POD uploaded successfully (demo mode)')),
         );
         Navigator.pop(context);
       }
