@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class POD {
   final String id;
   final String loadId;
@@ -22,6 +24,10 @@ class POD {
     'notes': notes,
     'uploadedBy': uploadedBy,
   };
+
+  static POD fromDoc(DocumentSnapshot doc) {
+    return fromMap(doc.id, doc.data() as Map<String, dynamic>);
+  }
 
   static POD fromMap(String id, Map<String, dynamic> d) {
     return POD(
