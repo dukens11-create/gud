@@ -29,17 +29,14 @@ class Driver {
     'isActive': isActive,
   };
 
-  static Driver fromMap(String id, Map<String, dynamic> data) {
-    final totalEarningsValue = data['totalEarnings'] ?? 0.0;
-    return Driver(
-      id: id,
-      name: (data['name'] ?? '') as String,
-      phone: (data['phone'] ?? '') as String,
-      truckNumber: (data['truckNumber'] ?? '') as String,
-      status: (data['status'] ?? 'available') as String,
-      totalEarnings: (totalEarningsValue as num).toDouble(),
-      completedLoads: (data['completedLoads'] ?? 0) as int,
-      isActive: (data['isActive'] ?? true) as bool,
-    );
-  }
+  static Driver fromMap(String id, Map<String, dynamic> data) => Driver(
+    id: id,
+    name: (data['name'] ?? '') as String,
+    phone: (data['phone'] ?? '') as String,
+    truckNumber: (data['truckNumber'] ?? '') as String,
+    status: (data['status'] ?? 'available') as String,
+    totalEarnings: ((data['totalEarnings'] ?? 0.0) as num).toDouble(),
+    completedLoads: (data['completedLoads'] ?? 0) as int,
+    isActive: (data['isActive'] ?? true) as bool,
+  );
 }
