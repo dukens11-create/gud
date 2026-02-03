@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import '../services/mock_data_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_textfield.dart';
+import 'admin/admin_home.dart';
+import 'driver/driver_home.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,7 +15,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authService = AuthService();
+  final _mockService = MockDataService();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -31,14 +33,28 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _authService.signIn(
+      final user = await _mockService.signIn(
         _emailController.text.trim(),
         _passwordController.text,
       );
-      // Navigation handled by StreamBuilder in app.dart
+      
+      if (!mounted) return;
+      
+      // Navigate based on role
+      if (user?['role'] == 'admin') {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AdminHome()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => DriverHome(driverId: user?['uid'] ?? ''),
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
       });
     }
@@ -59,7 +75,32 @@ class _LoginScreenState extends State<LoginScreen> {
                 'GUD Express',
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 8),
+              const Text(
+                'Demo Mode',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Demo Credentials:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text('Admin: admin@gud.com / admin123'),
+                    Text('Driver: driver@gud.com / driver123'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
               AppTextField(
                 controller: _emailController,
                 label: 'Email',

@@ -1,32 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import '../../services/expense_service.dart';
-import '../../models/expense.dart';
+import '../../services/mock_data_service.dart';
 
 class DriverExpensesScreen extends StatelessWidget {
   const DriverExpensesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final expenseService = ExpenseService();
+    final mockService = MockDataService();
+    final userId = mockService.currentUserId ?? '';
     final dateFormat = DateFormat('MMM dd, yyyy');
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Expenses'),
       ),
-      body: StreamBuilder<List<Expense>>(
-        stream: expenseService.streamDriverExpenses(userId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.receipt_long, size: 80, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'No expenses recorded',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'This is a demo version',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
           final expenses = snapshot.data ?? [];
 

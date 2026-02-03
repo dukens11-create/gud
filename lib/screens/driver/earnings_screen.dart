@@ -1,24 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/firestore_service.dart';
-import '../../services/expense_service.dart';
+import '../../services/mock_data_service.dart';
 
 class EarningsScreen extends StatelessWidget {
   const EarningsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final firestoreService = FirestoreService();
-    final expenseService = ExpenseService();
+    final mockService = MockDataService();
+    final userId = mockService.currentUserId ?? '';
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Earnings')),
-      body: FutureBuilder<List<double>>(
-        future: Future.wait([
-          firestoreService.getDriverEarnings(userId),
-          expenseService.getDriverTotalExpenses(userId),
-        ]),
+      body: FutureBuilder<double>(
+        future: mockService.getDriverEarnings(userId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -28,8 +22,8 @@ class EarningsScreen extends StatelessWidget {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final totalEarnings = snapshot.data?[0] ?? 0.0;
-          final totalExpenses = snapshot.data?[1] ?? 0.0;
+          final totalEarnings = snapshot.data ?? 0.0;
+          final totalExpenses = 0.0; // Mock expenses
           final netEarnings = totalEarnings - totalExpenses;
 
           return Center(
