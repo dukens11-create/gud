@@ -1,8 +1,6 @@
 import 'dart:io' show File;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:js_util' if (dart.library.io) 'js_util_stub.dart' show jsify;
 
 class StorageService {
   final _storage = FirebaseStorage.instance;
