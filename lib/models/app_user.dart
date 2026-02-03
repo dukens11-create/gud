@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class AppUser {
   final String uid;
   final String role; // 'admin' or 'driver'
@@ -28,7 +26,7 @@ class AppUser {
     'phone': phone,
     'truckNumber': truckNumber,
     'isActive': isActive,
-    'createdAt': Timestamp.fromDate(createdAt),
+    'createdAt': createdAt.toIso8601String(),
   };
 
   static AppUser fromMap(String uid, Map<String, dynamic> data) {
@@ -40,12 +38,9 @@ class AppUser {
       phone: (data['phone'] ?? '') as String,
       truckNumber: (data['truckNumber'] ?? '') as String,
       isActive: (data['isActive'] ?? true) as bool,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      createdAt: data['createdAt'] != null 
+          ? DateTime.parse(data['createdAt'] as String)
+          : null,
     );
-  }
-
-  factory AppUser.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return AppUser.fromMap(doc.id, data);
   }
 }

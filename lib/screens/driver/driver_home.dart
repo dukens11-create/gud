@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/firestore_service.dart';
-import '../../services/auth_service.dart';
+import '../../services/mock_data_service.dart';
 import '../../models/load.dart';
 import 'load_detail_screen.dart';
+import '../login_screen.dart';
 
 class DriverHome extends StatelessWidget {
   final String driverId;
@@ -12,8 +11,7 @@ class DriverHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firestoreService = FirestoreService();
-    final authService = AuthService();
+    final mockService = MockDataService();
 
     return Scaffold(
       appBar: AppBar(
@@ -30,13 +28,19 @@ class DriverHome extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.exit_to_app),
             onPressed: () async {
-              await authService.signOut();
+              await mockService.signOut();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
             },
           ),
         ],
       ),
       body: StreamBuilder<List<LoadModel>>(
-        stream: firestoreService.streamDriverLoads(driverId),
+        stream: mockService.streamDriverLoads(driverId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

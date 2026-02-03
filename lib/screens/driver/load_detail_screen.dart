@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../models/load.dart';
-import '../../services/firestore_service.dart';
+import '../../services/mock_data_service.dart';
 import 'upload_pod_screen.dart';
 
 class LoadDetailScreen extends StatelessWidget {
@@ -12,8 +11,8 @@ class LoadDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firestoreService = FirestoreService();
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final mockService = MockDataService();
+    final currentUserId = mockService.currentUserId ?? '';
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
 
     return Scaffold(
@@ -189,7 +188,7 @@ class LoadDetailScreen extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () async {
-                          await firestoreService.updateLoadStatus(
+                          await mockService.updateLoadStatus(
                             loadId: load.id,
                             status: 'picked_up',
                             pickedUpAt: DateTime.now(),
@@ -213,7 +212,11 @@ class LoadDetailScreen extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () async {
-                          await firestoreService.startTrip(load.id);
+                          await mockService.updateLoadStatus(
+                            loadId: load.id,
+                            status: 'in_transit',
+                            tripStartAt: DateTime.now(),
+                          );
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Trip started')),
@@ -284,7 +287,11 @@ class LoadDetailScreen extends StatelessWidget {
 
                                 if (confirmed == true && context.mounted) {
                                   final miles = double.tryParse(milesController.text) ?? 0.0;
-                                  await firestoreService.endTrip(load.id, miles);
+                                  await mockService.updateLoadStatus(
+                                    loadId: load.id,
+                                    status: 'delivered',
+                                    deliveredAt: DateTime.now(),
+                                  );
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text('Delivery completed')),

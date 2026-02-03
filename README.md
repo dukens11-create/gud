@@ -1,6 +1,6 @@
 # GUD Express - Trucking Management App (Demo Version)
 
-## 🌐 Live Demo & PWA Installation
+## 🌐 Live Demo
 
 **🚀 Try it now:** https://dukens11-create.github.io/gud/
 
@@ -32,68 +32,22 @@
 
 ---
 
-A comprehensive Flutter-based trucking management app for drivers and dispatchers with full Firebase integration.
+A comprehensive Flutter-based trucking management app for drivers and dispatchers. This demo version uses mock data for easy testing.
 
 ## Features
 
 ### Driver Features
 - View assigned loads with real-time updates
 - Track load status (assigned, picked up, in transit, delivered)
-- Upload Proof of Delivery (POD) with camera/gallery
 - Track earnings from completed loads
-- Track and view personal expenses
-- View net earnings (earnings - expenses)
 - Simple and intuitive interface
 
 ### Admin Features
 - View all loads across all drivers
-- Create and assign new loads to drivers
-- Monitor load statuses in real-time
-- Manage driver profiles
-- **Expense Management**: Track and manage all expenses
-- **Statistics Dashboard**: View comprehensive analytics
-  - Revenue, expenses, and net profit
-  - Load metrics and delivery rates
-  - Per-driver performance breakdown
-  - Customizable time periods (week, month, quarter, year, custom)
+- Monitor load statuses
 - Quick overview of operations
 
-## Technology Stack
-
-- **Frontend**: Flutter 3.0+
-- **Backend**: Firebase (Firestore, Authentication, Storage)
-- **Design**: Material Design 3
-- **Platforms**: Android, iOS, Web/PWA
-
-## 🌐 Web App / PWA
-
-**Live Demo**: https://dukens11-create.github.io/gud/
-
-For complete GitHub Pages setup instructions, see [GitHub Pages Setup Guide](docs/GITHUB_PAGES_SETUP.md).
-
-### Build Locally
-```bash
-flutter build web --release
-# Output: build/web/
-```
-
-For detailed deployment instructions, see [PWA Deployment Guide](docs/PWA_DEPLOYMENT.md).
-
-## Quick Start
-
-### Prerequisites
-- Flutter SDK 3.0.0+
-- Android Studio or VS Code
-
-### Basic Setup
-1. Clone the repository
-2. Run `flutter pub get`
-3. Run `flutter run`
-
-## Demo Accounts
-
-### Firebase Authentication Required
-This app uses Firebase Authentication. To test the app:
+## Demo Credentials
 
 **Admin Account:**
 - Email: admin@gud.com
@@ -103,7 +57,33 @@ This app uses Firebase Authentication. To test the app:
 - Email: driver@gud.com
 - Password: driver123
 
-Or create your own account through the login screen.
+## Technology Stack
+
+- **Frontend**: Flutter 3.0+
+- **Design**: Material Design 3
+- **Platforms**: Android, iOS, Web/PWA
+- **Demo**: Mock data service (no backend required)
+
+## Development
+
+### Build for web
+```bash
+flutter build web --release
+```
+
+### Run locally
+```bash
+flutter run -d chrome
+```
+
+### Prerequisites
+- Flutter SDK 3.0.0+
+- Android Studio or VS Code
+
+### Basic Setup
+1. Clone the repository
+2. Run `flutter pub get`
+3. Run `flutter run`
 
 ## Project Structure
 
