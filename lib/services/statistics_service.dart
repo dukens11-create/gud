@@ -36,16 +36,16 @@ class StatisticsService {
     
     // Calculate totals
     final totalRevenue = loads.fold(0.0, 
-        (sum, doc) => sum + ((doc.data()['rate'] ?? 0) as num).toDouble());
+        (sum, doc) => sum + (((doc.data() as Map<String, dynamic>)['rate'] ?? 0) as num).toDouble());
     
     final totalExpenses = expenses.fold(0.0,
-        (sum, doc) => sum + ((doc.data()['amount'] ?? 0) as num).toDouble());
+        (sum, doc) => sum + (((doc.data() as Map<String, dynamic>)['amount'] ?? 0) as num).toDouble());
     
     final totalMiles = loads.fold(0.0,
-        (sum, doc) => sum + ((doc.data()['miles'] ?? 0) as num).toDouble());
+        (sum, doc) => sum + (((doc.data() as Map<String, dynamic>)['miles'] ?? 0) as num).toDouble());
     
     final deliveredLoads = loads.where(
-        (doc) => ['delivered', 'completed'].contains(doc.data()['status'])).length;
+        (doc) => ['delivered', 'completed'].contains((doc.data() as Map<String, dynamic>)['status'])).length;
     
     final averageRate = loads.isEmpty ? 0.0 : totalRevenue / loads.length;
     final ratePerMile = totalMiles == 0 ? 0.0 : totalRevenue / totalMiles;
@@ -56,17 +56,17 @@ class StatisticsService {
       final driversSnapshot = await _db.collection('drivers').get();
       for (var driverDoc in driversSnapshot.docs) {
         final dId = driverDoc.id;
-        final driverLoads = loads.where((l) => l.data()['driverId'] == dId).toList();
+        final driverLoads = loads.where((l) => (l.data() as Map<String, dynamic>)['driverId'] == dId).toList();
         final driverRevenue = driverLoads.fold(0.0,
-            (sum, doc) => sum + ((doc.data()['rate'] ?? 0) as num).toDouble());
+            (sum, doc) => sum + (((doc.data() as Map<String, dynamic>)['rate'] ?? 0) as num).toDouble());
         final driverDelivered = driverLoads.where(
-            (doc) => ['delivered', 'completed'].contains(doc.data()['status'])).length;
+            (doc) => ['delivered', 'completed'].contains((doc.data() as Map<String, dynamic>)['status'])).length;
         
         driverStats[dId] = {
           'revenue': driverRevenue,
           'loads': driverLoads.length,
           'delivered': driverDelivered,
-          'name': driverDoc.data()['name'] ?? 'Unknown',
+          'name': (driverDoc.data() as Map<String, dynamic>)['name'] ?? 'Unknown',
         };
       }
     }
@@ -117,6 +117,6 @@ class StatisticsService {
         .limit(limit)
         .get();
     
-    return snapshot.docs.map((doc) => Statistics.fromDoc(doc)).toList();
+    return snapshot.docs.map((doc) => Statistics.fromMap(doc.data() as Map<String, dynamic>)).toList();
   }
 }
