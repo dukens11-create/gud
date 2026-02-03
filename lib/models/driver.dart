@@ -37,9 +37,7 @@ class Driver {
       phone: (data['phone'] ?? '') as String,
       truckNumber: (data['truckNumber'] ?? '') as String,
       status: (data['status'] ?? 'available') as String,
-      totalEarnings: totalEarningsValue is int 
-          ? (totalEarningsValue as int).toDouble()
-          : totalEarningsValue as double,
+      totalEarnings: (totalEarningsValue as num).toDouble(),
       completedLoads: (data['completedLoads'] ?? 0) as int,
       isActive: (data['isActive'] ?? true) as bool,
     );
