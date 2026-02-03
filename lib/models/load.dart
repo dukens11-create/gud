@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class LoadModel {
   final String id;
   final String loadNumber;
@@ -52,6 +54,10 @@ class LoadModel {
     if (notes != null) 'notes': notes,
     'createdBy': createdBy,
   };
+
+  static LoadModel fromDoc(DocumentSnapshot doc) {
+    return fromMap(doc.id, doc.data() as Map<String, dynamic>);
+  }
 
   static LoadModel fromMap(String id, Map<String, dynamic> d) {
     DateTime? _parseDateTime(dynamic v) => v == null ? null : DateTime.parse(v as String);

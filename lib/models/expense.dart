@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Expense {
   final String id;
   final double amount;
@@ -34,6 +36,10 @@ class Expense {
     'createdBy': createdBy,
     'createdAt': createdAt.toIso8601String(),
   };
+
+  static Expense fromDoc(DocumentSnapshot doc) {
+    return fromMap(doc.id, doc.data() as Map<String, dynamic>);
+  }
 
   static Expense fromMap(String id, Map<String, dynamic> d) {
     DateTime? _parseDateTime(dynamic v) => v == null ? null : DateTime.parse(v as String);

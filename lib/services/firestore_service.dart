@@ -223,7 +223,7 @@ class FirestoreService {
         .where('status', isEqualTo: 'delivered')
         .get();
 
-    return snapshot.docs.fold(0.0, (sum, doc) {
+    return snapshot.docs.fold<double>(0.0, (sum, doc) {
       return sum + ((doc.data()['rate'] ?? 0) as num).toDouble();
     });
   }
@@ -235,9 +235,10 @@ class FirestoreService {
         .where('status', isEqualTo: 'delivered')
         .snapshots()
         .map((snap) {
-      double total = 0;
+      double total = 0.0;
       for (var doc in snap.docs) {
-        total += (doc.data()['rate'] ?? 0).toDouble();
+        final rate = doc.data()['rate'];
+        total += (rate as num?)?.toDouble() ?? 0.0;
       }
       return total;
     });

@@ -68,7 +68,7 @@ class ExpenseService {
         .where('driverId', isEqualTo: driverId)
         .get();
     
-    return snapshot.docs.fold(
+    return snapshot.docs.fold<double>(
         0.0, (sum, doc) => sum + ((doc.data()['amount'] ?? 0) as num).toDouble());
   }
 
