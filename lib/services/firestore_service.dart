@@ -24,6 +24,9 @@ class FirestoreService {
       'phone': phone,
       'truckNumber': truckNumber,
       'status': 'available',
+      'totalEarnings': 0.0,
+      'completedLoads': 0,
+      'isActive': true,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
