@@ -1,0 +1,31 @@
+# Render Deploy Button Configuration
+previewsEnabled: true
+services:
+  - type: web
+    name: gud-express
+    env: static
+    buildCommand: ./render-build.sh
+    staticPublishPath: ./build/web
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /icons/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /flutter.js
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /main.dart.js
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: FLUTTER_VERSION
+        value: 3.24.0

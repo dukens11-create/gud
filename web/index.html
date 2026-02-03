@@ -1,7 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base href="$FLUTTER_BASE_HREF">
+  <script>
+    // Detect if running on Render or GitHub Pages
+    if (window.location.hostname.includes('onrender.com')) {
+      // Running on Render - use root path
+      document.write('<base href="/">');
+    } else if (window.location.hostname.includes('github.io')) {
+      // Running on GitHub Pages - use /gud/ path
+      document.write('<base href="/gud/">');
+    } else {
+      // Local development or custom domain
+      document.write('<base href="/">');
+    }
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="GUD Express Trucking Management Demo">

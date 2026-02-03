@@ -1,0 +1,18 @@
+# Ignore these files/folders during Render deployment
+.git/
+.github/
+.idea/
+.vscode/
+*.md
+!README.md
+!docs/RENDER_DEPLOYMENT.md
+docs/
+test/
+.gitignore
+.metadata
+analysis_options.yaml
+android/
+ios/
+linux/
+macos/
+windows/

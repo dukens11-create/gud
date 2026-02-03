@@ -7,6 +7,37 @@ Complete guide to building and deploying the GUD Express demo app.
 ### Option 1: Direct APK Distribution (Testing)
 ### Option 2: Google Play Store (Production)
 ### Option 3: Apple App Store (Production)
+### Option 4: Render.com Deployment (Web)
+
+---
+
+## 🌐 Option 4: Render.com Deployment (Web)
+
+Render is a modern cloud platform that provides free hosting for static sites with automatic deployments from GitHub.
+
+### Quick Setup
+
+1. **Sign up for Render:** https://render.com/
+2. **Connect GitHub:** In Render dashboard, connect your GitHub account
+3. **Create Static Site:**
+   - Click "New +" → "Static Site"
+   - Select `dukens11-create/gud` repository
+   - Build Command: `./render-build.sh`
+   - Publish Directory: `build/web`
+   - Click "Create Static Site"
+
+4. **Wait for build:** First build takes ~5-10 minutes
+5. **Access your app:** https://gud-express.onrender.com
+
+### Features
+- ✅ Free SSL certificates (HTTPS)
+- ✅ CDN-backed hosting
+- ✅ Automatic deployments from GitHub
+- ✅ Custom domain support
+- ✅ Environment variables support
+- ✅ Preview deployments for PRs
+
+See [Render Deployment Guide](docs/RENDER_DEPLOYMENT.md) for complete instructions.
 
 ---
 

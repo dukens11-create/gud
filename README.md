@@ -2,7 +2,12 @@
 
 ## 🌐 Live Demo
 
-**🚀 Try it now:** https://dukens11-create.github.io/gud/
+### Live Deployments
+
+- **Render (Production):** [https://gud-express.onrender.com](https://gud-express.onrender.com)
+- **GitHub Pages:** [https://dukens11-create.github.io/gud/](https://dukens11-create.github.io/gud/)
+
+**🚀 Try the GitHub Pages demo:** https://dukens11-create.github.io/gud/
 
 ### 📱 Install as Progressive Web App (PWA)
 
@@ -29,6 +34,30 @@
 - ✅ Installable on any device
 - ✅ Automatic updates
 - ✅ No app store required
+
+---
+
+## 🚀 Deployments
+
+### Deploy Your Own
+
+#### Deploy to Render (Recommended)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+1. Click the button above
+2. Connect your GitHub account
+3. Select this repository
+4. Click "Create Static Site"
+5. Your app will be live in ~5 minutes!
+
+See [Render Deployment Guide](docs/RENDER_DEPLOYMENT.md) for detailed instructions.
+
+#### Deploy to GitHub Pages
+
+Automatic deployment is configured. Every push to `main` branch deploys to GitHub Pages.
+
+See [PWA Deployment Guide](docs/PWA_DEPLOYMENT.md) for details.
 
 ---
 
