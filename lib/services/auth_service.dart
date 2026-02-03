@@ -2,23 +2,72 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
-  final _auth = FirebaseAuth.instance;
-  final _db = FirebaseFirestore.instance;
+  final FirebaseAuth? _auth;
+  final FirebaseFirestore? _db;
+  final bool _isOffline;
 
-  User? get currentUser => _auth.currentUser;
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  AuthService()
+      : _auth = _getFirebaseAuth(),
+        _db = _getFirestore(),
+        _isOffline = _getFirebaseAuth() == null;
 
-  Future<UserCredential> signIn(String email, String password) {
-    return _auth.signInWithEmailAndPassword(email: email, password: password);
+  static FirebaseAuth? _getFirebaseAuth() {
+    try {
+      return FirebaseAuth.instance;
+    } catch (e) {
+      return null;
+    }
   }
 
-  Future<void> signOut() => _auth.signOut();
-
-  Future<UserCredential> createUser(String email, String password) {
-    return _auth.createUserWithEmailAndPassword(email: email, password: password);
+  static FirebaseFirestore? _getFirestore() {
+    try {
+      return FirebaseFirestore.instance;
+    } catch (e) {
+      return null;
+    }
   }
 
-  Future<UserCredential> register({
+  User? get currentUser => _auth?.currentUser;
+  Stream<User?> get authStateChanges {
+    if (_isOffline) {
+      return Stream.value(null);
+    }
+    return _auth!.authStateChanges();
+  }
+
+  Future<UserCredential?> signIn(String email, String password) async {
+    if (_isOffline) {
+      // Mock authentication for offline mode
+      if (email == 'admin@gud.com' && password == 'admin123') {
+        return null; // Mock success
+      }
+      if (email == 'driver@gud.com' && password == 'driver123') {
+        return null; // Mock success
+      }
+      throw FirebaseAuthException(
+        code: 'invalid-credential',
+        message: 'Invalid credentials (offline mode)',
+      );
+    }
+    return _auth!.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<void> signOut() async {
+    if (_isOffline) return;
+    await _auth!.signOut();
+  }
+
+  Future<UserCredential?> createUser(String email, String password) async {
+    if (_isOffline) {
+      throw FirebaseAuthException(
+        code: 'unavailable',
+        message: 'User creation not available in offline mode',
+      );
+    }
+    return _auth!.createUserWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<UserCredential?> register({
     required String email,
     required String password,
     required String name,
@@ -26,12 +75,19 @@ class AuthService {
     String? phone,
     String? truckNumber,
   }) async {
-    final credential = await _auth.createUserWithEmailAndPassword(
+    if (_isOffline) {
+      throw FirebaseAuthException(
+        code: 'unavailable',
+        message: 'User registration not available in offline mode',
+      );
+    }
+
+    final credential = await _auth!.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
 
-    await _db.collection('users').doc(credential.user!.uid).set({
+    await _db!.collection('users').doc(credential.user!.uid).set({
       'name': name,
       'email': email,
       'role': role,
@@ -51,7 +107,8 @@ class AuthService {
     required String phone,
     required String truckNumber,
   }) async {
-    await _db.collection('users').doc(uid).set({
+    if (_isOffline) return;
+    await _db!.collection('users').doc(uid).set({
       'role': role,
       'name': name,
       'phone': phone,
@@ -61,11 +118,20 @@ class AuthService {
   }
 
   Future<String> getUserRole(String uid) async {
-    final doc = await _db.collection('users').doc(uid).get();
+    if (_isOffline) {
+      return 'driver'; // Default role in offline mode
+    }
+    final doc = await _db!.collection('users').doc(uid).get();
     return doc.data()?['role'] ?? 'driver';
   }
 
   Future<void> resetPassword(String email) async {
-    await _auth.sendPasswordResetEmail(email: email);
+    if (_isOffline) {
+      throw FirebaseAuthException(
+        code: 'unavailable',
+        message: 'Password reset not available in offline mode',
+      );
+    }
+    await _auth!.sendPasswordResetEmail(email: email);
   }
 }
