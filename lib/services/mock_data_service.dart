@@ -208,13 +208,13 @@ class MockDataService {
     await Future.delayed(const Duration(milliseconds: 300));
     return _mockLoads
         .where((load) => load.driverId == driverId && load.status == 'delivered')
-        .fold(0.0, (sum, load) => sum + load.rate);
+        .fold<double>(0.0, (sum, load) => sum + load.rate);
   }
 
   Stream<double> streamDriverEarnings(String driverId) {
     final earnings = _mockLoads
         .where((load) => load.driverId == driverId && load.status == 'delivered')
-        .fold(0.0, (sum, load) => sum + load.rate);
+        .fold<double>(0.0, (sum, load) => sum + load.rate);
     return Stream.value(earnings);
   }
 
@@ -225,7 +225,7 @@ class MockDataService {
       'assignedLoads': _mockLoads.where((l) => l.status == 'assigned').length,
       'inTransitLoads': _mockLoads.where((l) => l.status == 'in_transit').length,
       'deliveredLoads': _mockLoads.where((l) => l.status == 'delivered').length,
-      'totalRevenue': _mockLoads.fold(0.0, (sum, load) => sum + load.rate),
+      'totalRevenue': _mockLoads.fold<double>(0.0, (sum, load) => sum + load.rate),
     });
   }
 
