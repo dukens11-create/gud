@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/mock_data_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_textfield.dart';
 import 'admin/admin_home.dart';
@@ -15,7 +17,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _mockService = MockDataService();
+  final _authService = AuthService();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -33,28 +35,61 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final user = await _mockService.signIn(
-        _emailController.text.trim(),
+      final email = _emailController.text.trim();
+      
+      // Sign in with Firebase Authentication
+      final userCredential = await _authService.signIn(
+        email,
         _passwordController.text,
       );
       
       if (!mounted) return;
       
-      // Navigate based on role
-      if (user?['role'] == 'admin') {
+      // Get the user ID - if null, we're in offline mode
+      final uid = userCredential?.user?.uid;
+      
+      // Query Firestore for isAdmin field
+      bool isAdmin = false;
+      
+      if (uid != null) {
+        // Online mode - query Firestore
+        try {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .get();
+          
+          if (userDoc.exists) {
+            isAdmin = userDoc.data()?['isAdmin'] ?? false;
+          }
+        } catch (e) {
+          debugPrint('Error fetching user document: $e');
+          // If Firestore query fails, default to false
+          isAdmin = false;
+        }
+      } else {
+        // Offline/demo mode - use email-based check
+        // This matches the offline authentication logic in AuthService
+        isAdmin = (email == 'admin@gud.com');
+      }
+      
+      if (!mounted) return;
+      
+      // Navigate based on isAdmin field
+      if (isAdmin) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const AdminHome()),
         );
       } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => DriverHome(driverId: user?['uid'] ?? ''),
+            builder: (_) => DriverHome(driverId: uid ?? email),
           ),
         );
       }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('firebase_auth/', '');
         _isLoading = false;
       });
     }
