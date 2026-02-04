@@ -71,6 +71,24 @@ class FirestoreService {
     });
   }
 
+  /// Update driver's last known location
+  Future<void> updateDriverLocation({
+    required String driverId,
+    required double latitude,
+    required double longitude,
+    required String timestamp,
+    double? accuracy,
+  }) async {
+    await _db.collection('drivers').doc(driverId).update({
+      'lastLocation': {
+        'lat': latitude,
+        'lng': longitude,
+        'timestamp': timestamp,
+        if (accuracy != null) 'accuracy': accuracy,
+      },
+    });
+  }
+
   // Loads
   Future<String> createLoad({
     required String loadNumber,

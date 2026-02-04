@@ -7,6 +7,7 @@ class Driver {
   final double totalEarnings;
   final int completedLoads;
   final bool isActive;
+  final Map<String, dynamic>? lastLocation; // {lat, lng, timestamp}
 
   Driver({
     required this.id,
@@ -17,6 +18,7 @@ class Driver {
     this.totalEarnings = 0.0,
     this.completedLoads = 0,
     this.isActive = true,
+    this.lastLocation,
   });
 
   Map<String, dynamic> toMap() => {
@@ -27,6 +29,7 @@ class Driver {
     'totalEarnings': totalEarnings,
     'completedLoads': completedLoads,
     'isActive': isActive,
+    if (lastLocation != null) 'lastLocation': lastLocation,
   };
 
   static Driver fromMap(String id, Map<String, dynamic> data) => Driver(
@@ -38,5 +41,6 @@ class Driver {
     totalEarnings: ((data['totalEarnings'] ?? 0.0) as num).toDouble(),
     completedLoads: (data['completedLoads'] ?? 0) as int,
     isActive: (data['isActive'] ?? true) as bool,
+    lastLocation: data['lastLocation'] as Map<String, dynamic>?,
   );
 }
