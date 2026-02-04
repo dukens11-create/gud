@@ -64,6 +64,19 @@ A comprehensive Flutter-based trucking management app for drivers and dispatcher
 - **Platforms**: Android, iOS, Web/PWA
 - **Demo**: Mock data service (no backend required)
 
+## Documentation
+
+### 📱 Deployment & Distribution
+- **[Post-CodeMagic Guide](./POST_CODEMAGIC_GUIDE.md)** - What to do after building on CodeMagic
+- **[Deployment Guide](./DEPLOYMENT.md)** - Build and deploy instructions
+- **[Production Deployment](./DEPLOYMENT_PRODUCTION.md)** - Production deployment with Firebase
+- **[Firebase Setup](./FIREBASE_SETUP.md)** - Complete Firebase configuration
+
+### 📚 Additional Guides
+- **[Testing Guide](./TESTING_GUIDE.md)** - Testing procedures
+- **[Quick Reference](./QUICK_REFERENCE.md)** - Quick start guide
+- **[Architecture](./ARCHITECTURE.md)** - System architecture overview
+
 ## Development
 
 ### Build for web
