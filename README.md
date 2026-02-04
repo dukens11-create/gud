@@ -66,8 +66,11 @@ A comprehensive Flutter-based trucking management app for drivers and dispatcher
 
 ## Documentation
 
+### 🚀 Just Built on CodeMagic?
+- **[Quick Start After Build](./QUICKSTART_AFTER_BUILD.md)** ⚡ START HERE - 5-minute next steps
+- **[Complete Post-CodeMagic Guide](./POST_CODEMAGIC_GUIDE.md)** 📖 Full deployment walkthrough (1000+ lines)
+
 ### 📱 Deployment & Distribution
-- **[Post-CodeMagic Guide](./POST_CODEMAGIC_GUIDE.md)** - What to do after building on CodeMagic
 - **[Deployment Guide](./DEPLOYMENT.md)** - Build and deploy instructions
 - **[Production Deployment](./DEPLOYMENT_PRODUCTION.md)** - Production deployment with Firebase
 - **[Firebase Setup](./FIREBASE_SETUP.md)** - Complete Firebase configuration
