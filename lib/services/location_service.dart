@@ -51,11 +51,15 @@ class LocationService {
   }
 
   /// Convert Position to a map for Firestore storage
+  /// Throws an error if position.timestamp is null
   Map<String, dynamic> positionToMap(Position position) {
+    if (position.timestamp == null) {
+      throw ArgumentError('Position timestamp cannot be null');
+    }
     return {
       'lat': position.latitude,
       'lng': position.longitude,
-      'timestamp': DateTime.now().toIso8601String(),
+      'timestamp': position.timestamp!.toIso8601String(),
       'accuracy': position.accuracy,
     };
   }

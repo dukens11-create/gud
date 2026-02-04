@@ -76,14 +76,14 @@ class FirestoreService {
     required String driverId,
     required double latitude,
     required double longitude,
-    required String timestamp,
+    required DateTime timestamp,
     double? accuracy,
   }) async {
     await _db.collection('drivers').doc(driverId).update({
       'lastLocation': {
         'lat': latitude,
         'lng': longitude,
-        'timestamp': timestamp,
+        'timestamp': timestamp.toIso8601String(),
         if (accuracy != null) 'accuracy': accuracy,
       },
     });

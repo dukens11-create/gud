@@ -41,24 +41,19 @@ class _DriverHomeState extends State<DriverHome> {
         return;
       }
 
-      // Convert position to map
-      final locationData = _locationService.positionToMap(position);
-
       // Update driver location in Firestore
       await _firestoreService.updateDriverLocation(
         driverId: widget.driverId,
-        latitude: locationData['lat'],
-        longitude: locationData['lng'],
-        timestamp: locationData['timestamp'],
-        accuracy: locationData['accuracy'],
+        latitude: position.latitude,
+        longitude: position.longitude,
+        timestamp: position.timestamp ?? DateTime.now(),
+        accuracy: position.accuracy,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Location sent successfully!\nLat: ${position.latitude.toStringAsFixed(6)}, Lng: ${position.longitude.toStringAsFixed(6)}',
-            ),
+          const SnackBar(
+            content: Text('Location sent successfully!'),
             backgroundColor: Colors.green,
           ),
         );
