@@ -165,21 +165,6 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
       ),
     );
   }
-
-  void _startSyncAnimation() {
-    setState(() {
-      _isSyncing = true;
-    });
-    
-    // Simulate sync duration
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _isSyncing = false;
-        });
-      }
-    });
-  }
 }
 
 /// Dialog showing pending operations

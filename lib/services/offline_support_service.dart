@@ -1,7 +1,7 @@
-import 'dart:convert';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'dart:async';
 
 /// Service for managing offline data storage and queued operations
 class OfflineSupportService {
@@ -64,7 +64,7 @@ class OfflineSupportService {
   /// Handle reconnection to online state
   void _handleOnlineReconnection() {
     // This is a placeholder - actual sync would be triggered by SyncService
-    print('Back online - sync should be triggered');
+    debugPrint('Back online - sync should be triggered');
   }
 
   /// Queue an offline operation
@@ -82,7 +82,7 @@ class OfflineSupportService {
     };
 
     await _operationsBox!.add(operation);
-    print('Queued operation: $type');
+    debugPrint('Queued operation: $type');
   }
 
   /// Get all pending operations
@@ -127,7 +127,7 @@ class OfflineSupportService {
   /// Returns number of operations successfully synced
   Future<int> syncPendingOperations() async {
     if (!_isOnline) {
-      print('Cannot sync while offline');
+      debugPrint('Cannot sync while offline');
       return 0;
     }
 
@@ -138,18 +138,18 @@ class OfflineSupportService {
       try {
         // This would call the appropriate service method based on type
         // For now, just mark as synced
-        print('Syncing operation: ${operation['type']}');
+        debugPrint('Syncing operation: ${operation['type']}');
         
         await removeOperation(operation['index']);
         syncedCount++;
       } catch (e) {
-        print('Failed to sync operation: $e');
+        debugPrint('Failed to sync operation: $e');
         // Increment retry count
         final retries = (operation['retries'] ?? 0) + 1;
         if (retries > 5) {
           // Too many retries, remove operation
           await removeOperation(operation['index']);
-          print('Operation failed after 5 retries, removing');
+          debugPrint('Operation failed after 5 retries, removing');
         } else {
           // Update retry count
           await _operationsBox!.putAt(operation['index'], {
