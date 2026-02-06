@@ -212,7 +212,7 @@ expect(button.onPressed, isNotNull);
 expect(textField.obscureText, true);
 ```
 
-## Running the Tests
+## Common Issues and Solutions
 
 ### Issue: Tests fail with "Null check operator used on a null value"
 **Solution:** Ensure proper initialization of controllers and services in setUp().
