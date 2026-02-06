@@ -134,4 +134,100 @@ class AuthService {
     }
     await _auth!.sendPasswordResetEmail(email: email);
   }
+
+  /// Send email verification to current user
+  Future<void> sendEmailVerification() async {
+    if (_isOffline) {
+      throw FirebaseAuthException(
+        code: 'unavailable',
+        message: 'Email verification not available in offline mode',
+      );
+    }
+
+    final user = _auth!.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
+  }
+
+  /// Check if current user's email is verified
+  bool get isEmailVerified {
+    if (_isOffline) return true; // Skip verification in offline mode
+    return _auth?.currentUser?.emailVerified ?? false;
+  }
+
+  /// Reload current user to get latest verification status
+  Future<void> reloadUser() async {
+    if (_isOffline) return;
+    await _auth?.currentUser?.reload();
+  }
+
+  /// Update user email
+  Future<void> updateEmail(String newEmail) async {
+    if (_isOffline) {
+      throw FirebaseAuthException(
+        code: 'unavailable',
+        message: 'Email update not available in offline mode',
+      );
+    }
+
+    await _auth!.currentUser?.updateEmail(newEmail);
+    
+    // Update in Firestore as well
+    if (_auth!.currentUser != null) {
+      await _db!.collection('users').doc(_auth!.currentUser!.uid).update({
+        'email': newEmail,
+      });
+    }
+  }
+
+  /// Update user password
+  Future<void> updatePassword(String newPassword) async {
+    if (_isOffline) {
+      throw FirebaseAuthException(
+        code: 'unavailable',
+        message: 'Password update not available in offline mode',
+      );
+    }
+
+    await _auth!.currentUser?.updatePassword(newPassword);
+  }
+
+  /// Re-authenticate user (required before sensitive operations)
+  Future<void> reauthenticate(String password) async {
+    if (_isOffline) {
+      throw FirebaseAuthException(
+        code: 'unavailable',
+        message: 'Re-authentication not available in offline mode',
+      );
+    }
+
+    final user = _auth!.currentUser;
+    if (user != null && user.email != null) {
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+    }
+  }
+
+  /// Delete user account
+  Future<void> deleteAccount() async {
+    if (_isOffline) {
+      throw FirebaseAuthException(
+        code: 'unavailable',
+        message: 'Account deletion not available in offline mode',
+      );
+    }
+
+    final user = _auth!.currentUser;
+    if (user != null) {
+      // Delete user document from Firestore
+      await _db!.collection('users').doc(user.uid).delete();
+      
+      // Delete user from Firebase Auth
+      await user.delete();
+    }
+  }
 }
