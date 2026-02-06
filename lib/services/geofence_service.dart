@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -163,7 +164,13 @@ class GeofenceService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final key = '$prefsKeyPrefix${geofence.id}';
-      final data = '${geofence.latitude},${geofence.longitude},${geofence.radius},${geofence.type.name},${geofence.loadId}';
+      final data = jsonEncode({
+        'latitude': geofence.latitude,
+        'longitude': geofence.longitude,
+        'radius': geofence.radius,
+        'type': geofence.type.name,
+        'loadId': geofence.loadId,
+      });
       await prefs.setString(key, data);
     } catch (e) {
       print('❌ Error saving geofence to local storage: $e');
@@ -178,20 +185,18 @@ class GeofenceService {
       
       for (final key in keys) {
         final geofenceId = key.substring(prefsKeyPrefix.length);
-        final data = prefs.getString(key);
+        final dataStr = prefs.getString(key);
         
-        if (data != null) {
-          final parts = data.split(',');
-          if (parts.length == 5) {
-            _activeGeofences[geofenceId] = _GeofenceConfig(
-              id: geofenceId,
-              latitude: double.parse(parts[0]),
-              longitude: double.parse(parts[1]),
-              radius: double.parse(parts[2]),
-              type: parts[3] == 'pickup' ? GeofenceType.pickup : GeofenceType.delivery,
-              loadId: parts[4],
-            );
-          }
+        if (dataStr != null) {
+          final data = jsonDecode(dataStr) as Map<String, dynamic>;
+          _activeGeofences[geofenceId] = _GeofenceConfig(
+            id: geofenceId,
+            latitude: data['latitude'] as double,
+            longitude: data['longitude'] as double,
+            radius: data['radius'] as double,
+            type: data['type'] == 'pickup' ? GeofenceType.pickup : GeofenceType.delivery,
+            loadId: data['loadId'] as String,
+          );
         }
       }
       
