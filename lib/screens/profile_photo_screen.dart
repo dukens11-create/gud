@@ -248,10 +248,12 @@ class _ProfilePhotoScreenState extends State<ProfilePhotoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        Navigator.pop(context, _currentPhotoUrl != widget.user.profilePhotoUrl);
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (bool didPop) {
+        if (!didPop) {
+          Navigator.pop(context, _currentPhotoUrl != widget.user.profilePhotoUrl);
+        }
       },
       child: Scaffold(
         appBar: AppBar(

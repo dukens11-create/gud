@@ -159,7 +159,12 @@ class ProfileService {
     if (name.isEmpty) return 'https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff';
     
     // Generate avatar with user initials
-    final initials = name.split(' ').map((part) => part[0]).take(2).join('');
+    final initials = name
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => part[0])
+        .take(2)
+        .join('');
     return 'https://ui-avatars.com/api/?name=$initials&background=0D8ABC&color=fff&size=200';
   }
 

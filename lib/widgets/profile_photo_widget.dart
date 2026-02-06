@@ -53,7 +53,12 @@ class ProfilePhotoWidget extends StatelessWidget {
     if (userName.isEmpty) {
       return 'https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff&size=200';
     }
-    final initials = userName.split(' ').map((part) => part.isNotEmpty ? part[0] : '').take(2).join('');
+    final initials = userName
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => part[0])
+        .take(2)
+        .join('');
     return 'https://ui-avatars.com/api/?name=$initials&background=0D8ABC&color=fff&size=200';
   }
 
