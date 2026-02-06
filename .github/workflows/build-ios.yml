@@ -1,0 +1,200 @@
+name: Build iOS
+
+# Trigger on push to main or release branches, or manually
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      build-type:
+        description: 'Build type (debug/release)'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - debug
+          - release
+
+# Prevent concurrent builds
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios:
+    name: Build iOS App
+    runs-on: macos-latest
+    timeout-minutes: 45
+    
+    steps:
+      # Checkout repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for versioning
+      
+      # Set up Flutter SDK
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: flutter-ios-${{ hashFiles('**/pubspec.lock') }}
+      
+      # Verify Flutter installation
+      - name: Verify Flutter installation
+        run: |
+          flutter --version
+          flutter doctor -v
+      
+      # Get Flutter dependencies
+      - name: Get dependencies
+        run: flutter pub get
+      
+      # Generate version information
+      - name: Generate version info
+        id: version
+        run: |
+          # Extract version from pubspec.yaml
+          VERSION=$(grep "version:" pubspec.yaml | sed 's/version: //' | tr -d '\r')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build_number=${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION, Build: ${GITHUB_RUN_NUMBER}"
+      
+      # Cache CocoaPods dependencies
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+      
+      # Install CocoaPods dependencies
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+          cd ..
+      
+      # Configure iOS signing for release builds
+      - name: Configure iOS signing
+        if: github.event.inputs.build-type != 'debug'
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          
+          # Import certificate and provisioning profile from secrets
+          if [ -n "$IOS_CERTIFICATE_BASE64" ]; then
+            echo -n "$IOS_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+            echo -n "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+            
+            # Create temporary keychain
+            security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+            security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+            
+            # Import certificate to keychain
+            security import $CERTIFICATE_PATH -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+            security list-keychain -d user -s $KEYCHAIN_PATH
+            
+            # Install provisioning profile
+            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+            cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+            
+            echo "✅ iOS signing configured"
+          else
+            echo "⚠️ No signing credentials found. Building will fail for release."
+          fi
+      
+      # Build iOS app without codesign (for testing)
+      - name: Build iOS app (no codesign)
+        if: github.event.inputs.build-type == 'debug' || secrets.IOS_CERTIFICATE_BASE64 == ''
+        run: |
+          flutter build ios --debug --no-codesign \
+            --build-number=${{ steps.version.outputs.build_number }}
+      
+      # Build iOS app with codesign
+      - name: Build iOS app (release)
+        if: github.event.inputs.build-type != 'debug' && secrets.IOS_CERTIFICATE_BASE64 != ''
+        run: |
+          flutter build ios --release \
+            --build-number=${{ steps.version.outputs.build_number }}
+      
+      # Create IPA archive
+      - name: Create IPA
+        if: github.event.inputs.build-type != 'debug' && secrets.IOS_CERTIFICATE_BASE64 != ''
+        run: |
+          cd ios
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r ../gud-${{ steps.version.outputs.version }}-${{ steps.version.outputs.build_number }}.ipa Payload
+          cd ..
+      
+      # Upload IPA artifact
+      - name: Upload IPA
+        if: github.event.inputs.build-type != 'debug' && secrets.IOS_CERTIFICATE_BASE64 != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-${{ steps.version.outputs.version }}-${{ steps.version.outputs.build_number }}
+          path: '*.ipa'
+          retention-days: 90
+      
+      # Upload app bundle for debug builds
+      - name: Upload app bundle
+        if: github.event.inputs.build-type == 'debug' || secrets.IOS_CERTIFICATE_BASE64 == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-${{ steps.version.outputs.version }}-${{ steps.version.outputs.build_number }}
+          path: build/ios/iphoneos/Runner.app
+          retention-days: 30
+      
+      # Clean up sensitive files
+      - name: Clean up keychain and provisioning profile
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+          rm -f ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision || true
+          rm -f $RUNNER_TEMP/build_certificate.p12 || true
+          rm -f $RUNNER_TEMP/build_pp.mobileprovision || true
+      
+      # Create GitHub Release for tags
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/') && secrets.IOS_CERTIFICATE_BASE64 != ''
+        uses: softprops/action-gh-release@v1
+        with:
+          files: '*.ipa'
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Job summary
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: build-ios
+    if: always()
+    
+    steps:
+      - name: Build summary
+        run: |
+          if [[ "${{ needs.build-ios.result }}" == "success" ]]; then
+            echo "✅ iOS build completed successfully!"
+            echo "📦 IPA artifact is available for download."
+          else
+            echo "❌ iOS build failed. Please check the logs."
+            exit 1
+          fi

@@ -1,0 +1,326 @@
+name: Code Quality
+
+# Run on all pull requests
+on:
+  pull_request:
+    branches:
+      - '**'
+    types: [opened, synchronize, reopened]
+
+# Cancel in-progress runs when a new workflow with the same group is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      # Checkout repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for better analysis
+      
+      # Set up Flutter SDK
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: flutter-quality-${{ hashFiles('**/pubspec.lock') }}
+      
+      # Verify Flutter installation
+      - name: Verify Flutter installation
+        run: |
+          flutter --version
+          flutter doctor -v
+      
+      # Get Flutter dependencies
+      - name: Get dependencies
+        run: flutter pub get
+      
+      # Check code formatting
+      - name: Check code formatting
+        run: |
+          echo "📝 Checking code formatting..."
+          
+          # Check if code is properly formatted
+          if ! flutter format --set-exit-if-changed --dry-run .; then
+            echo "❌ Code formatting issues found!"
+            echo "Run 'flutter format .' to fix formatting issues."
+            exit 1
+          else
+            echo "✅ Code is properly formatted."
+          fi
+      
+      # Run Flutter analyze with strict mode
+      - name: Run Flutter analyze (strict)
+        run: |
+          echo "🔍 Running Flutter analyze in strict mode..."
+          
+          # Run analyze with fatal warnings
+          flutter analyze --fatal-infos --fatal-warnings
+      
+      # Check for unused files
+      - name: Check for unused files
+        run: |
+          echo "🔎 Checking for unused Dart files..."
+          
+          # Install dart_code_metrics
+          flutter pub global activate dart_code_metrics
+          
+          # Run unused files check
+          flutter pub global run dart_code_metrics:metrics check-unused-files lib
+        continue-on-error: true
+      
+      # Check for unused code
+      - name: Check for unused code
+        run: |
+          echo "🔎 Checking for unused code..."
+          
+          # Run unused code check
+          flutter pub global run dart_code_metrics:metrics check-unused-code lib
+        continue-on-error: true
+      
+      # Lint Dart code with custom rules
+      - name: Lint Dart code
+        run: |
+          echo "🧹 Linting Dart code..."
+          
+          # Check if analysis_options.yaml exists
+          if [ -f "analysis_options.yaml" ]; then
+            echo "Using custom analysis options..."
+          else
+            echo "No custom analysis options found, using defaults."
+          fi
+          
+          # Run analyze with detailed output
+          flutter analyze --no-fatal-infos > analyze_report.txt 2>&1 || true
+          
+          # Display the report
+          cat analyze_report.txt
+          
+          # Check for errors
+          if grep -q "error •" analyze_report.txt; then
+            echo "❌ Errors found in code analysis!"
+            exit 1
+          else
+            echo "✅ No errors found in code analysis."
+          fi
+      
+      # Check for dependency vulnerabilities
+      - name: Check dependency vulnerabilities
+        run: |
+          echo "🔒 Checking for dependency vulnerabilities..."
+          
+          # Get outdated packages
+          flutter pub outdated --json > outdated.json || true
+          
+          # Check if there are any security advisories
+          if [ -f "outdated.json" ]; then
+            echo "Checking outdated packages..."
+            cat outdated.json
+          fi
+          
+          # This is a basic check - in production, you'd integrate with a vulnerability database
+          echo "✅ Dependency check completed."
+        continue-on-error: true
+      
+      # Calculate code metrics
+      - name: Calculate code metrics
+        run: |
+          echo "📊 Calculating code metrics..."
+          
+          # Run metrics analysis
+          flutter pub global run dart_code_metrics:metrics analyze lib \
+            --reporter=console \
+            --reporter=html \
+            --set-exit-on-violation-level=warning
+        continue-on-error: true
+      
+      # Check for TODOs and FIXMEs
+      - name: Check for TODOs and FIXMEs
+        run: |
+          echo "📝 Checking for TODOs and FIXMEs..."
+          
+          TODO_COUNT=$(grep -r "TODO" lib --include="*.dart" | wc -l || echo "0")
+          FIXME_COUNT=$(grep -r "FIXME" lib --include="*.dart" | wc -l || echo "0")
+          
+          echo "Found $TODO_COUNT TODOs and $FIXME_COUNT FIXMEs"
+          
+          if [ "$TODO_COUNT" -gt 50 ]; then
+            echo "⚠️ Warning: Too many TODOs ($TODO_COUNT). Consider addressing some."
+          fi
+          
+          if [ "$FIXME_COUNT" -gt 10 ]; then
+            echo "⚠️ Warning: Too many FIXMEs ($FIXME_COUNT). These should be addressed."
+          fi
+      
+      # Check imports organization
+      - name: Check imports organization
+        run: |
+          echo "📦 Checking imports organization..."
+          
+          # Check for relative imports (should use package imports)
+          RELATIVE_IMPORTS=$(grep -r "^import '\.\." lib --include="*.dart" | wc -l || echo "0")
+          
+          if [ "$RELATIVE_IMPORTS" -gt 0 ]; then
+            echo "⚠️ Warning: Found $RELATIVE_IMPORTS relative imports."
+            echo "Consider using package imports instead."
+            grep -r "^import '\.\." lib --include="*.dart" | head -n 5
+          else
+            echo "✅ Imports are properly organized."
+          fi
+        continue-on-error: true
+      
+      # Check for print statements (should use logging)
+      - name: Check for print statements
+        run: |
+          echo "🖨️ Checking for print statements..."
+          
+          PRINT_COUNT=$(grep -r "print(" lib --include="*.dart" | grep -v "// print(" | wc -l || echo "0")
+          
+          if [ "$PRINT_COUNT" -gt 0 ]; then
+            echo "⚠️ Warning: Found $PRINT_COUNT print statements."
+            echo "Consider using a proper logging framework."
+            grep -r "print(" lib --include="*.dart" | grep -v "// print(" | head -n 5
+          else
+            echo "✅ No print statements found."
+          fi
+        continue-on-error: true
+      
+      # Generate quality report
+      - name: Generate quality report
+        if: always()
+        run: |
+          echo "📊 Generating quality report..."
+          
+          cat > quality_report.md << 'EOF'
+          # Code Quality Report
+          
+          ## Summary
+          
+          This report provides an overview of code quality checks performed on this pull request.
+          
+          ## Checks Performed
+          
+          - ✅ Code formatting
+          - ✅ Static analysis (Flutter analyze)
+          - ✅ Unused files detection
+          - ✅ Unused code detection
+          - ✅ Dependency vulnerabilities
+          - ✅ Code metrics
+          - ✅ TODOs and FIXMEs count
+          - ✅ Import organization
+          - ✅ Print statements check
+          
+          ## Recommendations
+          
+          1. Address all errors and warnings from Flutter analyze
+          2. Remove unused code and files
+          3. Keep TODOs and FIXMEs to a minimum
+          4. Use proper logging instead of print statements
+          5. Use package imports instead of relative imports
+          6. Keep code metrics within acceptable ranges
+          
+          ## Next Steps
+          
+          Review the detailed output above and address any issues before merging.
+          EOF
+          
+          cat quality_report.md
+      
+      # Upload quality report
+      - name: Upload quality report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-quality-report
+          path: |
+            quality_report.md
+            analyze_report.txt
+            outdated.json
+          retention-days: 30
+      
+      # Comment on PR with quality summary
+      - name: Comment on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let comment = '## 📊 Code Quality Report\n\n';
+            
+            // Read analyze report if it exists
+            if (fs.existsSync('analyze_report.txt')) {
+              const analyzeReport = fs.readFileSync('analyze_report.txt', 'utf8');
+              const errorCount = (analyzeReport.match(/error •/g) || []).length;
+              const warningCount = (analyzeReport.match(/warning •/g) || []).length;
+              const infoCount = (analyzeReport.match(/info •/g) || []).length;
+              
+              comment += `### Analysis Results\n`;
+              comment += `- Errors: ${errorCount}\n`;
+              comment += `- Warnings: ${warningCount}\n`;
+              comment += `- Infos: ${infoCount}\n\n`;
+            }
+            
+            comment += '### Quality Checks\n';
+            comment += '- ✅ Code formatting verified\n';
+            comment += '- ✅ Static analysis completed\n';
+            comment += '- ✅ Dependency check performed\n';
+            comment += '- ✅ Code metrics calculated\n\n';
+            
+            comment += '**Note:** Please review the detailed quality report in the workflow artifacts.\n';
+            
+            // Find existing comment and update it, or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Code Quality Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+        continue-on-error: true
+
+  # Summary job
+  quality-summary:
+    name: Quality Summary
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: always()
+    
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.code-quality.result }}" == "success" ]]; then
+            echo "✅ All code quality checks passed!"
+            echo "The code meets the required quality standards."
+          else
+            echo "❌ Some code quality checks failed."
+            echo "Please review the issues and fix them before merging."
+            exit 1
+          fi

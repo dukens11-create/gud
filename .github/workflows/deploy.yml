@@ -1,0 +1,374 @@
+name: Deploy
+
+# Trigger manually or on version tags
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      platform:
+        description: 'Platform to deploy'
+        required: true
+        type: choice
+        options:
+          - web
+          - android
+          - ios
+          - all
+      rollback:
+        description: 'Rollback to previous version'
+        required: false
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*.*.*'
+
+# Prevent concurrent deployments
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'prod' }}
+  cancel-in-progress: false
+
+jobs:
+  # Validate deployment prerequisites
+  validate:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      platform: ${{ steps.set-platform.outputs.platform }}
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set environment
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" == "push" ] && [ -n "${{ github.ref }}" ]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+          else
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Set platform
+        id: set-platform
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            echo "platform=all" >> $GITHUB_OUTPUT
+          else
+            echo "platform=${{ github.event.inputs.platform }}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(grep "version:" pubspec.yaml | sed 's/version: //' | tr -d '\r')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying version: $VERSION"
+      
+      - name: Check rollback status
+        if: github.event.inputs.rollback == 'true'
+        run: |
+          echo "⚠️ ROLLBACK MODE ACTIVATED"
+          echo "This will revert to the previous deployment"
+
+  # Deploy web app to Firebase Hosting
+  deploy-web:
+    name: Deploy Web to Firebase
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.platform == 'web' || needs.validate.outputs.platform == 'all'
+    environment:
+      name: ${{ needs.validate.outputs.environment }}
+      url: https://${{ needs.validate.outputs.environment }}.gud.app
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      
+      - name: Get dependencies
+        run: flutter pub get
+      
+      - name: Build web app
+        if: github.event.inputs.rollback != 'true'
+        run: |
+          flutter build web --release \
+            --dart-define=ENVIRONMENT=${{ needs.validate.outputs.environment }}
+      
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        if: github.event.inputs.rollback != 'true'
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          target: ${{ needs.validate.outputs.environment }}
+      
+      - name: Rollback Firebase Hosting
+        if: github.event.inputs.rollback == 'true'
+        run: |
+          # Install Firebase CLI
+          npm install -g firebase-tools
+          
+          # Authenticate with Firebase
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > $RUNNER_TEMP/firebase-sa.json
+          export GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa.json
+          
+          # Get previous version and rollback
+          firebase hosting:channel:list --project ${{ secrets.FIREBASE_PROJECT_ID }}
+          echo "Manual rollback required. Please check Firebase console."
+      
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Web deployment to ${{ needs.validate.outputs.environment }} successful!"
+          else
+            echo "❌ Web deployment failed!"
+          fi
+
+  # Deploy Android app to Google Play
+  deploy-android:
+    name: Deploy Android to Google Play
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.platform == 'android' || needs.validate.outputs.platform == 'all'
+    environment:
+      name: ${{ needs.validate.outputs.environment }}-android
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+      
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      
+      - name: Get dependencies
+        run: flutter pub get
+      
+      - name: Configure Android signing
+        if: github.event.inputs.rollback != 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_PROPERTIES: ${{ secrets.ANDROID_KEY_PROPERTIES }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+          echo "$KEY_PROPERTIES" > android/key.properties
+      
+      - name: Build App Bundle
+        if: github.event.inputs.rollback != 'true'
+        run: |
+          flutter build appbundle --release \
+            --dart-define=ENVIRONMENT=${{ needs.validate.outputs.environment }}
+      
+      - name: Deploy to Google Play
+        if: github.event.inputs.rollback != 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
+          packageName: com.gud.app
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: ${{ needs.validate.outputs.environment == 'prod' && 'production' || 'internal' }}
+          status: ${{ needs.validate.outputs.environment == 'prod' && 'completed' || 'draft' }}
+          whatsNewDirectory: fastlane/metadata/android
+      
+      - name: Rollback Google Play
+        if: github.event.inputs.rollback == 'true'
+        run: |
+          echo "⚠️ Manual rollback required for Google Play"
+          echo "Please use Google Play Console to halt the current rollout"
+          echo "and promote the previous version"
+      
+      - name: Clean up
+        if: always()
+        run: |
+          rm -f android/app/upload-keystore.jks
+          rm -f android/key.properties
+      
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Android deployment to ${{ needs.validate.outputs.environment }} successful!"
+          else
+            echo "❌ Android deployment failed!"
+          fi
+
+  # Deploy iOS app to App Store
+  deploy-ios:
+    name: Deploy iOS to App Store
+    runs-on: macos-latest
+    needs: validate
+    if: needs.validate.outputs.platform == 'ios' || needs.validate.outputs.platform == 'all'
+    environment:
+      name: ${{ needs.validate.outputs.environment }}-ios
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      
+      - name: Get dependencies
+        run: flutter pub get
+      
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+          cd ..
+      
+      - name: Configure iOS signing
+        if: github.event.inputs.rollback != 'true'
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          
+          echo -n "$IOS_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+          
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security import $CERTIFICATE_PATH -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+      
+      - name: Build iOS app
+        if: github.event.inputs.rollback != 'true'
+        run: |
+          flutter build ios --release \
+            --dart-define=ENVIRONMENT=${{ needs.validate.outputs.environment }}
+      
+      - name: Build and upload to App Store Connect
+        if: github.event.inputs.rollback != 'true'
+        env:
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          cd ios
+          
+          # Archive the app
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath $RUNNER_TEMP/gud.xcarchive \
+            archive
+          
+          # Export the archive
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/gud.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath $RUNNER_TEMP/
+          
+          # Upload to App Store Connect using altool
+          xcrun altool --upload-app \
+            --type ios \
+            --file $RUNNER_TEMP/*.ipa \
+            --apiKey ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
+            --apiIssuer ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      
+      - name: Rollback App Store
+        if: github.event.inputs.rollback == 'true'
+        run: |
+          echo "⚠️ Manual rollback required for App Store"
+          echo "Please use App Store Connect to remove the current version"
+          echo "and re-submit the previous version"
+      
+      - name: Clean up
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+          rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision || true
+          rm -rf $RUNNER_TEMP/*.p12 || true
+          rm -rf $RUNNER_TEMP/*.mobileprovision || true
+      
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ iOS deployment to ${{ needs.validate.outputs.environment }} successful!"
+          else
+            echo "❌ iOS deployment failed!"
+          fi
+
+  # Deployment summary
+  deployment-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [validate, deploy-web, deploy-android, deploy-ios]
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ needs.validate.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Platform:** ${{ needs.validate.outputs.platform }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Results" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.validate.outputs.platform }}" == "web" ]] || [[ "${{ needs.validate.outputs.platform }}" == "all" ]]; then
+            if [[ "${{ needs.deploy-web.result }}" == "success" ]]; then
+              echo "✅ Web deployment: Success" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Web deployment: Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
+          if [[ "${{ needs.validate.outputs.platform }}" == "android" ]] || [[ "${{ needs.validate.outputs.platform }}" == "all" ]]; then
+            if [[ "${{ needs.deploy-android.result }}" == "success" ]]; then
+              echo "✅ Android deployment: Success" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Android deployment: Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
+          if [[ "${{ needs.validate.outputs.platform }}" == "ios" ]] || [[ "${{ needs.validate.outputs.platform }}" == "all" ]]; then
+            if [[ "${{ needs.deploy-ios.result }}" == "success" ]]; then
+              echo "✅ iOS deployment: Success" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ iOS deployment: Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
