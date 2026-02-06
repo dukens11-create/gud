@@ -11,6 +11,7 @@ import 'services/offline_support_service.dart';
 import 'services/background_location_service.dart';
 import 'services/geofence_service.dart';
 import 'services/sync_service.dart';
+import 'services/remote_config_service.dart';
 import 'app.dart';
 
 /// Initialize all background services
@@ -18,11 +19,12 @@ import 'app.dart';
 /// Services are initialized in dependency order:
 /// 1. Crash reporting (must be first to catch all errors)
 /// 2. Analytics (for tracking initialization)
-/// 3. Notifications (needed by other services)
-/// 4. Offline support (needed by sync service)
-/// 5. Background location (GPS tracking)
-/// 6. Geofencing (location-based updates)
-/// 7. Sync service (background synchronization)
+/// 3. Remote Config (for feature flags and configuration)
+/// 4. Notifications (needed by other services)
+/// 5. Offline support (needed by sync service)
+/// 6. Background location (GPS tracking)
+/// 7. Geofencing (location-based updates)
+/// 8. Sync service (background synchronization)
 Future<void> initializeServices() async {
   try {
     print('🚀 Initializing services...');
@@ -34,6 +36,15 @@ Future<void> initializeServices() async {
     // Initialize analytics
     await AnalyticsService.instance.initialize();
     print('✅ Analytics Service initialized');
+
+    // Initialize Remote Config
+    await RemoteConfigService().initialize();
+    print('✅ Remote Config Service initialized');
+
+    // Check maintenance mode
+    if (RemoteConfigService().isMaintenanceMode) {
+      print('🚧 App is in maintenance mode');
+    }
 
     // Initialize notifications
     await NotificationService().initialize();

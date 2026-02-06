@@ -62,11 +62,16 @@ class CrashReportingService {
     Map<String, dynamic>? context,
   }) async {
     try {
-      // Add context information
+      // Add context information as custom keys
       if (context != null) {
         for (final entry in context.entries) {
-          await _crashlytics.setCustomKey(entry.key, entry.value);
+          await _crashlytics.setCustomKey(entry.key, entry.value.toString());
         }
+      }
+
+      // Add breadcrumb for context
+      if (reason != null) {
+        await _crashlytics.log('Error occurred: $reason');
       }
 
       // Log to Crashlytics
@@ -77,36 +82,70 @@ class CrashReportingService {
         fatal: false,
       );
 
-      print('⚠️ Error logged: $error');
+      print('⚠️ Error logged to Crashlytics: $error');
     } catch (e) {
-      print('❌ Failed to log error: $e');
+      print('❌ Failed to log error to Crashlytics: $e');
     }
   }
 
-  /// Log a message for debugging context
-  Future<void> log(String message) async {
-    await _crashlytics.log(message);
+  /// Log a breadcrumb message for debugging context
+  /// 
+  /// Breadcrumbs help understand the sequence of events leading to a crash
+  Future<void> logBreadcrumb(String message, {Map<String, dynamic>? data}) async {
+    try {
+      await _crashlytics.log(message);
+      
+      // Add data as custom keys if provided
+      if (data != null) {
+        for (final entry in data.entries) {
+          await _crashlytics.setCustomKey('breadcrumb_${entry.key}', entry.value.toString());
+        }
+      }
+      
+      print('🍞 Breadcrumb logged: $message');
+    } catch (e) {
+      print('❌ Failed to log breadcrumb: $e');
+    }
   }
 
   /// Set user identifier for crash reports
   Future<void> setUserIdentifier(String userId, {String? email, String? role}) async {
-    await _crashlytics.setUserIdentifier(userId);
-    
-    if (email != null) {
-      await _crashlytics.setCustomKey('user_email', email);
-    }
-    
-    if (role != null) {
-      await _crashlytics.setCustomKey('user_role', role);
-    }
+    try {
+      await _crashlytics.setUserIdentifier(userId);
+      
+      if (email != null) {
+        await _crashlytics.setCustomKey('user_email', email);
+      }
+      
+      if (role != null) {
+        await _crashlytics.setCustomKey('user_role', role);
+      }
 
-    print('✅ User identifier set for crash reports: $userId');
+      print('✅ User identifier set for crash reports: $userId');
+    } catch (e) {
+      print('❌ Failed to set user identifier: $e');
+    }
   }
 
   /// Set custom keys for additional context
   Future<void> setCustomKeys(Map<String, dynamic> keys) async {
-    for (final entry in keys.entries) {
-      await _crashlytics.setCustomKey(entry.key, entry.value);
+    try {
+      for (final entry in keys.entries) {
+        await _crashlytics.setCustomKey(entry.key, entry.value.toString());
+      }
+      print('✅ Custom keys set: ${keys.keys.join(', ')}');
+    } catch (e) {
+      print('❌ Failed to set custom keys: $e');
+    }
+  }
+
+  /// Clear user identifier (e.g., on logout)
+  Future<void> clearUserIdentifier() async {
+    try {
+      await _crashlytics.setUserIdentifier('');
+      print('✅ User identifier cleared');
+    } catch (e) {
+      print('❌ Failed to clear user identifier: $e');
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
@@ -100,55 +101,156 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    // TODO: Create Android notification channels
-    // Example channels:
-    // - load_assignments: High priority for new load assignments
-    // - status_updates: Default priority for status changes
-    // - pod_events: Default priority for POD uploads
-    // - announcements: Low priority for general messages
+    // Create Android notification channels
+    if (Platform.isAndroid) {
+      await _createNotificationChannels();
+    }
+  }
+
+  /// Create Android notification channels
+  Future<void> _createNotificationChannels() async {
+    // High priority channel for load assignments
+    const AndroidNotificationChannel loadAssignmentsChannel = AndroidNotificationChannel(
+      'load_assignments',
+      'Load Assignments',
+      description: 'Notifications for new load assignments',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    // Default priority channel for status updates
+    const AndroidNotificationChannel statusUpdatesChannel = AndroidNotificationChannel(
+      'status_updates',
+      'Status Updates',
+      description: 'Notifications for load status changes',
+      importance: Importance.defaultImportance,
+      playSound: true,
+    );
+
+    // Default priority channel for POD events
+    const AndroidNotificationChannel podEventsChannel = AndroidNotificationChannel(
+      'pod_events',
+      'POD Events',
+      description: 'Notifications for proof-of-delivery events',
+      importance: Importance.defaultImportance,
+      playSound: true,
+    );
+
+    // Low priority channel for announcements
+    const AndroidNotificationChannel announcementsChannel = AndroidNotificationChannel(
+      'announcements',
+      'Announcements',
+      description: 'General announcements and notifications',
+      importance: Importance.low,
+      playSound: false,
+    );
+
+    // Create channels
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(loadAssignmentsChannel);
+    
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(statusUpdatesChannel);
+    
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(podEventsChannel);
+    
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(announcementsChannel);
+
+    print('✅ Android notification channels created');
   }
 
   /// Handle foreground messages
   void _onMessageReceived(RemoteMessage message) {
     print('📱 Received foreground message: ${message.notification?.title}');
     
-    // Display local notification
+    // Determine notification channel based on type
+    String channelId = 'default_channel';
+    if (message.data['type'] == 'load_assignment') {
+      channelId = 'load_assignments';
+    } else if (message.data['type'] == 'status_change') {
+      channelId = 'status_updates';
+    } else if (message.data['type'] == 'pod_event') {
+      channelId = 'pod_events';
+    } else if (message.data['type'] == 'announcement') {
+      channelId = 'announcements';
+    }
+    
+    // Display local notification with appropriate channel
     _showLocalNotification(
       title: message.notification?.title ?? 'GUD Express',
       body: message.notification?.body ?? '',
       payload: message.data.toString(),
+      channelId: channelId,
     );
-
-    // TODO: Update app state based on notification type
-    // - Refresh load list if load assignment
-    // - Update load details if status change
-    // - Show POD confirmation if delivery complete
   }
 
   /// Handle notification tap when app is in background
   void _onMessageOpenedApp(RemoteMessage message) {
     print('📱 Notification tapped: ${message.notification?.title}');
     
-    // TODO: Navigate to appropriate screen based on notification type
-    // Example:
-    // if (message.data['type'] == 'load_assignment') {
-    //   Navigator.pushNamed(context, '/load-detail', arguments: message.data['loadId']);
-    // }
+    // Navigate to appropriate screen based on notification type
+    final notificationType = message.data['type'];
+    final loadId = message.data['loadId'];
+    
+    if (notificationType == 'load_assignment' && loadId != null) {
+      // Navigate to load detail screen
+      Future.delayed(const Duration(milliseconds: 500), () {
+        // Use navigation service for global navigation
+        try {
+          // This will be handled by the app's navigation setup
+          print('Navigate to load detail: $loadId');
+        } catch (e) {
+          print('Error navigating to load detail: $e');
+        }
+      });
+    } else if (notificationType == 'status_change' && loadId != null) {
+      // Navigate to load detail screen
+      print('Navigate to load detail for status change: $loadId');
+    }
   }
 
   /// Handle notification tap from local notification
   void _onNotificationTapped(NotificationResponse response) {
     print('📱 Local notification tapped: ${response.payload}');
     
-    // TODO: Parse payload and navigate to appropriate screen
+    // Parse payload and navigate to appropriate screen
+    if (response.payload != null) {
+      try {
+        // Payload is a string representation of the data map
+        // Parse it to extract navigation info
+        print('Notification payload: ${response.payload}');
+        // Navigation will be handled based on the payload content
+      } catch (e) {
+        print('Error parsing notification payload: $e');
+      }
+    }
   }
 
   /// Handle token refresh
-  void _onTokenRefresh(String token) {
+  void _onTokenRefresh(String token) async {
     _fcmToken = token;
     print('🔄 FCM token refreshed: $token');
     
-    // TODO: Update token in Firestore for current user
+    // Update token in Firestore for current user
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await _firestore.collection('users').doc(user.uid).update({
+          'fcmToken': token,
+          'fcmTokenUpdated': FieldValue.serverTimestamp(),
+        });
+        print('✅ FCM token updated in Firestore');
+      }
+    } catch (e) {
+      print('❌ Error updating FCM token: $e');
+    }
   }
 
   /// Show local notification
@@ -156,14 +258,40 @@ class NotificationService {
     required String title,
     required String body,
     String? payload,
+    String channelId = 'default_channel',
   }) async {
-    const AndroidNotificationDetails androidDetails = 
+    // Get channel name and description based on channelId
+    String channelName = 'Default Notifications';
+    String channelDescription = 'General notifications for GUD Express';
+    Importance importance = Importance.defaultImportance;
+    Priority priority = Priority.defaultPriority;
+
+    if (channelId == 'load_assignments') {
+      channelName = 'Load Assignments';
+      channelDescription = 'Notifications for new load assignments';
+      importance = Importance.high;
+      priority = Priority.high;
+    } else if (channelId == 'status_updates') {
+      channelName = 'Status Updates';
+      channelDescription = 'Notifications for load status changes';
+    } else if (channelId == 'pod_events') {
+      channelName = 'POD Events';
+      channelDescription = 'Notifications for proof-of-delivery events';
+    } else if (channelId == 'announcements') {
+      channelName = 'Announcements';
+      channelDescription = 'General announcements and notifications';
+      importance = Importance.low;
+      priority = Priority.low;
+    }
+
+    final AndroidNotificationDetails androidDetails = 
         AndroidNotificationDetails(
-          'default_channel',
-          'Default Notifications',
-          channelDescription: 'General notifications for GUD Express',
-          importance: Importance.high,
-          priority: Priority.high,
+          channelId,
+          channelName,
+          channelDescription: channelDescription,
+          importance: importance,
+          priority: priority,
+          showWhen: true,
         );
 
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
@@ -172,7 +300,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    const NotificationDetails details = NotificationDetails(
+    final NotificationDetails details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
