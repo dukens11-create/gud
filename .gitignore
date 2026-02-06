@@ -47,3 +47,10 @@ app.*.map.json
 google-services.json
 GoogleService-Info.plist
 *.tar.xz
+
+# Environment files with secrets
+.env
+.env.*
+!.env.development
+!.env.production
+# Note: .env.development and .env.production are templates with placeholders
