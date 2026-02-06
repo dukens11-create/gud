@@ -1,12 +1,32 @@
 import 'package:geolocator/geolocator.dart';
 
+/// Location service for GPS positioning and location permissions.
+/// 
+/// Provides:
+/// - Current location retrieval
+/// - Location permission management
+/// - Location service status checking
+/// - Position data formatting for Firestore
+/// 
+/// Requires:
+/// - Location permissions in AndroidManifest.xml and Info.plist
+/// - Geolocator package
 class LocationService {
-  /// Check if location services are enabled
+  /// Check if device location services are enabled
+  /// 
+  /// Returns true if GPS is enabled, false otherwise
   Future<bool> isLocationServiceEnabled() async {
     return await Geolocator.isLocationServiceEnabled();
   }
 
   /// Check and request location permissions
+  /// 
+  /// Handles permission flow:
+  /// 1. Checks current permission status
+  /// 2. Requests permission if denied
+  /// 3. Returns false if permanently denied
+  /// 
+  /// Returns true if permission granted, false otherwise
   Future<bool> requestLocationPermission() async {
     LocationPermission permission = await Geolocator.checkPermission();
     
@@ -24,8 +44,17 @@ class LocationService {
     return true;
   }
 
-  /// Get current position
-  /// Returns null if location service is disabled or permission denied
+  /// Get current GPS position with high accuracy
+  /// 
+  /// Automatically handles:
+  /// - Location service enabled check
+  /// - Permission request
+  /// - Position retrieval with high accuracy
+  /// 
+  /// Returns [Position] if successful, null if:
+  /// - Location services disabled
+  /// - Permission denied
+  /// - Error occurred
   Future<Position?> getCurrentLocation() async {
     // Check if location services are enabled
     bool serviceEnabled = await isLocationServiceEnabled();
@@ -50,8 +79,15 @@ class LocationService {
     }
   }
 
-  /// Convert Position to a map for Firestore storage
-  /// Throws an error if position.timestamp is null
+  /// Convert Position to Firestore-compatible map
+  /// 
+  /// Returns a map with:
+  /// - lat: Latitude
+  /// - lng: Longitude  
+  /// - timestamp: ISO 8601 string
+  /// - accuracy: Accuracy in meters
+  /// 
+  /// Throws [ArgumentError] if position.timestamp is null
   Map<String, dynamic> positionToMap(Position position) {
     if (position.timestamp == null) {
       throw ArgumentError('Position timestamp cannot be null');

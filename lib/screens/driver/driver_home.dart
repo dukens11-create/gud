@@ -82,18 +82,24 @@ class _DriverHomeState extends State<DriverHome> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Loads'),
+        title: Semantics(
+          header: true,
+          child: const Text('My Loads'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.receipt_long),
+            tooltip: 'View expenses',
             onPressed: () => Navigator.pushNamed(context, '/driver/expenses'),
           ),
           IconButton(
             icon: const Icon(Icons.attach_money),
+            tooltip: 'View earnings',
             onPressed: () => Navigator.pushNamed(context, '/driver/earnings'),
           ),
           IconButton(
             icon: const Icon(Icons.exit_to_app),
+            tooltip: 'Sign out',
             onPressed: () async {
               await mockService.signOut();
               if (context.mounted) {
@@ -112,20 +118,25 @@ class _DriverHomeState extends State<DriverHome> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: _isSendingLocation ? null : _sendLocation,
-              icon: _isSendingLocation
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.my_location),
-              label: Text(_isSendingLocation ? 'Sending...' : 'Send Location'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
+            child: Semantics(
+              label: _isSendingLocation ? 'Sending location, please wait' : 'Send your current location',
+              button: true,
+              enabled: !_isSendingLocation,
+              child: ElevatedButton.icon(
+                onPressed: _isSendingLocation ? null : _sendLocation,
+                icon: _isSendingLocation
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location),
+                label: Text(_isSendingLocation ? 'Sending...' : 'Send Location'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
               ),
             ),
           ),
@@ -145,44 +156,58 @@ class _DriverHomeState extends State<DriverHome> {
                 final loads = snapshot.data ?? [];
 
                 if (loads.isEmpty) {
-                  return const Center(
-                    child: Text('No loads assigned yet.'),
+                  return Center(
+                    child: Semantics(
+                      label: 'No loads assigned yet. Check back later for new assignments.',
+                      child: const Text('No loads assigned yet.'),
+                    ),
                   );
                 }
 
-                return ListView.builder(
-                  itemCount: loads.length,
-                  itemBuilder: (context, index) {
-                    final load = loads[index];
-                    return Card(
-                      margin: const EdgeInsets.all(8),
-                      child: ListTile(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => LoadDetailScreen(load: load),
+                return Semantics(
+                  label: 'List of ${loads.length} assigned loads',
+                  child: ListView.builder(
+                    itemCount: loads.length,
+                    itemBuilder: (context, index) {
+                      final load = loads[index];
+                      return Semantics(
+                        label: 'Load ${load.loadNumber}, from ${load.pickupAddress} to ${load.deliveryAddress}, rate ${load.rate} dollars, status ${load.status}. Tap to view details.',
+                        button: true,
+                        child: Card(
+                          margin: const EdgeInsets.all(8),
+                          child: ListTile(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LoadDetailScreen(load: load),
+                                ),
+                              );
+                            },
+                            leading: ExcludeSemantics(
+                              child: CircleAvatar(
+                                child: Text(load.status.isNotEmpty ? load.status[0].toUpperCase() : 'L'),
+                              ),
                             ),
-                          );
-                        },
-                        leading: CircleAvatar(
-                          child: Text(load.status.isNotEmpty ? load.status[0].toUpperCase() : 'L'),
+                            title: Text(load.loadNumber),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('From: ${load.pickupAddress}'),
+                                Text('To: ${load.deliveryAddress}'),
+                                Text('Rate: \$${load.rate.toStringAsFixed(2)}'),
+                              ],
+                            ),
+                            trailing: ExcludeSemantics(
+                              child: Chip(
+                                label: Text(load.status),
+                              ),
+                            ),
+                          ),
                         ),
-                        title: Text(load.loadNumber),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('From: ${load.pickupAddress}'),
-                            Text('To: ${load.deliveryAddress}'),
-                            Text('Rate: \$${load.rate.toStringAsFixed(2)}'),
-                          ],
-                        ),
-                        trailing: Chip(
-                          label: Text(load.status),
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 );
               },
             ),
