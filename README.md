@@ -1,8 +1,13 @@
 # GUD Express - Production-Ready Trucking Management App
 
+[![Build Status](https://img.shields.io/github/actions/workflow/status/dukens11-create/gud/test.yml?branch=main)](https://github.com/dukens11-create/gud/actions)
+[![Flutter Version](https://img.shields.io/badge/Flutter-3.24.0-02569B?logo=flutter)](https://flutter.dev)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+
 A comprehensive, enterprise-grade logistics and delivery management application built with Flutter and Firebase. Designed for trucking companies to manage drivers, loads, deliveries, and real-time tracking.
 
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-06  
+**Version:** 2.0.0
 
 ---
 
@@ -18,18 +23,33 @@ A comprehensive, enterprise-grade logistics and delivery management application 
 - ✅ **GPS Location** - Manual location sharing from drivers
 - ✅ **Expense Tracking** - Track and manage delivery expenses
 - ✅ **Statistics Dashboard** - Performance metrics and analytics
+- ✅ **Invoice Management** - Create, edit, and manage invoices for loads
+- ✅ **Export Functionality** - Export data to PDF and CSV formats
+- ✅ **Load History** - View historical loads with advanced filtering and search
+- ✅ **Offline Support** - Local data caching with Hive database
+- ✅ **Background Sync** - Automatic data synchronization with WorkManager
+- ✅ **Enhanced Geofencing** - Automatic status updates on arrival at locations
+- ✅ **Offline Indicator** - Visual indicator for network connectivity status
+- ✅ **Environment Configuration** - Separate development and production environments
+- ✅ **Feature Flags** - Toggle features dynamically without code changes
 
 ### Production Features (Scaffolded & Ready to Enable)
 - 🔄 **Background GPS Tracking** - Continuous location tracking even when app is closed
 - 📱 **Push Notifications** - Firebase Cloud Messaging for load updates and alerts
 - 🗺️ **Live Map Dashboard** - Real-time driver location display on Google Maps
-- 📍 **Geofencing** - Automatic triggers on arrival at pickup/delivery locations
 - 📊 **Crash Reporting** - Firebase Crashlytics with custom error logging
 - 📈 **Analytics** - User behavior tracking and performance metrics
 - 🔐 **Advanced Auth** - Google Sign-In, Apple Sign-In, 2FA support
 - 📄 **Document Management** - Driver license, certifications, and document tracking
-- 🎨 **Onboarding Experience** - New user introduction and tutorials
+- 🎨 **Enhanced Onboarding** - New user introduction with smooth animations
 - 🔒 **Production Security** - Firebase App Check, enhanced security rules
+
+### CI/CD & Automation
+- ✅ **Automated Testing** - Unit, widget, and integration test workflows
+- ✅ **Android Build Pipeline** - Automated APK and AAB builds
+- ✅ **iOS Build Pipeline** - Automated iOS app builds
+- ✅ **Code Quality Checks** - Automated linting and analysis
+- ✅ **Firebase Deployment** - Automated deployment workflows
 
 ---
 
@@ -41,20 +61,24 @@ A comprehensive, enterprise-grade logistics and delivery management application 
 - **[Quickstart Guide](QUICKSTART.md)** - Get running in minutes
 
 ### Feature Documentation
-- **[Production Readiness Status](PRODUCTION_READINESS_STATUS.md)** - ⭐ Current status of all features (scaffolded vs production-ready)
+- **[Production Readiness Status](PRODUCTION_READINESS_STATUS.md)** - ⭐ Current status of all features
 - **[Production Features Guide](PRODUCTION_FEATURES_GUIDE.md)** - Comprehensive guide to all enterprise features
 - **[Feature Integration Guide](FEATURE_INTEGRATION_GUIDE.md)** - Step-by-step integration instructions
 - **[GPS Location Setup](GPS_LOCATION_SETUP.md)** - Location tracking configuration
 - **[Expense Tracking Guide](EXPENSE_TRACKING_GUIDE.md)** - Expense management documentation
 - **[Statistics Guide](STATISTICS_GUIDE.md)** - Analytics and metrics
 
-### Development
+### Development & Architecture
 - **[Architecture](ARCHITECTURE.md)** - System design and data flow
-- **[Testing Guide](AUTOMATED_TESTING_GUIDE.md)** - Unit, widget, and integration tests
+- **[Architecture Deep Dive](ARCHITECTURE_DEEP_DIVE.md)** - Detailed architectural documentation
+- **[API Documentation](API.md)** - API reference and endpoints
+- **[Testing Guide](TESTING.md)** - Comprehensive testing documentation
+- **[Contributing Guide](CONTRIBUTING.md)** - Contribution guidelines and standards
+- **[Changelog](CHANGELOG.md)** - Version history and changes
 - **[Quick Reference](QUICK_REFERENCE.md)** - Common tasks and commands
 
 ### Deployment
-- **[Deployment Guide](DEPLOYMENT.md)** - Build and release process
+- **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Complete build and release process
 - **[Production Deployment](DEPLOYMENT_PRODUCTION.md)** - Production environment setup
 
 ### Security & Rules
@@ -73,6 +97,10 @@ A comprehensive, enterprise-grade logistics and delivery management application 
 - **Notifications:** Firebase Cloud Messaging
 - **Analytics:** Firebase Analytics & Crashlytics
 - **State Management:** StreamBuilder pattern
+- **Local Storage:** Hive (offline support)
+- **Background Tasks:** WorkManager
+- **Export:** PDF & CSV generation
+- **Environment Management:** flutter_dotenv
 
 ### Project Structure
 ```
@@ -80,6 +108,10 @@ lib/
 ├── main.dart                    # App entry point
 ├── app.dart                     # Material app configuration
 ├── routes.dart                  # Route definitions
+├── config/                      # Configuration files
+│   ├── app_config.dart          # App configuration
+│   ├── environment.dart         # Environment settings (dev/prod)
+│   └── feature_flags.dart       # Feature flag management
 ├── models/                      # Data models
 │   ├── app_user.dart
 │   ├── driver.dart
@@ -87,10 +119,16 @@ lib/
 │   ├── load.dart
 │   ├── pod.dart
 │   ├── expense.dart
+│   ├── invoice.dart             # Invoice model
 │   └── statistics.dart
 ├── screens/                     # UI screens
 │   ├── login_screen.dart
 │   ├── onboarding_screen.dart   # New user onboarding
+│   ├── load_history_screen.dart # Historical load viewing
+│   ├── export_screen.dart       # Data export functionality
+│   ├── invoice_management_screen.dart
+│   ├── invoice_detail_screen.dart
+│   ├── create_invoice_screen.dart
 │   ├── admin/
 │   │   ├── admin_home_screen.dart
 │   │   ├── admin_map_dashboard_screen.dart  # Live map
@@ -109,8 +147,27 @@ lib/
 │   ├── geofence_service.dart
 │   ├── crash_reporting_service.dart
 │   ├── expense_service.dart
-│   └── statistics_service.dart
+│   ├── statistics_service.dart
+│   ├── invoice_service.dart     # Invoice management
+│   ├── export_service.dart      # PDF/CSV export
+│   ├── pdf_generator_service.dart
+│   ├── offline_support_service.dart  # Hive offline storage
+│   └── sync_service.dart        # Background sync with WorkManager
 └── widgets/                     # Reusable UI components
+    ├── offline_indicator.dart   # Network status indicator
+    └── ...
+```
+
+### Configuration Files
+```
+.env.development                 # Development environment variables
+.env.production                  # Production environment variables
+.github/workflows/               # CI/CD pipelines
+├── test.yml                     # Automated testing
+├── android-build.yml            # Android builds
+├── ios-build.yml                # iOS builds
+├── code-quality.yml             # Code quality checks
+└── firebase-deploy.yml          # Firebase deployment
 ```
 
 ---
@@ -136,19 +193,28 @@ lib/
    flutter pub get
    ```
 
-3. **Configure Firebase:**
+3. **Configure Environment:**
+   - Copy `.env.development` and `.env.production` files
+   - Update environment variables as needed
+   - See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for details
+
+4. **Configure Firebase:**
    - Follow [FIREBASE_SETUP.md](FIREBASE_SETUP.md)
    - Add `google-services.json` (Android)
    - Add `GoogleService-Info.plist` (iOS)
 
-4. **Configure Google Maps:**
+5. **Configure Google Maps:**
    - Get API keys from Google Cloud Console
    - Add to `AndroidManifest.xml` and `AppDelegate.swift`
    - See [PRODUCTION_FEATURES_GUIDE.md](PRODUCTION_FEATURES_GUIDE.md) for details
 
-5. **Run the app:**
+6. **Run the app:**
    ```bash
-   flutter run
+   # Development mode
+   flutter run --dart-define=ENV=development
+   
+   # Production mode
+   flutter run --dart-define=ENV=production
    ```
 
 ### First Login
@@ -205,17 +271,33 @@ flutter test
 # With coverage
 flutter test --coverage
 
-# Specific tests
+# Specific test suites
 flutter test test/unit/
 flutter test test/widget/
+flutter test test/integration/
+
+# Generate coverage report
+flutter test --coverage && genhtml coverage/lcov.info -o coverage/html
 ```
 
 ### Integration Tests
 ```bash
+# Run integration tests
 flutter test integration_test/
+
+# Run on specific device
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart
 ```
 
-**See [AUTOMATED_TESTING_GUIDE.md](AUTOMATED_TESTING_GUIDE.md) for comprehensive testing documentation.**
+### CI/CD Testing
+All tests run automatically on push and pull requests via GitHub Actions:
+- Unit tests
+- Widget tests
+- Integration tests
+- Code quality checks
+- Build verification
+
+**See [TESTING.md](TESTING.md) for comprehensive testing documentation.**
 
 ---
 
@@ -240,6 +322,72 @@ flutter build web --release
 ```
 
 **See [DEPLOYMENT_PRODUCTION.md](DEPLOYMENT_PRODUCTION.md) for complete deployment guide.**
+
+---
+
+## 📸 Screenshots
+
+> **Note:** Screenshots will be added in a future update. The app features:
+> - Clean, modern Material Design UI
+> - Responsive layouts for all screen sizes
+> - Intuitive navigation and user flows
+> - Real-time data updates
+> - Offline-capable interface with status indicators
+> - Professional invoice generation and export screens
+> - Comprehensive load history and filtering interface
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**Build Errors:**
+- Run `flutter clean && flutter pub get`
+- Check Flutter version: `flutter --version` (requires 3.0.0+)
+- Verify Firebase configuration files are present
+- Update dependencies: `flutter pub upgrade`
+
+**Firebase Connection Issues:**
+- Verify `google-services.json` / `GoogleService-Info.plist` are in correct locations
+- Check Firebase project configuration in console
+- Ensure Firebase rules are deployed
+- Verify API keys are enabled in Google Cloud Console
+
+**Location/GPS Issues:**
+- Check device permissions (Location, Background Location)
+- Verify Google Maps API key is configured
+- Test on physical device (emulator GPS can be unreliable)
+- Check location service settings on device
+
+**Offline Sync Issues:**
+- Verify Hive initialization in `main.dart`
+- Check device storage permissions
+- Clear local cache if corruption occurs: `Hive.deleteFromDisk()`
+- Monitor sync logs in console output
+
+**Build/Release Issues:**
+- Check signing configuration for Android/iOS
+- Verify all required API keys are configured
+- Review platform-specific requirements in [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+- Test release builds before production deployment
+
+**Environment Configuration:**
+- Ensure `.env.development` and `.env.production` files exist
+- Verify environment variables are loaded: `flutter run --dart-define=ENV=development`
+- Check `lib/config/environment.dart` for correct configuration
+
+**Performance Issues:**
+- Enable release mode for testing: `flutter run --release`
+- Profile app: `flutter run --profile`
+- Check for excessive rebuilds using Flutter DevTools
+- Optimize image sizes and caching
+
+For more detailed troubleshooting, see:
+- [TESTING.md](TESTING.md) - Testing and debugging
+- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Deployment issues
+- [FIREBASE_SETUP.md](FIREBASE_SETUP.md) - Firebase-specific problems
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Development environment setup
 
 ---
 
@@ -280,6 +428,8 @@ See [PRODUCTION_FEATURES_GUIDE.md](PRODUCTION_FEATURES_GUIDE.md) Security sectio
 
 ## 🤝 Contributing
 
+We welcome contributions! Please follow these steps:
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
@@ -287,10 +437,21 @@ See [PRODUCTION_FEATURES_GUIDE.md](PRODUCTION_FEATURES_GUIDE.md) Security sectio
 5. Open a Pull Request
 
 ### Development Guidelines
-- Follow Dart style guide
-- Add tests for new features
-- Update documentation
+- Follow Dart style guide and Flutter best practices
+- Add tests for new features (unit, widget, and integration)
+- Update documentation for any user-facing changes
 - Use semantic commit messages
+- Run tests and linting before submitting PR
+- Ensure CI/CD pipeline passes
+
+### Code Quality Standards
+- All tests must pass (`flutter test`)
+- Code must pass linting (`flutter analyze`)
+- Maintain test coverage above 80%
+- Follow existing project structure and patterns
+- Document complex logic with comments
+
+**See [CONTRIBUTING.md](CONTRIBUTING.md) for complete contribution guidelines.**
 
 ---
 
@@ -317,50 +478,81 @@ This project is proprietary software. All rights reserved.
 
 ## 🗺️ Roadmap
 
-### v1.0 (Current - Scaffolded)
+### v2.0 (Current - Complete) ✅
 - ✅ Core logistics features
-- ✅ Production feature scaffolding
+- ✅ Invoice management system
+- ✅ PDF and CSV export functionality
+- ✅ Load history with advanced filtering
+- ✅ Offline support with Hive
+- ✅ Background sync with WorkManager
+- ✅ Enhanced geofencing with auto-status updates
+- ✅ Enhanced onboarding experience
+- ✅ Offline indicator widget
+- ✅ Environment configuration (dev/prod)
+- ✅ Feature flags system
+- ✅ CI/CD pipelines (test, build, deploy)
 - ✅ Comprehensive documentation
-- ✅ Integration guides
+- ✅ Production feature scaffolding
 
-### v1.1 (Next)
+### v2.1 (Next - Q1 2026)
 - 🔄 Enable background GPS tracking
 - 🔄 Implement push notifications
-- 🔄 Add live map dashboard
-- 🔄 Configure geofencing
-
-### v1.2 (Future)
-- 🔄 Advanced authentication
-- 🔄 Document management
-- 🔄 Enhanced UI/UX
+- 🔄 Activate live map dashboard
+- 🔄 Enable geofencing triggers
+- 🔄 Advanced authentication (OAuth)
+- 🔄 Document management system
+- 🔄 Enhanced UI/UX polish
 - 🔄 Production security hardening
 
-### v2.0 (Long-term)
-- 🔄 Route optimization
-- 🔄 Automated dispatch
+### v2.2 (Future - Q2 2026)
+- 🔄 Route optimization algorithms
+- 🔄 Automated dispatch system
 - 🔄 Customer portal
 - 🔄 Advanced analytics dashboard
 - 🔄 Multi-language support
-- 🔄 Offline mode enhancement
+- 🔄 Enhanced offline capabilities
+- 🔄 Driver performance scoring
+- 🔄 Fuel efficiency tracking
+
+### v3.0 (Long-term - Q3-Q4 2026)
+- 🔄 AI-powered route recommendations
+- 🔄 Predictive maintenance alerts
+- 🔄 Advanced reporting and insights
+- 🔄 Integration with third-party logistics platforms
+- 🔄 Fleet management module
+- 🔄 Automated load matching
+- 🔄 Mobile web app (PWA enhancements)
+- 🔄 White-label customization options
 
 ---
 
 ## 🎯 Project Status
 
-**Current Phase:** Feature Scaffolding Complete ✅
+**Current Phase:** Phase 11 Complete - Full Production Features ✅
 
-All production-ready features have been scaffolded with:
-- ✅ Dependencies added to pubspec.yaml
-- ✅ Service files with starter code and comprehensive TODOs
-- ✅ Configuration files updated (AndroidManifest.xml, Info.plist)
-- ✅ Comprehensive documentation (guides, setup instructions, integration steps)
-- ✅ Sample code for critical flows
-- ✅ Clear markers for incomplete/ready-for-extension areas
-- ✅ Modular, secure, and scalable architecture
+**Version 2.0.0** includes:
+- ✅ Invoice management with PDF generation
+- ✅ Advanced export functionality (PDF/CSV)
+- ✅ Load history with filtering and search
+- ✅ Offline support with Hive database
+- ✅ Background sync with WorkManager
+- ✅ Enhanced geofencing with auto-status
+- ✅ Offline indicator widget
+- ✅ Environment configuration system
+- ✅ Feature flags for dynamic control
+- ✅ Complete CI/CD pipeline
+- ✅ Comprehensive testing suite
+- ✅ Enhanced onboarding experience
+- ✅ Production-ready architecture
+- ✅ Complete documentation suite
 
 **Production Status:** See [PRODUCTION_READINESS_STATUS.md](PRODUCTION_READINESS_STATUS.md) for detailed feature-by-feature status.
 
-**Next Steps:** Follow [FEATURE_INTEGRATION_GUIDE.md](FEATURE_INTEGRATION_GUIDE.md) to enable features incrementally.
+**Next Steps:** 
+- Enable remaining scaffolded features (background GPS, push notifications, live maps)
+- Deploy to production environments
+- Monitor and optimize performance
+- See [FEATURE_INTEGRATION_GUIDE.md](FEATURE_INTEGRATION_GUIDE.md) for activation steps
 
 ---
 
@@ -376,16 +568,20 @@ All production-ready features have been scaffolded with:
 
 ### What Makes This App Production-Ready
 
-1. **Comprehensive Feature Set** - All essential logistics features included
-2. **Enterprise-Grade Architecture** - Scalable, modular, maintainable
-3. **Security First** - RBAC, secure rules, data validation
-4. **Real-time Everything** - Live tracking, notifications, updates
-5. **Mobile-First Design** - Optimized for drivers on the go
-6. **Extensive Documentation** - 12+ guide documents covering all aspects
+1. **Comprehensive Feature Set** - All essential logistics features plus invoice management, exports, and offline support
+2. **Enterprise-Grade Architecture** - Scalable, modular, maintainable with environment management
+3. **Security First** - RBAC, secure rules, data validation, and feature flags
+4. **Real-time Everything** - Live tracking, notifications, updates with offline fallback
+5. **Mobile-First Design** - Optimized for drivers on the go with offline capabilities
+6. **Extensive Documentation** - 15+ guide documents covering all aspects
 7. **Clear Integration Path** - Step-by-step guides for feature enablement
 8. **Production Security** - App Check, enhanced rules, monitoring ready
-9. **Testing Framework** - Unit, widget, integration test structure
-10. **Deployment Ready** - CI/CD configuration, build scripts, deployment guides
+9. **Complete Testing Framework** - Unit, widget, integration tests with CI/CD
+10. **Deployment Ready** - Automated CI/CD pipelines, environment configs, deployment guides
+11. **Offline-First Design** - Hive database, background sync, connectivity monitoring
+12. **Professional Invoicing** - Generate, manage, and export invoices with PDF support
+13. **Advanced Filtering** - Comprehensive load history with search and filters
+14. **Environment Management** - Separate dev/prod configurations with feature flags
 
 ### Why Choose GUD Express
 
@@ -397,6 +593,12 @@ All production-ready features have been scaffolded with:
 - 🌐 **Scalable** - Designed to grow with your business
 - 🎯 **Focused** - Purpose-built for trucking and logistics
 - 💪 **Reliable** - Production-tested patterns and best practices
+- 📴 **Offline-Ready** - Work seamlessly without internet connectivity
+- 📊 **Data Export** - Professional PDF and CSV exports
+- 🔄 **Auto-Sync** - Background synchronization when online
+- 🎨 **Modern UI** - Clean, intuitive interface with smooth animations
+- 🚦 **CI/CD Pipeline** - Automated testing, builds, and deployments
+- 🔧 **Configurable** - Feature flags and environment management
 
 ---
 
