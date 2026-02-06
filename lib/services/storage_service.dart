@@ -2,10 +2,27 @@ import 'dart:io' show File;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
+/// Cloud storage service for managing file uploads and downloads.
+/// 
+/// Handles:
+/// - Image selection from camera or gallery
+/// - POD image uploads to Firebase Storage
+/// - Image optimization (resize and compression)
+/// - File deletion
 class StorageService {
   final _storage = FirebaseStorage.instance;
   final _picker = ImagePicker();
 
+  /// Pick an image from camera or gallery
+  /// 
+  /// Automatically optimizes the image:
+  /// - Max dimensions: 1920x1080
+  /// - Quality: 85%
+  /// 
+  /// Parameters:
+  /// - [source]: ImageSource.camera or ImageSource.gallery
+  /// 
+  /// Returns [File] if image selected, null if cancelled
   Future<File?> pickImage({required ImageSource source}) async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -21,6 +38,15 @@ class StorageService {
     }
   }
 
+  /// Upload POD image to Firebase Storage
+  /// 
+  /// Stores images in 'pods/{loadId}/' directory with timestamp filename
+  /// 
+  /// Parameters:
+  /// - [loadId]: Associated load ID for organizing storage
+  /// - [file]: Image file to upload
+  /// 
+  /// Returns the public download URL of the uploaded image
   Future<String> uploadPodImage({
     required String loadId,
     required File file,
@@ -30,6 +56,12 @@ class StorageService {
     return ref.getDownloadURL();
   }
 
+  /// Delete a POD image from Firebase Storage
+  /// 
+  /// Parameters:
+  /// - [imageUrl]: Full download URL of the image to delete
+  /// 
+  /// Silently handles errors (e.g., file not found)
   Future<void> deletePOD(String imageUrl) async {
     try {
       final ref = _storage.refFromURL(imageUrl);

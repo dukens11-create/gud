@@ -2,6 +2,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
+/// Authentication service for managing user authentication and user data.
+/// 
+/// Provides methods for sign in, sign out, user registration, and role management.
+/// Supports both online Firebase authentication and offline mock authentication for development.
+/// 
+/// Features:
+/// - Email/password authentication
+/// - User registration with role assignment
+/// - Password reset functionality
+/// - Automatic error logging to Crashlytics
+/// - Offline mode support for testing
 class AuthService {
   final FirebaseAuth? _auth;
   final FirebaseFirestore? _db;
@@ -28,7 +39,12 @@ class AuthService {
     }
   }
 
+  /// Returns the currently authenticated user, or null if not authenticated
   User? get currentUser => _auth?.currentUser;
+  
+  /// Stream of authentication state changes
+  /// 
+  /// Emits whenever the user signs in or out
   Stream<User?> get authStateChanges {
     if (_isOffline) {
       return Stream.value(null);
@@ -36,6 +52,14 @@ class AuthService {
     return _auth!.authStateChanges();
   }
 
+  /// Sign in a user with email and password
+  /// 
+  /// Returns [UserCredential] on success, null in offline mode
+  /// Throws [FirebaseAuthException] on authentication failure
+  /// 
+  /// Offline mode credentials:
+  /// - admin@gud.com / admin123
+  /// - driver@gud.com / driver123
   Future<UserCredential?> signIn(String email, String password) async {
     try {
       if (_isOffline) {
@@ -66,11 +90,17 @@ class AuthService {
     }
   }
 
+  /// Sign out the currently authenticated user
   Future<void> signOut() async {
     if (_isOffline) return;
     await _auth!.signOut();
   }
 
+  /// Create a new user account with email and password
+  /// 
+  /// Returns [UserCredential] on success
+  /// Throws [FirebaseAuthException] if user creation fails
+  /// Not available in offline mode
   Future<UserCredential?> createUser(String email, String password) async {
     try {
       if (_isOffline) {
@@ -94,6 +124,20 @@ class AuthService {
     }
   }
 
+  /// Register a new user with full profile information
+  /// 
+  /// Creates Firebase Authentication account and user profile in Firestore
+  /// 
+  /// Parameters:
+  /// - [email]: User's email address
+  /// - [password]: User's password
+  /// - [name]: User's full name
+  /// - [role]: User role ('admin' or 'driver')
+  /// - [phone]: Optional phone number
+  /// - [truckNumber]: Optional truck number (for drivers)
+  /// 
+  /// Returns [UserCredential] on success
+  /// Throws [FirebaseAuthException] on failure
   Future<UserCredential?> register({
     required String email,
     required String password,
@@ -140,6 +184,10 @@ class AuthService {
     }
   }
 
+  /// Ensure user document exists in Firestore
+  /// 
+  /// Creates or updates user document with provided data.
+  /// Uses merge: true to preserve existing fields.
   Future<void> ensureUserDoc({
     required String uid,
     required String role,
@@ -157,6 +205,9 @@ class AuthService {
     }, SetOptions(merge: true));
   }
 
+  /// Get user's role from Firestore
+  /// 
+  /// Returns 'admin' or 'driver', defaults to 'driver' if not found
   Future<String> getUserRole(String uid) async {
     if (_isOffline) {
       return 'driver'; // Default role in offline mode
@@ -165,6 +216,11 @@ class AuthService {
     return doc.data()?['role'] ?? 'driver';
   }
 
+  /// Send password reset email
+  /// 
+  /// Sends password reset email to the specified address
+  /// Throws [FirebaseAuthException] if email is invalid
+  /// Not available in offline mode
   Future<void> resetPassword(String email) async {
     if (_isOffline) {
       throw FirebaseAuthException(
