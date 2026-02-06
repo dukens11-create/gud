@@ -17,6 +17,12 @@ import 'auth_service_test.mocks.dart';
   CollectionReference,
 ])
 void main() {
+  // Note: AuthService uses FirebaseAuth.instance and FirebaseFirestore.instance internally,
+  // which makes it difficult to inject mocks without refactoring the service.
+  // These tests focus on offline mode behavior which is well-supported by the service.
+  // For full Firebase integration testing, consider using firebase_auth_mocks package
+  // or Firebase emulators.
+  
   group('AuthService', () {
     late MockFirebaseAuth mockAuth;
     late MockFirebaseFirestore mockFirestore;

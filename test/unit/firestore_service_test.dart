@@ -19,6 +19,14 @@ import 'firestore_service_test.mocks.dart';
   Query,
 ])
 void main() {
+  // Note: FirestoreService uses FirebaseFirestore.instance internally,
+  // which makes it difficult to inject mocks without refactoring the service.
+  // These tests verify the service interface, parameter validation, and stream types.
+  // For full Firestore testing with mocks, consider:
+  // 1. Using fake_cloud_firestore package for in-memory Firestore
+  // 2. Refactoring FirestoreService to accept FirebaseFirestore via constructor
+  // 3. Using Firebase emulators for integration tests
+  
   group('FirestoreService', () {
     late MockFirebaseFirestore mockFirestore;
     late MockCollectionReference<Map<String, dynamic>> mockCollection;

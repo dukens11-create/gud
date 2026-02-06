@@ -16,6 +16,12 @@ import 'storage_service_test.mocks.dart';
   ImagePicker,
 ])
 void main() {
+  // Note: StorageService uses FirebaseStorage.instance and ImagePicker() internally,
+  // which makes it difficult to inject mocks without refactoring the service.
+  // These tests verify the service interface and behavior in offline mode.
+  // For full mock-based testing, consider refactoring StorageService to accept
+  // dependencies via constructor injection.
+  
   group('StorageService', () {
     late MockFirebaseStorage mockStorage;
     late MockReference mockReference;
@@ -73,10 +79,10 @@ void main() {
 
         // Verifies that image quality parameters are set
         // In real implementation: maxWidth: 1920, maxHeight: 1080, quality: 85
-        final result = await service.pickImage(source: ImageSource.gallery);
-        
-        // Test passes if method completes without error
-        expect(() => result, returnsNormally);
+        await expectLater(
+          service.pickImage(source: ImageSource.gallery),
+          completes,
+        );
       });
     });
 
