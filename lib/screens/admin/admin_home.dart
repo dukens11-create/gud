@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:intl/intl.dart';
 import '../../services/mock_data_service.dart';
 import '../../services/analytics_service.dart';
 import '../../models/load.dart';
@@ -18,6 +19,9 @@ class _AdminHomeState extends State<AdminHome> {
   String _searchQuery = '';
   String _statusFilter = 'all';
   Timer? _debounce;
+  DateTimeRange? _dateRange;
+  String _sortBy = 'date'; // date, amount, driver, status
+  bool _sortAscending = false;
 
   @override
   void initState() {
@@ -49,19 +53,53 @@ class _AdminHomeState extends State<AdminHome> {
 
   Stream<List<LoadModel>> _getFilteredLoads() {
     return mockService.streamAllLoads().map((loads) {
-      return loads.where((load) {
-        // Search filter
+      var filteredLoads = loads.where((load) {
+        // Search filter - searches across load number, driver, and locations
         final matchesSearch = _searchQuery.isEmpty ||
             load.loadNumber.toLowerCase().contains(_searchQuery) ||
             load.driverId.toLowerCase().contains(_searchQuery) ||
             load.pickupAddress.toLowerCase().contains(_searchQuery) ||
-            load.deliveryAddress.toLowerCase().contains(_searchQuery);
+            load.deliveryAddress.toLowerCase().contains(_searchQuery) ||
+            load.pickupCity.toLowerCase().contains(_searchQuery) ||
+            load.deliveryCity.toLowerCase().contains(_searchQuery);
 
         // Status filter
         final matchesStatus = _statusFilter == 'all' || load.status == _statusFilter;
 
-        return matchesSearch && matchesStatus;
+        // Date range filter
+        bool matchesDateRange = true;
+        if (_dateRange != null) {
+          final loadDate = load.createdAt;
+          matchesDateRange = loadDate.isAfter(_dateRange!.start.subtract(const Duration(days: 1))) &&
+                             loadDate.isBefore(_dateRange!.end.add(const Duration(days: 1)));
+        }
+
+        return matchesSearch && matchesStatus && matchesDateRange;
       }).toList();
+
+      // Sort loads
+      filteredLoads.sort((a, b) {
+        int comparison = 0;
+        
+        switch (_sortBy) {
+          case 'date':
+            comparison = a.createdAt.compareTo(b.createdAt);
+            break;
+          case 'amount':
+            comparison = a.rate.compareTo(b.rate);
+            break;
+          case 'driver':
+            comparison = a.driverId.compareTo(b.driverId);
+            break;
+          case 'status':
+            comparison = a.status.compareTo(b.status);
+            break;
+        }
+
+        return _sortAscending ? comparison : -comparison;
+      });
+
+      return filteredLoads;
     });
   }
 
@@ -168,7 +206,79 @@ class _AdminHomeState extends State<AdminHome> {
             ),
           ),
 
-          const SizedBox(height: 8),
+          // Date Range and Sort Controls
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                // Date Range Picker
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.date_range),
+                    label: Text(
+                      _dateRange == null
+                          ? 'Select Date Range'
+                          : '${DateFormat('MMM d').format(_dateRange!.start)} - ${DateFormat('MMM d').format(_dateRange!.end)}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onPressed: () async {
+                      final picked = await showDateRangePicker(
+                        context: context,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        initialDateRange: _dateRange,
+                      );
+                      if (picked != null) {
+                        setState(() => _dateRange = picked);
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Sort Dropdown
+                DropdownButton<String>(
+                  value: _sortBy,
+                  icon: const Icon(Icons.sort),
+                  underline: Container(),
+                  items: const [
+                    DropdownMenuItem(value: 'date', child: Text('Date')),
+                    DropdownMenuItem(value: 'amount', child: Text('Amount')),
+                    DropdownMenuItem(value: 'driver', child: Text('Driver')),
+                    DropdownMenuItem(value: 'status', child: Text('Status')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _sortBy = value);
+                    }
+                  },
+                ),
+                // Sort Direction Toggle
+                IconButton(
+                  icon: Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward),
+                  onPressed: () {
+                    setState(() => _sortAscending = !_sortAscending);
+                  },
+                  tooltip: _sortAscending ? 'Ascending' : 'Descending',
+                ),
+                // Clear Filters
+                if (_statusFilter != 'all' || _dateRange != null || _searchQuery.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.clear_all),
+                    onPressed: () {
+                      setState(() {
+                        _statusFilter = 'all';
+                        _dateRange = null;
+                        _searchQuery = '';
+                        _searchController.clear();
+                      });
+                    },
+                    tooltip: 'Clear Filters',
+                  ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 8),
 
           // Load List
           Expanded(
@@ -186,10 +296,23 @@ class _AdminHomeState extends State<AdminHome> {
                 final loads = snapshot.data ?? [];
 
                 if (loads.isEmpty) {
-                  // Show different messages based on filters
-                  final message = _searchQuery.isNotEmpty || _statusFilter != 'all'
-                      ? 'No loads found matching your criteria'
-                      : 'No loads yet. Create your first load!';
+                  // Show different messages based on active filters
+                  String message;
+                  String subtitle;
+                  
+                  if (_searchQuery.isNotEmpty) {
+                    message = 'No loads match "${_searchController.text}"';
+                    subtitle = 'Try adjusting your search terms';
+                  } else if (_dateRange != null) {
+                    message = 'No loads in selected date range';
+                    subtitle = 'Try selecting a different date range';
+                  } else if (_statusFilter != 'all') {
+                    message = 'No $_statusFilter loads found';
+                    subtitle = 'Try changing the status filter';
+                  } else {
+                    message = 'No loads yet';
+                    subtitle = 'Create your first load to get started!';
+                  }
                   
                   return Center(
                     child: Semantics(
@@ -198,29 +321,50 @@ class _AdminHomeState extends State<AdminHome> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.search_off,
-                            size: 64,
-                            color: Colors.grey.shade400,
+                            _searchQuery.isNotEmpty || _statusFilter != 'all' || _dateRange != null
+                                ? Icons.search_off
+                                : Icons.inventory_2_outlined,
+                            size: 80,
+                            color: Colors.grey.shade300,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 24),
                           Text(
                             message,
                             style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey.shade600,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade700,
                             ),
                           ),
-                          if (_searchQuery.isNotEmpty || _statusFilter != 'all') ...[
-                            const SizedBox(height: 16),
-                            TextButton.icon(
+                          const SizedBox(height: 8),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                          if (_searchQuery.isNotEmpty || _statusFilter != 'all' || _dateRange != null) ...[
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
                               icon: const Icon(Icons.clear_all),
-                              label: const Text('Clear Filters'),
+                              label: const Text('Clear All Filters'),
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() {
                                   _searchQuery = '';
                                   _statusFilter = 'all';
+                                  _dateRange = null;
                                 });
+                              },
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.add),
+                              label: const Text('Create New Load'),
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/admin/create-load');
                               },
                             ),
                           ],

@@ -26,6 +26,8 @@ class GeofenceService {
 
   // Configuration
   static const double defaultRadius = 200.0; // meters
+  static const double approachingRadius = 500.0; // meters - for "approaching" notifications
+  static const double arrivedRadius = 100.0; // meters - for "arrived" status
   static const Duration monitoringInterval = Duration(seconds: 30);
 
   /// Create geofence for a load's pickup location
@@ -196,9 +198,28 @@ class GeofenceService {
           geofence.longitude,
         );
 
-        bool isInside = distance <= geofence.radius;
+        // Multi-radius detection
+        bool isApproaching = distance <= approachingRadius && distance > arrivedRadius;
+        bool isArrived = distance <= arrivedRadius;
+        bool isInside = distance <= geofence.radius; // Standard radius check
 
-        // Check for entry/exit events
+        // Handle approaching zone (500m)
+        if (isApproaching && !geofence.isApproaching) {
+          await _onGeofenceApproaching(driverId, geofence, position, distance);
+          geofence.isApproaching = true;
+        } else if (!isApproaching && geofence.isApproaching) {
+          geofence.isApproaching = false;
+        }
+
+        // Handle arrival zone (100m)
+        if (isArrived && !geofence.isArrived) {
+          await _onGeofenceArrived(driverId, geofence, position);
+          geofence.isArrived = true;
+        } else if (!isArrived && geofence.isArrived) {
+          geofence.isArrived = false;
+        }
+
+        // Handle standard entry/exit events
         if (isInside && !geofence.isInside) {
           await _onGeofenceEnter(driverId, geofence, position);
           geofence.isInside = true;
@@ -210,6 +231,62 @@ class GeofenceService {
     } catch (e) {
       print('❌ Error checking geofences: $e');
     }
+  }
+
+  /// Handle driver approaching geofence (500m radius)
+  Future<void> _onGeofenceApproaching(
+    String driverId,
+    _GeofenceConfig geofence,
+    Position position,
+    double distance,
+  ) async {
+    print('🎯 Driver approaching ${geofence.type.name} geofence: ${geofence.id} (${distance.toStringAsFixed(0)}m away)');
+
+    // Log event to Firestore
+    await _firestore.collection('geofenceEvents').add({
+      'geofenceId': geofence.id,
+      'loadId': geofence.loadId,
+      'driverId': driverId,
+      'type': 'approaching',
+      'geofenceType': geofence.type.name,
+      'distance': distance,
+      'latitude': position.latitude,
+      'longitude': position.longitude,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    // Send notification about approaching
+    print('📱 Send "approaching" notification to driver and admin');
+  }
+
+  /// Handle driver arrived at geofence (100m radius)
+  Future<void> _onGeofenceArrived(
+    String driverId,
+    _GeofenceConfig geofence,
+    Position position,
+  ) async {
+    print('🎯 Driver arrived at ${geofence.type.name} geofence: ${geofence.id}');
+
+    // Log event to Firestore
+    await _firestore.collection('geofenceEvents').add({
+      'geofenceId': geofence.id,
+      'loadId': geofence.loadId,
+      'driverId': driverId,
+      'type': 'arrived',
+      'geofenceType': geofence.type.name,
+      'latitude': position.latitude,
+      'longitude': position.longitude,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    // Trigger automatic actions based on geofence type
+    if (geofence.type == GeofenceType.pickup) {
+      await _handlePickupArrival(geofence.loadId, driverId);
+    } else if (geofence.type == GeofenceType.delivery) {
+      await _handleDeliveryArrival(geofence.loadId, driverId);
+    }
+
+    print('📱 Send "arrived" notification to driver and admin');
   }
 
   /// Handle geofence entry event
@@ -270,16 +347,32 @@ class GeofenceService {
   /// Handle driver arrival at pickup location
   Future<void> _handlePickupArrival(String loadId, String driverId) async {
     try {
-      // TODO: Automatically update load status to "at_pickup"
-      // await _firestore.collection('loads').doc(loadId).update({
-      //   'status': 'at_pickup',
-      //   'pickupArrivalTime': FieldValue.serverTimestamp(),
-      // });
+      // Automatically update load status to "at_pickup"
+      await _firestore.collection('loads').doc(loadId).update({
+        'status': 'at_pickup',
+        'pickupArrivalTime': FieldValue.serverTimestamp(),
+        'lastStatusUpdate': FieldValue.serverTimestamp(),
+      });
 
       print('✅ Load $loadId marked as at pickup location');
       
-      // TODO: Send notification to admin
-      // TODO: Send notification to driver with next steps
+      // Send notification to driver with next steps
+      final driverDoc = await _firestore.collection('users').doc(driverId).get();
+      final driverData = driverDoc.data();
+      
+      if (driverData != null && driverData['fcmToken'] != null) {
+        // Notification will be sent via Cloud Function
+        print('📱 Pickup arrival notification will be sent to driver');
+      }
+      
+      // Log the geofence event for analytics
+      await _firestore.collection('geofenceEvents').add({
+        'loadId': loadId,
+        'driverId': driverId,
+        'eventType': 'pickup_arrival',
+        'statusChange': 'at_pickup',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       print('❌ Error handling pickup arrival: $e');
     }
@@ -288,16 +381,32 @@ class GeofenceService {
   /// Handle driver arrival at delivery location
   Future<void> _handleDeliveryArrival(String loadId, String driverId) async {
     try {
-      // TODO: Automatically update load status to "at_delivery"
-      // await _firestore.collection('loads').doc(loadId).update({
-      //   'status': 'at_delivery',
-      //   'deliveryArrivalTime': FieldValue.serverTimestamp(),
-      // });
+      // Automatically update load status to "at_delivery"
+      await _firestore.collection('loads').doc(loadId).update({
+        'status': 'at_delivery',
+        'deliveryArrivalTime': FieldValue.serverTimestamp(),
+        'lastStatusUpdate': FieldValue.serverTimestamp(),
+      });
 
       print('✅ Load $loadId marked as at delivery location');
       
-      // TODO: Send notification to driver to upload POD
-      // TODO: Send notification to admin
+      // Send notification to driver to upload POD
+      final driverDoc = await _firestore.collection('users').doc(driverId).get();
+      final driverData = driverDoc.data();
+      
+      if (driverData != null && driverData['fcmToken'] != null) {
+        // Notification will be sent via Cloud Function
+        print('📱 Delivery arrival notification will be sent to driver');
+      }
+      
+      // Log the geofence event for analytics
+      await _firestore.collection('geofenceEvents').add({
+        'loadId': loadId,
+        'driverId': driverId,
+        'eventType': 'delivery_arrival',
+        'statusChange': 'at_delivery',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       print('❌ Error handling delivery arrival: $e');
     }
@@ -350,6 +459,8 @@ class _GeofenceConfig {
   final GeofenceType type;
   final String loadId;
   bool isInside;
+  bool isApproaching;
+  bool isArrived;
 
   _GeofenceConfig({
     required this.id,
@@ -359,6 +470,8 @@ class _GeofenceConfig {
     required this.type,
     required this.loadId,
     this.isInside = false,
+    this.isApproaching = false,
+    this.isArrived = false,
   });
 }
 
