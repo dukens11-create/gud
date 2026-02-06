@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 
+    iOS Export Options for GUD Express
+    
+    This file configures how the app is exported and distributed.
+    Update the values below for your specific use case.
+    -->
+    
+    <!-- 
+    METHOD: Determines the distribution method
+    Options:
+    - app-store: For App Store distribution
+    - ad-hoc: For testing on registered devices
+    - enterprise: For enterprise distribution
+    - development: For development builds
+    -->
+    <key>method</key>
+    <string>app-store</string>
+    
+    <!-- 
+    TEAM ID: Your Apple Developer Team ID
+    Find it in Apple Developer Console under Membership
+    -->
+    <key>teamID</key>
+    <string>YOUR_TEAM_ID</string>
+    
+    <!-- 
+    UPLOAD SYMBOLS: Upload symbols to Apple for crash reporting
+    -->
+    <key>uploadSymbols</key>
+    <true/>
+    
+    <!-- 
+    BITCODE: Enable bitcode (deprecated in Xcode 14+)
+    -->
+    <key>uploadBitcode</key>
+    <false/>
+    
+    <!-- 
+    APP THINNING: Optimize app for specific devices
+    Options: <none>, <thin-for-all-variants>
+    -->
+    <key>compileBitcode</key>
+    <false/>
+    
+    <!-- 
+    PROVISIONING PROFILES: Automatic or manual provisioning
+    Leave empty for automatic provisioning
+    -->
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.gud.express</key>
+        <string>YOUR_PROVISIONING_PROFILE_NAME</string>
+    </dict>
+    
+    <!-- 
+    SIGNING CERTIFICATE: Code signing certificate to use
+    Options:
+    - "iOS Distribution" for app-store and ad-hoc
+    - "iOS Development" for development
+    -->
+    <key>signingCertificate</key>
+    <string>iOS Distribution</string>
+    
+    <!-- 
+    SIGNING STYLE: Manual or automatic signing
+    Options: manual, automatic
+    -->
+    <key>signingStyle</key>
+    <string>automatic</string>
+    
+    <!-- 
+    MANIFEST: For ad-hoc and enterprise distributions
+    -->
+    <key>manifest</key>
+    <dict>
+        <key>appURL</key>
+        <string>https://your-distribution-url.com/GUD-Express.ipa</string>
+        <key>displayImageURL</key>
+        <string>https://your-distribution-url.com/icon-57x57.png</string>
+        <key>fullSizeImageURL</key>
+        <string>https://your-distribution-url.com/icon-512x512.png</string>
+    </dict>
+    
+    <!-- 
+    ICLOUD CONTAINER ENVIRONMENT: For apps using iCloud
+    Options: Development, Production
+    -->
+    <key>iCloudContainerEnvironment</key>
+    <string>Production</string>
+    
+    <!-- 
+    STRIP SWIFT SYMBOLS: Reduce app size
+    -->
+    <key>stripSwiftSymbols</key>
+    <true/>
+    
+    <!-- 
+    THINNING: Create app variants for different devices
+    -->
+    <key>thinning</key>
+    <string>&lt;none&gt;</string>
+</dict>
+</plist>

@@ -51,3 +51,6 @@ GoogleService-Info.plist
 
 # Android signing
 key.properties
+*.jks
+*.keystore
+upload-keystore.jks
