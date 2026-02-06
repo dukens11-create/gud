@@ -55,11 +55,20 @@
 	<string>This app needs access to your location to track your position during deliveries</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>This app needs continuous access to your location for real-time delivery tracking, even when the app is in the background</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs access to your microphone to record voice notes for delivery documentation</string>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>This app does not access your music library</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
 		<string>fetch</string>
 		<string>remote-notification</string>
+		<string>processing</string>
 	</array>
+	<key>UIRequiresFullScreen</key>
+	<false/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

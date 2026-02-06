@@ -2,24 +2,27 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 
+/// Breadcrumb for crash context
+class Breadcrumb {
+  final String message;
+  final DateTime timestamp;
+  final Map<String, String>? data;
+
+  Breadcrumb({
+    required this.message,
+    required this.timestamp,
+    this.data,
+  });
+}
+
 /// Crash Reporting and Analytics Service
 /// 
 /// Provides comprehensive error tracking and analytics:
 /// - Automatic crash reporting via Firebase Crashlytics
-/// - Custom error logging
-/// - User analytics and behavior tracking
-/// - Performance monitoring
-/// 
-/// Setup Requirements:
-/// 1. Enable Crashlytics in Firebase Console
-/// 2. Add Firebase Crashlytics SDK
-/// 3. Configure crash reporting in main.dart
-/// 4. Upload debug symbols for iOS
-/// 
-/// TODO: Add custom crash keys for better debugging
-/// TODO: Implement user feedback integration
-/// TODO: Add breadcrumb tracking for crash context
-/// TODO: Set up alerts for critical errors
+/// - Custom error logging with context
+/// - Breadcrumb tracking for debugging
+/// - User feedback integration
+/// - Custom crash keys for better debugging
 class CrashReportingService {
   static final CrashReportingService _instance = CrashReportingService._internal();
   factory CrashReportingService() => _instance;
@@ -29,6 +32,8 @@ class CrashReportingService {
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
   
   bool _initialized = false;
+  final List<Breadcrumb> _breadcrumbs = [];
+  static const int _maxBreadcrumbs = 50;
 
   /// Initialize crash reporting and analytics
   Future<void> initialize() async {
@@ -38,20 +43,60 @@ class CrashReportingService {
       // Configure Crashlytics
       await _crashlytics.setCrashlyticsCollectionEnabled(!kDebugMode);
       
-      // Pass all uncaught errors to Crashlytics
-      FlutterError.onError = _crashlytics.recordFlutterFatalError;
+      // Pass all uncaught errors to Crashlytics with breadcrumb
+      FlutterError.onError = (FlutterErrorDetails details) {
+        _crashlytics.recordFlutterFatalError(details);
+        _addBreadcrumb('Flutter Fatal Error: ${details.exception}');
+      };
       
-      // Pass all uncaught asynchronous errors to Crashlytics
+      // Pass all uncaught asynchronous errors to Crashlytics with breadcrumb
       PlatformDispatcher.instance.onError = (error, stack) {
         _crashlytics.recordError(error, stack, fatal: true);
+        _addBreadcrumb('Platform Error: $error');
         return true;
       };
 
       _initialized = true;
       print('✅ Crash reporting service initialized');
+      
+      _addBreadcrumb('CrashReportingService initialized');
     } catch (e) {
       print('❌ Error initializing crash reporting: $e');
     }
+  }
+
+  /// Add breadcrumb for crash context (private)
+  void _addBreadcrumb(String message, {Map<String, String>? data}) {
+    final breadcrumb = Breadcrumb(
+      message: message,
+      timestamp: DateTime.now(),
+      data: data,
+    );
+    
+    _breadcrumbs.add(breadcrumb);
+    
+    // Keep only the last N breadcrumbs
+    if (_breadcrumbs.length > _maxBreadcrumbs) {
+      _breadcrumbs.removeAt(0);
+    }
+    
+    // Log to Crashlytics as custom log
+    _crashlytics.log('${breadcrumb.timestamp.toIso8601String()}: $message');
+  }
+
+  /// Add public breadcrumb method for app to track user actions
+  void addBreadcrumb(String message, {Map<String, String>? data}) {
+    _addBreadcrumb(message, data: data);
+  }
+
+  /// Get breadcrumbs for debugging (useful for user feedback)
+  List<Breadcrumb> getBreadcrumbs() {
+    return List.unmodifiable(_breadcrumbs);
+  }
+
+  /// Set custom key for crash context
+  Future<void> setCustomKey(String key, dynamic value) async {
+    await _crashlytics.setCustomKey(key, value);
   }
 
   /// Log a non-fatal error
@@ -225,7 +270,137 @@ class CrashReportingService {
 
     print('✅ User properties set for analytics: $userId');
   }
+
+  // ===================
+  // User Feedback Methods
+  // ===================
+
+  /// Record user feedback for a crash or error
+  Future<void> recordUserFeedback({
+    required String feedback,
+    String? errorId,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      // Log as custom event
+      await _analytics.logEvent(
+        name: 'user_feedback',
+        parameters: {
+          'feedback': feedback,
+          'error_id': errorId ?? 'manual',
+          'timestamp': DateTime.now().toIso8601String(),
+          ...?metadata?.map((k, v) => MapEntry(k, v.toString())),
+        },
+      );
+
+      // Add as breadcrumb
+      _addBreadcrumb('User Feedback: $feedback', data: {'error_id': errorId ?? 'manual'});
+
+      // Set as custom key for next crash
+      await _crashlytics.setCustomKey('last_user_feedback', feedback);
+      await _crashlytics.setCustomKey('feedback_timestamp', DateTime.now().toIso8601String());
+
+      print('✅ User feedback recorded: $feedback');
+    } catch (e) {
+      print('❌ Error recording user feedback: $e');
+    }
+  }
+
+  /// Record user rating
+  Future<void> recordUserRating({
+    required double rating,
+    String? context,
+    String? comment,
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'user_rating',
+        parameters: {
+          'rating': rating.toString(),
+          'context': context ?? 'general',
+          'comment': comment ?? '',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+
+      _addBreadcrumb('User Rating: $rating/5.0', data: {
+        'context': context ?? 'general',
+      });
+
+      print('✅ User rating recorded: $rating');
+    } catch (e) {
+      print('❌ Error recording user rating: $e');
+    }
+  }
+
+  /// Record feature request
+  Future<void> recordFeatureRequest({
+    required String featureName,
+    String? description,
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'feature_request',
+        parameters: {
+          'feature': featureName,
+          'description': description ?? '',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+
+      _addBreadcrumb('Feature Request: $featureName');
+
+      print('✅ Feature request recorded: $featureName');
+    } catch (e) {
+      print('❌ Error recording feature request: $e');
+    }
+  }
+
+  /// Record bug report
+  Future<void> recordBugReport({
+    required String description,
+    String? stepsToReproduce,
+    String? expectedBehavior,
+    String? actualBehavior,
+  }) async {
+    try {
+      // Build breadcrumb trail for bug context
+      final breadcrumbTrail = _breadcrumbs.map((b) => 
+        '${b.timestamp.toIso8601String()}: ${b.message}'
+      ).join('\n');
+
+      await _analytics.logEvent(
+        name: 'bug_report',
+        parameters: {
+          'description': description,
+          'steps': stepsToReproduce ?? '',
+          'expected': expectedBehavior ?? '',
+          'actual': actualBehavior ?? '',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+
+      // Log to Crashlytics for investigation
+      await _crashlytics.recordError(
+        Exception('User reported bug: $description'),
+        StackTrace.current,
+        reason: 'Bug report from user',
+        fatal: false,
+      );
+
+      // Set custom keys with bug details
+      await _crashlytics.setCustomKey('bug_description', description);
+      await _crashlytics.setCustomKey('breadcrumb_trail', breadcrumbTrail);
+
+      _addBreadcrumb('Bug Report: $description');
+
+      print('✅ Bug report recorded: $description');
+    } catch (e) {
+      print('❌ Error recording bug report: $e');
+    }
+  }
 }
+
 
 // TODO: Add performance monitoring
 // Track:
