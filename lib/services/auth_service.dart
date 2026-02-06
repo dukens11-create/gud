@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 class AuthService {
   final FirebaseAuth? _auth;
@@ -36,20 +37,33 @@ class AuthService {
   }
 
   Future<UserCredential?> signIn(String email, String password) async {
-    if (_isOffline) {
-      // Mock authentication for offline mode
-      if (email == 'admin@gud.com' && password == 'admin123') {
-        return null; // Mock success
+    try {
+      if (_isOffline) {
+        // Mock authentication for offline mode
+        if (email == 'admin@gud.com' && password == 'admin123') {
+          return null; // Mock success
+        }
+        if (email == 'driver@gud.com' && password == 'driver123') {
+          return null; // Mock success
+        }
+        throw FirebaseAuthException(
+          code: 'invalid-credential',
+          message: 'Invalid credentials (offline mode)',
+        );
       }
-      if (email == 'driver@gud.com' && password == 'driver123') {
-        return null; // Mock success
+      return await _auth!.signInWithEmailAndPassword(email: email, password: password);
+    } catch (e, stackTrace) {
+      // Log error to Crashlytics
+      if (!_isOffline) {
+        await FirebaseCrashlytics.instance.recordError(
+          e,
+          stackTrace,
+          reason: 'Sign in failed for email: $email',
+          fatal: false,
+        );
       }
-      throw FirebaseAuthException(
-        code: 'invalid-credential',
-        message: 'Invalid credentials (offline mode)',
-      );
+      rethrow;
     }
-    return _auth!.signInWithEmailAndPassword(email: email, password: password);
   }
 
   Future<void> signOut() async {
@@ -58,13 +72,26 @@ class AuthService {
   }
 
   Future<UserCredential?> createUser(String email, String password) async {
-    if (_isOffline) {
-      throw FirebaseAuthException(
-        code: 'unavailable',
-        message: 'User creation not available in offline mode',
-      );
+    try {
+      if (_isOffline) {
+        throw FirebaseAuthException(
+          code: 'unavailable',
+          message: 'User creation not available in offline mode',
+        );
+      }
+      return await _auth!.createUserWithEmailAndPassword(email: email, password: password);
+    } catch (e, stackTrace) {
+      // Log error to Crashlytics
+      if (!_isOffline) {
+        await FirebaseCrashlytics.instance.recordError(
+          e,
+          stackTrace,
+          reason: 'Create user failed for email: $email',
+          fatal: false,
+        );
+      }
+      rethrow;
     }
-    return _auth!.createUserWithEmailAndPassword(email: email, password: password);
   }
 
   Future<UserCredential?> register({
@@ -75,29 +102,42 @@ class AuthService {
     String? phone,
     String? truckNumber,
   }) async {
-    if (_isOffline) {
-      throw FirebaseAuthException(
-        code: 'unavailable',
-        message: 'User registration not available in offline mode',
+    try {
+      if (_isOffline) {
+        throw FirebaseAuthException(
+          code: 'unavailable',
+          message: 'User registration not available in offline mode',
+        );
+      }
+
+      final credential = await _auth!.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
+
+      await _db!.collection('users').doc(credential.user!.uid).set({
+        'name': name,
+        'email': email,
+        'role': role,
+        'phone': phone ?? '',
+        'truckNumber': truckNumber ?? '',
+        'createdAt': FieldValue.serverTimestamp(),
+        'isActive': true,
+      });
+
+      return credential;
+    } catch (e, stackTrace) {
+      // Log error to Crashlytics
+      if (!_isOffline) {
+        await FirebaseCrashlytics.instance.recordError(
+          e,
+          stackTrace,
+          reason: 'User registration failed for email: $email, role: $role',
+          fatal: false,
+        );
+      }
+      rethrow;
     }
-
-    final credential = await _auth!.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-
-    await _db!.collection('users').doc(credential.user!.uid).set({
-      'name': name,
-      'email': email,
-      'role': role,
-      'phone': phone ?? '',
-      'truckNumber': truckNumber ?? '',
-      'createdAt': FieldValue.serverTimestamp(),
-      'isActive': true,
-    });
-
-    return credential;
   }
 
   Future<void> ensureUserDoc({
