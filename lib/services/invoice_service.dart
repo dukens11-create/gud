@@ -58,7 +58,8 @@ class InvoiceService {
     );
     
     final docRef = await _firestore.collection('invoices').add(invoice.toMap());
-    return invoice.copyWith()..id == docRef.id;
+    // Return invoice with the generated document ID
+    return Invoice.fromMap(docRef.id, invoice.toMap());
   }
   
   Future<Invoice> createInvoiceFromLoad({

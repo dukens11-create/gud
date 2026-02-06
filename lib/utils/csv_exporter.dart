@@ -25,10 +25,40 @@ class CsvExporter {
   
   static String _formatValue(dynamic value) {
     if (value == null) return '';
-    if (value is DateTime) return value.toIso8601String();
-    if (value is double) return value.toStringAsFixed(2);
-    if (value is num) return value.toString();
-    return value.toString();
+    
+    String stringValue;
+    if (value is DateTime) {
+      stringValue = value.toIso8601String();
+    } else if (value is double) {
+      stringValue = value.toStringAsFixed(2);
+    } else if (value is num) {
+      stringValue = value.toString();
+    } else {
+      stringValue = value.toString();
+    }
+    
+    // Prevent CSV injection by sanitizing values that start with formula characters
+    return _sanitizeForCSV(stringValue);
+  }
+  
+  /// Sanitizes CSV values to prevent formula injection attacks
+  /// Values starting with =, +, -, @, or tab are prefixed with a single quote
+  static String _sanitizeForCSV(String value) {
+    if (value.isEmpty) return value;
+    
+    final firstChar = value[0];
+    // Check for formula injection characters
+    if (firstChar == '=' || 
+        firstChar == '+' || 
+        firstChar == '-' || 
+        firstChar == '@' ||
+        firstChar == '\t' ||
+        firstChar == '\r') {
+      // Prefix with single quote to treat as text
+      return "'$value";
+    }
+    
+    return value;
   }
   
   static List<List<String>> parseCSV(String csvString) {
