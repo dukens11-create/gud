@@ -15,17 +15,11 @@ import GoogleSignIn
     GeneratedPluginRegistrant.register(with: self)
     
     // Request notification permissions
-    if #available(iOS 10.0, *) {
-      UNUserNotificationCenter.current().delegate = self
-      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-      UNUserNotificationCenter.current().requestAuthorization(
-        options: authOptions,
-        completionHandler: {_, _ in })
-    } else {
-      let settings: UIUserNotificationSettings =
-      UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
-      application.registerUserNotificationSettings(settings)
-    }
+    UNUserNotificationCenter.current().delegate = self
+    let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+    UNUserNotificationCenter.current().requestAuthorization(
+      options: authOptions,
+      completionHandler: {_, _ in })
     
     application.registerForRemoteNotifications()
     
@@ -46,8 +40,12 @@ import GoogleSignIn
     _ application: UIApplication,
     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
   ) {
-    // Pass device token to Firebase
-    Auth.auth().setAPNSToken(deviceToken, type: .unknown)
+    // Pass device token to Firebase with appropriate type based on build configuration
+    #if DEBUG
+    Auth.auth().setAPNSToken(deviceToken, type: .sandbox)
+    #else
+    Auth.auth().setAPNSToken(deviceToken, type: .prod)
+    #endif
   }
   
   // Handle notification received while app is in foreground
