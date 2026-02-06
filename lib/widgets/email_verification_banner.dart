@@ -61,8 +61,8 @@ class _EmailVerificationBannerState extends State<EmailVerificationBanner> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
+          const SnackBar(
+            content: Text('Failed to send verification email. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -108,8 +108,8 @@ class _EmailVerificationBannerState extends State<EmailVerificationBanner> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
+          const SnackBar(
+            content: Text('Unable to check verification status. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );

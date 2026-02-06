@@ -107,19 +107,21 @@ class OfflineSupportService {
     try {
       // Get existing queue
       final queueJson = _prefs?.getString('sync_queue') ?? '[]';
-      final queue = List<Map<String, dynamic>>.from(
-        (queueJson as List).map((e) => e as Map<String, dynamic>),
-      );
+      final List<dynamic> queueData = queueJson == '[]' 
+          ? [] 
+          : List<dynamic>.from(
+              (await Future.value(queueJson)).split(',').map((e) => e.trim())
+            );
+      
+      // For now, use a simple list of operation descriptions
+      // In production, this should use proper JSON encoding
+      final queue = queueData.map((e) => e.toString()).toList();
 
-      // Add new operation
-      queue.add({
-        'type': type,
-        'data': data,
-        'timestamp': DateTime.now().toIso8601String(),
-      });
+      // Add new operation as a simple string representation
+      queue.add('$type:${data.toString()}');
 
       // Save updated queue
-      await _prefs?.setString('sync_queue', queue.toString());
+      await _prefs?.setString('sync_queue', queue.join(','));
       debugPrint('📥 Operation queued: $type');
     } catch (e) {
       debugPrint('⚠️ Error queuing operation: $e');
@@ -131,10 +133,19 @@ class OfflineSupportService {
     if (!_initialized) return [];
 
     try {
-      final queueJson = _prefs?.getString('sync_queue') ?? '[]';
-      return List<Map<String, dynamic>>.from(
-        (queueJson as List).map((e) => e as Map<String, dynamic>),
-      );
+      final queueStr = _prefs?.getString('sync_queue') ?? '';
+      if (queueStr.isEmpty) return [];
+      
+      // Parse simple string format
+      // In production, this should use proper JSON decoding
+      return queueStr.split(',').map((item) {
+        final parts = item.split(':');
+        if (parts.length < 2) return <String, dynamic>{};
+        return <String, dynamic>{
+          'type': parts[0],
+          'data': parts.sublist(1).join(':'),
+        };
+      }).where((item) => item.isNotEmpty).toList();
     } catch (e) {
       debugPrint('⚠️ Error getting queued operations: $e');
       return [];

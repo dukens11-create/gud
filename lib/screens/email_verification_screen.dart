@@ -140,8 +140,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         await AnalyticsService.instance.logEvent('verification_email_failed');
         
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error sending email: $e'),
+          const SnackBar(
+            content: Text('Failed to send verification email. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
