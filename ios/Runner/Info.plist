@@ -45,21 +45,38 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app needs access to photo library to select images</string>
-	<key>NSCameraUsageDescription</key>
-	<string>This app needs access to camera to take photos</string>
+	<!-- Location Permissions -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app needs access to your location to track your position while delivering loads</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app needs access to your location to track your position during deliveries</string>
+	<string>GUD Express needs your location to track deliveries and show your current position on the map.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>This app needs continuous access to your location for real-time delivery tracking, even when the app is in the background</string>
+	<string>GUD Express needs your location even when the app is in the background to track delivery routes and provide accurate ETAs.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>GUD Express needs continuous access to your location for real-time delivery tracking.</string>
+	
+	<!-- Camera Permission -->
+	<key>NSCameraUsageDescription</key>
+	<string>GUD Express needs camera access to capture proof of delivery photos.</string>
+	
+	<!-- Photo Library Permission -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>GUD Express needs access to your photo library to upload proof of delivery images.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>GUD Express needs permission to save proof of delivery photos to your photo library.</string>
+	
+	<!-- Microphone Permission (if needed for video POD in future) -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>GUD Express may need microphone access for future features.</string>
+	
+	<!-- Background Modes -->
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>location</string>
 		<string>fetch</string>
+		<string>location</string>
 		<string>remote-notification</string>
 	</array>
+	
+	<!-- Firebase Cloud Messaging -->
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
 </dict>
 </plist>
