@@ -45,13 +45,22 @@ flutter build ios
 
 ## Push Notifications Setup
 
-### APNs Certificate
+### APNs Authentication Key (Recommended)
 1. Go to [Apple Developer Portal](https://developer.apple.com/account/)
-2. Navigate to Certificates, Identifiers & Profiles
+2. Navigate to Certificates, Identifiers & Profiles > Keys
+3. Create a new key and enable "Apple Push Notifications service (APNs)"
+4. Download the .p8 key file
+5. In Firebase Console, go to Project Settings > Cloud Messaging > Apple app configuration
+6. Upload your APNs Auth Key (.p8 file) with Key ID and Team ID
+7. This key never expires and works for all apps in your team
+
+### APNs Certificate (Legacy Alternative)
+If you prefer using certificates instead of auth keys:
+1. Go to [Apple Developer Portal](https://developer.apple.com/account/)
+2. Navigate to Certificates, Identifiers & Profiles > Certificates
 3. Create an APNs certificate for your app
-4. Download the certificate and upload to Firebase Console
-5. In Firebase Console, go to Project Settings > Cloud Messaging
-6. Upload your APNs certificate (.p12 file)
+4. Download the certificate and export as .p12
+5. Upload to Firebase Console under Project Settings > Cloud Messaging
 
 ## Troubleshooting
 

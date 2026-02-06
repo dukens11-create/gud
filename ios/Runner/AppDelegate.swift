@@ -54,6 +54,6 @@ import GoogleSignIn
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
   ) {
-    completionHandler([[.alert, .sound, .badge]])
+    completionHandler([.alert, .sound, .badge])
   }
 }
