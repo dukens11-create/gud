@@ -53,6 +53,7 @@ dev_dependencies:
   flutter_lints: ^2.0.0
   mockito: ^5.4.0  # Mocking for tests
   build_runner: ^2.4.0  # Code generation
+  flutter_dotenv: ^5.1.0  # Environment configuration
   integration_test:
     sdk: flutter
   flutter_driver:
@@ -60,3 +61,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  
+  # Environment configuration
+  assets:
+    - .env
