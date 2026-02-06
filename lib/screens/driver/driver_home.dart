@@ -85,22 +85,92 @@ class _DriverHomeState extends State<DriverHome> {
         title: const Text('My Loads'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.receipt_long),
-            onPressed: () => Navigator.pushNamed(context, '/driver/expenses'),
+            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
+            tooltip: 'Settings',
           ),
           IconButton(
-            icon: const Icon(Icons.attach_money),
-            onPressed: () => Navigator.pushNamed(context, '/driver/earnings'),
+            icon: const Icon(Icons.person),
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
+            tooltip: 'Profile',
           ),
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            onPressed: () async {
-              await mockService.signOut();
-              if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
-                );
+          PopupMenuButton(
+            icon: const Icon(Icons.more_vert),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'earnings',
+                child: Row(
+                  children: [
+                    Icon(Icons.attach_money),
+                    SizedBox(width: 8),
+                    Text('Earnings'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'expenses',
+                child: Row(
+                  children: [
+                    Icon(Icons.receipt_long),
+                    SizedBox(width: 8),
+                    Text('Expenses'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'history',
+                child: Row(
+                  children: [
+                    Icon(Icons.history),
+                    SizedBox(width: 8),
+                    Text('Load History'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'export',
+                child: Row(
+                  children: [
+                    Icon(Icons.download),
+                    SizedBox(width: 8),
+                    Text('Export Data'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.exit_to_app),
+                    SizedBox(width: 8),
+                    Text('Sign Out'),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (value) async {
+              switch (value) {
+                case 'earnings':
+                  Navigator.pushNamed(context, '/driver/earnings');
+                  break;
+                case 'expenses':
+                  Navigator.pushNamed(context, '/driver/expenses');
+                  break;
+                case 'history':
+                  Navigator.pushNamed(context, '/load-history');
+                  break;
+                case 'export':
+                  Navigator.pushNamed(context, '/export');
+                  break;
+                case 'logout':
+                  await mockService.signOut();
+                  if (context.mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  }
+                  break;
               }
             },
           ),
