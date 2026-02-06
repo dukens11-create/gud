@@ -41,6 +41,7 @@ A comprehensive, enterprise-grade logistics and delivery management application 
 - **[Quickstart Guide](QUICKSTART.md)** - Get running in minutes
 
 ### Feature Documentation
+- **[Production Readiness Status](PRODUCTION_READINESS_STATUS.md)** - ⭐ Current status of all features (scaffolded vs production-ready)
 - **[Production Features Guide](PRODUCTION_FEATURES_GUIDE.md)** - Comprehensive guide to all enterprise features
 - **[Feature Integration Guide](FEATURE_INTEGRATION_GUIDE.md)** - Step-by-step integration instructions
 - **[GPS Location Setup](GPS_LOCATION_SETUP.md)** - Location tracking configuration
@@ -356,6 +357,8 @@ All production-ready features have been scaffolded with:
 - ✅ Sample code for critical flows
 - ✅ Clear markers for incomplete/ready-for-extension areas
 - ✅ Modular, secure, and scalable architecture
+
+**Production Status:** See [PRODUCTION_READINESS_STATUS.md](PRODUCTION_READINESS_STATUS.md) for detailed feature-by-feature status.
 
 **Next Steps:** Follow [FEATURE_INTEGRATION_GUIDE.md](FEATURE_INTEGRATION_GUIDE.md) to enable features incrementally.
 
