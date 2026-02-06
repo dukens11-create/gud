@@ -83,6 +83,7 @@ class EnvironmentConfig {
   /// Validate that all required environment variables are set
   /// 
   /// Throws an exception if any required variables are missing
+  /// In production, this will prevent the app from starting with invalid config
   static void validate() {
     final required = {
       'FIREBASE_API_KEY': firebaseApiKey,
@@ -99,10 +100,22 @@ class EnvironmentConfig {
     });
 
     if (missing.isNotEmpty) {
-      throw Exception(
+      final errorMessage = 
         'Missing required environment variables: ${missing.join(', ')}\n'
-        'Please check your .env file and ensure all required variables are set.'
-      );
+        'Please check your .env file and ensure all required variables are set.';
+      
+      // In production, throw a fatal error
+      if (isProduction) {
+        throw Exception(
+          '🚨 PRODUCTION BUILD ERROR 🚨\n'
+          '$errorMessage\n\n'
+          'Production builds MUST have all environment variables configured.\n'
+          'Please create a .env file from .env.production template.'
+        );
+      } else {
+        // In development, just warn
+        print('⚠️ WARNING: $errorMessage');
+      }
     }
   }
 
