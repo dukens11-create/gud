@@ -95,8 +95,8 @@ open coverage/html/index.html
 ## Mock Files
 
 The tests use Mockito for mocking Firebase dependencies. Mock files are generated:
-- `auth_service_test.mocks.dart` - Mocks for FirebaseAuth and Firestore
-- `firestore_service_test.mocks.dart` - Mocks for Firestore operations
+- `auth_service_test.mocks.dart` - Mocks for FirebaseAuth and FirebaseFirestore
+- `firestore_service_test.mocks.dart` - Mocks for FirebaseFirestore operations
 - `storage_service_test.mocks.dart` - Mocks for Firebase Storage and ImagePicker
 
 To regenerate mocks after changing test annotations:

@@ -1,26 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gud_app/screens/login_screen.dart';
-import 'package:gud_app/services/auth_service.dart';
 import 'package:gud_app/screens/admin/admin_home.dart';
 import 'package:gud_app/screens/driver/driver_home.dart';
 import 'package:gud_app/widgets/app_button.dart';
 import 'package:gud_app/widgets/app_textfield.dart';
 
-@GenerateMocks([AuthService, User, UserCredential])
-import 'login_screen_test.mocks.dart';
-
 void main() {
   group('LoginScreen Widget Tests', () {
-    late MockAuthService mockAuthService;
-
-    setUp(() {
-      mockAuthService = MockAuthService();
-    });
 
     Widget makeTestableWidget(Widget child) {
       return MaterialApp(

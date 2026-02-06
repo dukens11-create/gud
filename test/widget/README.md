@@ -212,19 +212,7 @@ expect(button.onPressed, isNotNull);
 expect(textField.obscureText, true);
 ```
 
-## Mocking Dependencies
-
-Tests use mockito for mocking dependencies:
-
-```dart
-@GenerateMocks([AuthService, MockDataService, LocationService])
-import 'test_file.mocks.dart';
-
-// Generate mocks
-flutter pub run build_runner build
-```
-
-## Common Issues and Solutions
+## Running the Tests
 
 ### Issue: Tests fail with "Null check operator used on a null value"
 **Solution:** Ensure proper initialization of controllers and services in setUp().
@@ -303,7 +291,7 @@ Planned enhancements:
 - [ ] Increase test coverage to 100%
 - [ ] Add performance benchmarks
 - [ ] Add tests for all screens
-- [ ] Mock Firebase services for consistent test behavior
+- [ ] Add mocking for Firebase services for more controlled testing
 - [ ] Add visual regression testing
 
 ---

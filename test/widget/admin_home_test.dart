@@ -1,14 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
 import 'package:gud_app/screens/admin/admin_home.dart';
 import 'package:gud_app/screens/login_screen.dart';
-import 'package:gud_app/services/mock_data_service.dart';
-import 'package:gud_app/models/load.dart';
-
-@GenerateMocks([MockDataService])
-import 'admin_home_test.mocks.dart';
 
 void main() {
   group('AdminHome Widget Tests', () {

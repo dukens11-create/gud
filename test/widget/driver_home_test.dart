@@ -1,17 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
 import 'package:gud_app/screens/driver/driver_home.dart';
 import 'package:gud_app/screens/driver/load_detail_screen.dart';
 import 'package:gud_app/screens/login_screen.dart';
-import 'package:gud_app/services/mock_data_service.dart';
-import 'package:gud_app/services/location_service.dart';
-import 'package:gud_app/services/firestore_service.dart';
-import 'package:gud_app/models/load.dart';
-
-@GenerateMocks([MockDataService, LocationService, FirestoreService])
-import 'driver_home_test.mocks.dart';
 
 void main() {
   group('DriverHome Widget Tests', () {
