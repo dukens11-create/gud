@@ -14,6 +14,31 @@ A comprehensive, enterprise-grade logistics and delivery management application 
 
 ---
 
+## 📱 Download
+
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.gudexpress.gud_app">
+    <img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="80"/>
+  </a>
+  &nbsp;&nbsp;&nbsp;
+  <a href="https://apps.apple.com/us/app/gud-express/id000000000">
+    <img alt="Download on the App Store" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" height="80"/>
+  </a>
+</p>
+
+<p align="center">
+  <em>Coming soon to App Stores</em>
+</p>
+
+**Important Links:**
+- 📋 [Privacy Policy](docs/PRIVACY_POLICY.md) | [Online](https://gudexpress.com/privacy)
+- 📄 [Terms of Service](docs/TERMS_OF_SERVICE.md) | [Online](https://gudexpress.com/terms)
+- 🗑️ [Data Deletion Policy](docs/DATA_DELETION_POLICY.md)
+- 🚀 [App Store Submission Guide](docs/APP_STORE_SUBMISSION_GUIDE.md)
+- ✅ [Store Assets Checklist](docs/STORE_ASSETS_CHECKLIST.md)
+
+---
+
 ## 🚀 Features
 
 ### Core Features (Implemented & Production-Ready)
@@ -118,6 +143,19 @@ See [CHANGELOG.md](CHANGELOG.md) for complete release notes.
 ### Deployment
 - **[Deployment Guide](DEPLOYMENT.md)** - Build and release process
 - **[Production Deployment](DEPLOYMENT_PRODUCTION.md)** - Production environment setup
+
+### App Store Submission
+- **[App Store Submission Guide](docs/APP_STORE_SUBMISSION_GUIDE.md)** - Complete guide for Google Play and Apple App Store
+- **[Beta Testing Guide](docs/BETA_TESTING_GUIDE.md)** - Internal and external testing procedures
+- **[Test Accounts](docs/TEST_ACCOUNTS.md)** - Test account credentials for reviewers
+- **[Submission Timeline](docs/SUBMISSION_TIMELINE.md)** - 6-week submission roadmap
+- **[Store Assets Checklist](docs/STORE_ASSETS_CHECKLIST.md)** - Complete asset preparation checklist
+- **Store Listings:**
+  - [Google Play Listing](docs/store_listings/GOOGLE_PLAY_LISTING.md)
+  - [Apple App Store Listing](docs/store_listings/APP_STORE_LISTING.md)
+  - [App Icon Requirements](docs/store_listings/APP_ICON_REQUIREMENTS.md)
+  - [Screenshot Requirements](docs/store_listings/SCREENSHOT_REQUIREMENTS.md)
+  - [Release Notes Template](docs/store_listings/RELEASE_NOTES_TEMPLATE.md)
 
 ### Security & Rules
 - **[Firestore Rules](FIRESTORE_RULES.md)** - Database security configuration

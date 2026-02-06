@@ -1,0 +1,28 @@
+# Android Release Signing Configuration Template
+# 
+# This file contains the configuration for signing your Android release builds.
+# 
+# IMPORTANT: 
+# - Copy this file to 'key.properties' in the same directory
+# - Fill in your actual values
+# - NEVER commit key.properties to version control (it's in .gitignore)
+# - Keep your passwords and keystore file secure
+#
+# To generate a keystore, run:
+# keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+
+# Password for the keystore file
+storePassword=<your-store-password>
+
+# Password for the key (can be same as storePassword)
+keyPassword=<your-key-password>
+
+# Alias name for the key
+keyAlias=upload
+
+# Full path to the keystore file
+# Examples:
+# Windows: C:\\Users\\YourName\\upload-keystore.jks
+# Mac/Linux: /Users/YourName/upload-keystore.jks
+# Relative: ../upload-keystore.jks
+storeFile=<path-to-keystore>/upload-keystore.jks
