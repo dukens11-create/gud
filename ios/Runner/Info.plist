@@ -53,5 +53,13 @@
 	<string>This app needs access to your location to track your position while delivering loads</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs access to your location to track your position during deliveries</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>This app needs continuous access to your location for real-time delivery tracking, even when the app is in the background</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>
