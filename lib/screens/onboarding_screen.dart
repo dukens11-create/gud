@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'login_screen.dart';
 
 /// App Onboarding Screen
 /// 
 /// Welcome and introduction flow for new users:
-/// - App feature highlights
-/// - Permission requests
+/// - App feature highlights with smooth animations
+/// - Swipeable pages with dot indicators
+/// - Skip button in top-right corner
 /// - Role-specific tutorials
-/// - Quick start guide
 /// 
 /// Shown only on first app launch
-/// 
-/// TODO: Add animated illustrations
-/// TODO: Implement swipeable pages
-/// TODO: Add skip button
-/// TODO: Create role-specific onboarding
 class OnboardingScreen extends StatefulWidget {
   final String userRole; // 'admin' or 'driver'
 
@@ -27,9 +23,12 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with SingleTickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   List<OnboardingPage> get _pages {
     if (widget.userRole == 'admin') {
@@ -111,8 +110,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
+    );
+    
+    // Start fade-in animation
+    _fadeController.forward();
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
@@ -123,14 +141,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
+    // Fade out animation
+    await _fadeController.reverse();
+    
     // Mark onboarding as complete
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_complete', true);
+    await prefs.setBool('onboarding_completed', true);
 
     if (!mounted) return;
 
-    // Navigate to main app
-    Navigator.of(context).pushReplacementNamed('/');
+    // Navigate to login screen
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 500),
+      ),
+    );
   }
 
   void _nextPage() {
@@ -152,55 +184,96 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            // Skip button
-            Align(
-              alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: _skipOnboarding,
-                child: const Text('Skip'),
-              ),
-            ),
-
-            // Page view
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                itemCount: _pages.length,
-                itemBuilder: (context, index) {
-                  return _buildPage(_pages[index]);
-                },
-              ),
-            ),
-
-            // Page indicator
-            _buildPageIndicator(),
-
-            // Next/Get Started button
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _nextPage,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Column(
+            children: [
+              // Skip button (top-right corner)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: TextButton(
+                    onPressed: _skipOnboarding,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).primaryColor,
                     ),
-                  ),
-                  child: Text(
-                    _currentPage == _pages.length - 1
-                        ? 'Get Started'
-                        : 'Next',
-                    style: const TextStyle(fontSize: 16),
+                    child: const Text(
+                      'Skip',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+
+              // Page view with swipe gestures
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: _onPageChanged,
+                  itemCount: _pages.length,
+                  itemBuilder: (context, index) {
+                    return AnimatedBuilder(
+                      animation: _pageController,
+                      builder: (context, child) {
+                        double value = 1.0;
+                        if (_pageController.position.haveDimensions) {
+                          value = _pageController.page! - index;
+                          value = (1 - (value.abs() * 0.3)).clamp(0.0, 1.0);
+                        }
+                        return Opacity(
+                          opacity: value,
+                          child: Transform.scale(
+                            scale: value,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: _buildPage(_pages[index]),
+                    );
+                  },
+                ),
+              ),
+
+              // Dot indicators
+              _buildPageIndicator(),
+
+              // Next/Get Started button
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _nextPage,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Theme.of(context).primaryColor,
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Text(
+                        _currentPage == _pages.length - 1
+                            ? 'Get Started'
+                            : 'Next',
+                        key: ValueKey<int>(_currentPage),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -212,42 +285,69 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Icon
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: page.color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              page.icon,
-              size: 60,
-              color: page.color,
+          // Animated Icon
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.elasticOut,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: value,
+                child: child,
+              );
+            },
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: page.color.withOpacity(0.1),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: page.color.withOpacity(0.2),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: Icon(
+                page.icon,
+                size: 60,
+                color: page.color,
+              ),
             ),
           ),
           const SizedBox(height: 48),
 
-          // Title
-          Text(
-            page.title,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+          // Animated Title
+          AnimatedOpacity(
+            opacity: 1.0,
+            duration: const Duration(milliseconds: 800),
+            child: Text(
+              page.title,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
 
-          // Description
-          Text(
-            page.description,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-              height: 1.5,
+          // Animated Description
+          AnimatedOpacity(
+            opacity: 1.0,
+            duration: const Duration(milliseconds: 1000),
+            child: Text(
+              page.description,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                height: 1.6,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -256,17 +356,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildPageIndicator() {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      padding: const EdgeInsets.symmetric(vertical: 24.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
           _pages.length,
-          (index) => Container(
-            width: 8,
+          (index) => AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: _currentPage == index ? 24 : 8,
             height: 8,
             margin: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(4),
               color: _currentPage == index
                   ? Theme.of(context).primaryColor
                   : Colors.grey[300],
@@ -296,45 +397,12 @@ class OnboardingPage {
 /// Helper function to check if onboarding should be shown
 Future<bool> shouldShowOnboarding() async {
   final prefs = await SharedPreferences.getInstance();
-  return !(prefs.getBool('onboarding_complete') ?? false);
+  return !(prefs.getBool('onboarding_completed') ?? false);
 }
 
 /// Helper function to reset onboarding (for testing)
 Future<void> resetOnboarding() async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.remove('onboarding_complete');
+  await prefs.remove('onboarding_completed');
 }
 
-// TODO: Add animated illustrations
-// Use Lottie or Rive for smooth animations
-// Example:
-// Lottie.asset('assets/animations/truck_animation.json')
-
-// TODO: Implement swipeable pages
-// Add gesture detection for more intuitive navigation
-// Show "Swipe to continue" hint
-
-// TODO: Add permission requests
-// Request location permission during onboarding
-// Request notification permission
-// Explain why each permission is needed
-
-// TODO: Create interactive tutorials
-// Highlight key UI elements
-// Show tooltips and hints
-// Add "Try it yourself" interactive steps
-
-// TODO: Add video tutorials
-// Embed short video clips
-// Show real usage examples
-// Link to detailed help documentation
-
-// TODO: Implement progress saving
-// Allow users to pause and resume onboarding
-// Save current page index
-// Remember skipped sections
-
-// TODO: Add localization
-// Support multiple languages
-// Translate all onboarding content
-// Respect device language settings
