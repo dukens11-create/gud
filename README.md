@@ -2,7 +2,8 @@
 
 A comprehensive, enterprise-grade logistics and delivery management application built with Flutter and Firebase. Designed for trucking companies to manage drivers, loads, deliveries, and real-time tracking.
 
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-06  
+**Version:** 2.0.0
 
 ---
 
@@ -50,12 +51,20 @@ A comprehensive, enterprise-grade logistics and delivery management application 
 
 ### Development
 - **[Architecture](ARCHITECTURE.md)** - System design and data flow
-- **[Testing Guide](AUTOMATED_TESTING_GUIDE.md)** - Unit, widget, and integration tests
+- **[Detailed Architecture](docs/ARCHITECTURE_DETAILED.md)** - ⭐ In-depth system architecture, layers, and patterns
+- **[Testing Guide](TESTING.md)** - ⭐ Comprehensive testing guide with examples
+- **[Automated Testing](AUTOMATED_TESTING_GUIDE.md)** - Unit, widget, and integration tests
 - **[Quick Reference](QUICK_REFERENCE.md)** - Common tasks and commands
+- **[API Documentation](docs/API.md)** - ⭐ Complete API reference and examples
 
 ### Deployment
-- **[Deployment Guide](DEPLOYMENT.md)** - Build and release process
+- **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - ⭐ Complete production deployment for iOS, Android, and Web
+- **[Deployment](DEPLOYMENT.md)** - Build and release process
 - **[Production Deployment](DEPLOYMENT_PRODUCTION.md)** - Production environment setup
+
+### Contributing
+- **[Contributing Guide](CONTRIBUTING.md)** - ⭐ How to contribute to the project
+- **[Changelog](CHANGELOG.md)** - ⭐ Version history and release notes
 
 ### Security & Rules
 - **[Firestore Rules](FIRESTORE_RULES.md)** - Database security configuration
