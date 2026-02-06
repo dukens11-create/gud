@@ -12,10 +12,14 @@ class AdminHome extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: Semantics(
+          header: true,
+          child: const Text('Admin Dashboard'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.exit_to_app),
+            tooltip: 'Sign out',
             onPressed: () async {
               await mockService.signOut();
               if (context.mounted) {
@@ -42,24 +46,34 @@ class AdminHome extends StatelessWidget {
           final loads = snapshot.data ?? [];
 
           if (loads.isEmpty) {
-            return const Center(
-              child: Text('No loads yet. Create your first load!'),
+            return Center(
+              child: Semantics(
+                label: 'No loads available. Create your first load using the add button.',
+                child: const Text('No loads yet. Create your first load!'),
+              ),
             );
           }
 
-          return ListView.builder(
-            itemCount: loads.length,
-            itemBuilder: (context, index) {
-              final load = loads[index];
-              return Card(
-                margin: const EdgeInsets.all(8),
-                child: ListTile(
-                  title: Text(load.loadNumber),
-                  subtitle: Text('Driver ID: ${load.driverId} - Status: ${load.status}'),
-                  trailing: Text('\$${load.rate.toStringAsFixed(2)}'),
-                ),
-              );
-            },
+          return Semantics(
+            label: 'List of ${loads.length} loads',
+            child: ListView.builder(
+              itemCount: loads.length,
+              itemBuilder: (context, index) {
+                final load = loads[index];
+                return Semantics(
+                  label: 'Load ${load.loadNumber}, driver ${load.driverId}, status ${load.status}, rate ${load.rate} dollars',
+                  button: true,
+                  child: Card(
+                    margin: const EdgeInsets.all(8),
+                    child: ListTile(
+                      title: Text(load.loadNumber),
+                      subtitle: Text('Driver ID: ${load.driverId} - Status: ${load.status}'),
+                      trailing: Text('\$${load.rate.toStringAsFixed(2)}'),
+                    ),
+                  ),
+                );
+              },
+            ),
           );
         },
       ),
@@ -69,24 +83,28 @@ class AdminHome extends StatelessWidget {
           FloatingActionButton(
             heroTag: 'statistics',
             onPressed: () => Navigator.pushNamed(context, '/admin/statistics'),
+            tooltip: 'View statistics',
             child: const Icon(Icons.bar_chart),
           ),
           const SizedBox(height: 16),
           FloatingActionButton(
             heroTag: 'expenses',
             onPressed: () => Navigator.pushNamed(context, '/admin/expenses'),
+            tooltip: 'View expenses',
             child: const Icon(Icons.receipt_long),
           ),
           const SizedBox(height: 16),
           FloatingActionButton(
             heroTag: 'drivers',
             onPressed: () => Navigator.pushNamed(context, '/admin/drivers'),
+            tooltip: 'Manage drivers',
             child: const Icon(Icons.people),
           ),
           const SizedBox(height: 16),
           FloatingActionButton(
             heroTag: 'create-load',
             onPressed: () => Navigator.pushNamed(context, '/admin/create-load'),
+            tooltip: 'Create new load',
             child: const Icon(Icons.add),
           ),
         ],
