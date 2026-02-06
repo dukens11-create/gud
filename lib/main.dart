@@ -3,32 +3,114 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'config/environment_config.dart';
+import 'services/crash_reporting_service.dart';
+import 'services/analytics_service.dart';
+import 'services/notification_service.dart';
+import 'services/offline_support_service.dart';
+import 'services/background_location_service.dart';
+import 'services/geofence_service.dart';
+import 'services/sync_service.dart';
 import 'app.dart';
+
+/// Initialize all background services
+/// 
+/// Services are initialized in dependency order:
+/// 1. Crash reporting (must be first to catch all errors)
+/// 2. Analytics (for tracking initialization)
+/// 3. Notifications (needed by other services)
+/// 4. Offline support (needed by sync service)
+/// 5. Background location (GPS tracking)
+/// 6. Geofencing (location-based updates)
+/// 7. Sync service (background synchronization)
+Future<void> initializeServices() async {
+  try {
+    print('🚀 Initializing services...');
+
+    // Initialize crash reporting first to catch any errors during initialization
+    await CrashReportingService().initialize();
+    print('✅ Crash Reporting Service initialized');
+
+    // Initialize analytics
+    await AnalyticsService.instance.initialize();
+    print('✅ Analytics Service initialized');
+
+    // Initialize notifications
+    await NotificationService().initialize();
+    print('✅ Notification Service initialized');
+
+    // Initialize offline support
+    await OfflineSupportService.instance.initialize();
+    print('✅ Offline Support Service initialized');
+
+    // Initialize background location (Note: actual tracking starts per-driver)
+    // BackgroundLocationService is stateless and doesn't need initialization
+    print('✅ Background Location Service ready');
+
+    // Initialize geofencing (Note: geofences are created per-load)
+    // GeofenceService is stateless and doesn't need initialization
+    print('✅ Geofence Service ready');
+
+    // Initialize sync service
+    await SyncService.instance.initialize();
+    print('✅ Sync Service initialized');
+
+    // Log successful initialization
+    await AnalyticsService.instance.logEvent('services_initialized');
+    print('✅ All services initialized successfully');
+  } catch (e, stackTrace) {
+    // Log the error but don't prevent app from starting
+    print('⚠️ Error initializing services: $e');
+    try {
+      await CrashReportingService().logError(
+        e,
+        stackTrace,
+        reason: 'Service initialization failed',
+      );
+    } catch (_) {
+      // If crash reporting fails, just print
+      print('⚠️ Could not log error to crash reporting');
+    }
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
+    // Load environment variables
+    try {
+      await EnvironmentConfig.load();
+      print('✅ Environment configuration loaded');
+    } catch (e) {
+      print('⚠️ Environment configuration not found, using defaults: $e');
+    }
+
+    // Initialize Firebase
     await Firebase.initializeApp();
     print('✅ Firebase initialized successfully');
     
-    // Initialize Firebase Crashlytics
+    // Set up global error handlers
     FlutterError.onError = (errorDetails) {
+      FlutterError.presentError(errorDetails);
       FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
     };
     
-    // Pass all uncaught asynchronous errors to Crashlytics
+    // Catch async errors
     PlatformDispatcher.instance.onError = (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
       return true;
     };
     
-    print('✅ Firebase Crashlytics initialized');
+    print('✅ Error handlers configured');
+
+    // Initialize all services
+    await initializeServices();
     
-    // Initialize Firebase Analytics
+    // Log app open event
     FirebaseAnalytics analytics = FirebaseAnalytics.instance;
     await analytics.logAppOpen();
-    print('✅ Firebase Analytics initialized');
+    print('✅ App open logged');
     
   } catch (e) {
     print('⚠️ Firebase initialization failed: $e');

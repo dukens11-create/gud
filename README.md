@@ -5,10 +5,12 @@
 [![License](https://img.shields.io/badge/license-Proprietary-blue.svg)](LICENSE)
 [![Flutter Version](https://img.shields.io/badge/flutter-3.24.0-blue.svg)](https://flutter.dev/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](CHANGELOG.md)
 
 A comprehensive, enterprise-grade logistics and delivery management application built with Flutter and Firebase. Designed for trucking companies to manage drivers, loads, deliveries, and real-time tracking.
 
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-06  
+**Current Version:** 2.1.0
 
 ---
 
@@ -16,7 +18,9 @@ A comprehensive, enterprise-grade logistics and delivery management application 
 
 ### Core Features (Implemented & Production-Ready)
 - ✅ **User Authentication** - Email/password login with role-based access (Admin/Driver)
+- ✅ **Email Verification** - Enforced email verification with auto-checking and resend functionality
 - ✅ **Load Management** - Create, assign, and track delivery loads
+- ✅ **Search & Filter** - Full-text search and status filtering on all load lists
 - ✅ **Driver Management** - Manage driver profiles and assignments
 - ✅ **Proof of Delivery (POD)** - Photo capture and upload with notes
 - ✅ **Real-time Updates** - Live data synchronization via Firestore
@@ -24,10 +28,12 @@ A comprehensive, enterprise-grade logistics and delivery management application 
 - ✅ **GPS Location** - Manual location sharing from drivers
 - ✅ **Expense Tracking** - Track and manage delivery expenses
 - ✅ **Statistics Dashboard** - Performance metrics and analytics
+- ✅ **Offline Support** - Queue operations for later sync when offline
+- ✅ **Background Sync** - Automatic synchronization of queued operations
 - ✅ **Automated Testing** - 213+ tests (93% coverage)
 - ✅ **CI/CD Pipeline** - Automated testing, building, and deployment
 - ✅ **Crash Reporting** - Firebase Crashlytics with error tracking
-- ✅ **Analytics** - Firebase Analytics for user behavior tracking
+- ✅ **Analytics** - Comprehensive user behavior tracking with Firebase Analytics
 - ✅ **Environment Config** - Secure API key and configuration management
 - ✅ **Security Hardening** - ProGuard obfuscation, security audit
 - ✅ **Accessibility** - WCAG 2.1 compliant with semantic labels
@@ -44,6 +50,48 @@ A comprehensive, enterprise-grade logistics and delivery management application 
 - 📄 **Document Management** - Driver license, certifications, and document tracking
 - 🎨 **Onboarding Experience** - New user introduction and tutorials
 - 🔒 **Production Security** - Firebase App Check, enhanced security rules
+
+---
+
+## 🆕 What's New in 2.1.0
+
+### Service Initialization
+- All background services now initialize automatically on app startup
+- AnalyticsService for comprehensive event and screen view tracking
+- OfflineSupportService for offline data caching and operation queuing
+- SyncService for automatic background synchronization
+- Enhanced error handling with graceful degradation
+
+### Email Verification
+- New dedicated email verification screen
+- Auto-checking verification status every 3 seconds
+- Resend verification email with cooldown protection
+- Persistent verification banner on screens
+- AuthWrapper enforces verification before app access
+
+### Search and Filter UI
+- **Admin Dashboard**: Search loads by number, driver, or location with real-time filtering
+- **Driver Dashboard**: Search and filter assigned loads by status
+- Status filter chips (All, Assigned, In Transit, Delivered)
+- Debounced search (300ms) to optimize performance
+- Enhanced load cards with color-coded status badges
+- Empty state handling with clear filters button
+
+### Analytics Integration
+- Screen view tracking on all major screens
+- Login/logout event tracking
+- Search query logging
+- Filter usage tracking
+- Content selection tracking
+- Location update tracking
+- User property management
+
+### Environment & Error Handling
+- Automatic environment configuration loading
+- Enhanced global error handling for Flutter and async errors
+- Graceful service initialization failure handling
+
+See [CHANGELOG.md](CHANGELOG.md) for complete release notes.
 
 ---
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
+import '../services/analytics_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_textfield.dart';
 import 'admin/admin_home.dart';
@@ -20,6 +21,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _authService = AuthService();
   bool _isLoading = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    // Log screen view
+    AnalyticsService.instance.logScreenView(screenName: 'login');
+  }
 
   @override
   void dispose() {
@@ -50,6 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
       
       // Query Firestore for isAdmin field
       bool isAdmin = false;
+      String role = 'driver';
       
       if (uid != null) {
         // Online mode - query Firestore
@@ -61,6 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
           
           if (userDoc.exists) {
             isAdmin = userDoc.data()?['isAdmin'] ?? false;
+            role = userDoc.data()?['role'] ?? (isAdmin ? 'admin' : 'driver');
           }
         } catch (e) {
           debugPrint('Error fetching user document: $e');
@@ -71,6 +81,22 @@ class _LoginScreenState extends State<LoginScreen> {
         // Offline/demo mode - use email-based check
         // This matches the offline authentication logic in AuthService
         isAdmin = (email == 'admin@gud.com');
+        role = isAdmin ? 'admin' : 'driver';
+      }
+      
+      // Log successful login
+      await AnalyticsService.instance.logEvent('login_success', parameters: {
+        'method': 'email',
+        'user_role': role,
+      });
+      
+      // Set user properties
+      if (uid != null) {
+        await AnalyticsService.instance.setUserId(uid);
+        await AnalyticsService.instance.setUserProperty(
+          name: 'user_role',
+          value: role,
+        );
       }
       
       if (!mounted) return;
@@ -88,6 +114,11 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
+      // Log failed login
+      await AnalyticsService.instance.logEvent('login_failed', parameters: {
+        'error': e.toString(),
+      });
+      
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('firebase_auth/', '');
         _isLoading = false;
