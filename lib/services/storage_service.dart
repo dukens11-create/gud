@@ -70,4 +70,22 @@ class StorageService {
       // Handle error silently
     }
   }
+
+  /// Upload profile photo to Firebase Storage
+  /// 
+  /// Stores images in 'profile_photos/{userId}.jpg'
+  /// 
+  /// Parameters:
+  /// - [userId]: User ID for organizing storage
+  /// - [imageFile]: Image file to upload
+  /// 
+  /// Returns the public download URL of the uploaded image
+  Future<String> uploadProfilePhoto({
+    required String userId,
+    required File imageFile,
+  }) async {
+    final ref = _storage.ref().child('profile_photos/$userId.jpg');
+    await ref.putFile(imageFile);
+    return ref.getDownloadURL();
+  }
 }

@@ -157,28 +157,113 @@ class _DriverHomeState extends State<DriverHome> {
           child: const Text('My Loads'),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.receipt_long),
-            tooltip: 'View expenses',
-            onPressed: () => Navigator.pushNamed(context, '/driver/expenses'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.attach_money),
-            tooltip: 'View earnings',
-            onPressed: () => Navigator.pushNamed(context, '/driver/earnings'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            tooltip: 'Sign out',
-            onPressed: () async {
-              await mockService.signOut();
-              if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
-                );
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'More options',
+            onSelected: (value) {
+              switch (value) {
+                case 'earnings':
+                  Navigator.pushNamed(context, '/driver/earnings');
+                  break;
+                case 'expenses':
+                  Navigator.pushNamed(context, '/driver/expenses');
+                  break;
+                case 'history':
+                  Navigator.pushNamed(context, '/load-history');
+                  break;
+                case 'export':
+                  Navigator.pushNamed(context, '/export');
+                  break;
+                case 'settings':
+                  Navigator.pushNamed(context, '/settings');
+                  break;
+                case 'profile':
+                  Navigator.pushNamed(context, '/profile');
+                  break;
+                case 'logout':
+                  mockService.signOut().then((_) {
+                    if (context.mounted) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        (route) => false,
+                      );
+                    }
+                  });
+                  break;
               }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'earnings',
+                child: Row(
+                  children: [
+                    Icon(Icons.attach_money),
+                    SizedBox(width: 8),
+                    Text('My Earnings'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'expenses',
+                child: Row(
+                  children: [
+                    Icon(Icons.receipt_long),
+                    SizedBox(width: 8),
+                    Text('My Expenses'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'history',
+                child: Row(
+                  children: [
+                    Icon(Icons.history),
+                    SizedBox(width: 8),
+                    Text('Load History'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'export',
+                child: Row(
+                  children: [
+                    Icon(Icons.file_download),
+                    SizedBox(width: 8),
+                    Text('Export My Data'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings),
+                    SizedBox(width: 8),
+                    Text('Settings'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person),
+                    SizedBox(width: 8),
+                    Text('Profile'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.exit_to_app, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Logout', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
