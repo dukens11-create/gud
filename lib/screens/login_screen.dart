@@ -163,6 +163,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       label: 'Sign In',
                       onPressed: _signIn,
                     ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.pushNamed(context, '/password-reset'),
+                child: const Text('Forgot Password?'),
+              ),
             ],
           ),
         ),
