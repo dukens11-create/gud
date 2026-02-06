@@ -87,14 +87,22 @@ class ExportService {
       (sum, load) => sum + load.rate,
     );
 
+    // Handle division by zero
+    final completionRate = totalLoads > 0
+        ? (completedLoads / totalLoads * 100).toStringAsFixed(1)
+        : '0.0';
+    final avgPerLoad = totalLoads > 0
+        ? (totalEarnings / totalLoads).toStringAsFixed(2)
+        : '0.00';
+
     // Generate CSV with statistics
     final data = [
       ['Metric', 'Value'],
       ['Total Loads', totalLoads.toString()],
       ['Completed Loads', completedLoads.toString()],
-      ['Completion Rate', '${(completedLoads / totalLoads * 100).toStringAsFixed(1)}%'],
+      ['Completion Rate', '$completionRate%'],
       ['Total Earnings', '\$${totalEarnings.toStringAsFixed(2)}'],
-      ['Average per Load', '\$${(totalEarnings / totalLoads).toStringAsFixed(2)}'],
+      ['Average per Load', '\$$avgPerLoad'],
     ];
 
     final csv = const ListToCsvConverter().convert(data);

@@ -96,6 +96,8 @@ class InvoiceService {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
+    // Note: This query uses range filters which work well for date ranges
+    // A composite index may be required in Firestore for optimal performance
     final snapshot = await _firestore
         .collection('invoices')
         .where('issueDate', isGreaterThanOrEqualTo: startDate.toIso8601String())
@@ -107,28 +109,14 @@ class InvoiceService {
     }).toList();
   }
 
-  /// Calculate total outstanding amount
-  Future<double> getTotalOutstanding() async {
-    final snapshot = await _firestore
-        .collection('invoices')
-        .where('status', whereIn: ['sent', 'draft'])
-        .get();
-
-    double total = 0;
-    for (final doc in snapshot.docs) {
-      final invoice = Invoice.fromMap(doc.data());
-      total += invoice.total;
-    }
-
-    return total;
-  }
-
   /// Calculate total paid this month
   Future<double> getTotalPaidThisMonth() async {
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
     final endOfMonth = DateTime(now.year, now.month + 1, 0);
 
+    // Note: This query combines equality and range filters
+    // A composite index is required in Firestore: (status ASC, updatedAt ASC)
     final snapshot = await _firestore
         .collection('invoices')
         .where('status', isEqualTo: 'paid')
