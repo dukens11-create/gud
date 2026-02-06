@@ -230,4 +230,13 @@ class AuthService {
     }
     await _auth!.sendPasswordResetEmail(email: email);
   }
+
+  /// Reload the current user's data
+  /// 
+  /// Fetches the latest user data from Firebase Auth
+  /// This is useful for checking email verification status
+  Future<void> reloadUser() async {
+    if (_isOffline || _auth?.currentUser == null) return;
+    await _auth!.currentUser!.reload();
+  }
 }
