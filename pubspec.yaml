@@ -1,7 +1,7 @@
 name: gud_app
-description: GUD Express Trucking Management App Demo
+description: GUD Express Trucking Management App - Production Ready
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.0.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -37,11 +37,26 @@ dependencies:
   shared_preferences: ^2.3.2  # Local storage
   flutter_local_notifications: ^17.2.3  # Local notifications
   permission_handler: ^11.3.1  # Permission management
+  
+  # Advanced Features
+  local_auth: ^2.1.0  # Biometric authentication
+  share_plus: ^7.2.0  # Share functionality
+  path_provider: ^2.1.0  # File system paths
+  pdf: ^3.10.0  # PDF generation
+  csv: ^5.1.0  # CSV export
+  image_cropper: ^5.0.0  # Image cropping
+  cached_network_image: ^3.3.0  # Image caching
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  mockito: ^5.4.0  # Mocking for tests
+  build_runner: ^2.4.0  # Code generation
+  integration_test:
+    sdk: flutter
+  flutter_driver:
+    sdk: flutter
 
 flutter:
   uses-material-design: true
