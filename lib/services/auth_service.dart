@@ -159,6 +159,10 @@ class AuthService {
         password: password,
       );
 
+      // Send email verification immediately after account creation
+      await credential.user!.sendEmailVerification();
+      print('✅ Verification email sent to: $email');
+
       await _db!.collection('users').doc(credential.user!.uid).set({
         'name': name,
         'email': email,
@@ -167,6 +171,8 @@ class AuthService {
         'truckNumber': truckNumber ?? '',
         'createdAt': FieldValue.serverTimestamp(),
         'isActive': true,
+        'emailVerified': false,
+        'verificationEmailSentAt': FieldValue.serverTimestamp(),
       });
 
       return credential;
