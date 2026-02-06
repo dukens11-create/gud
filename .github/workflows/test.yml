@@ -18,6 +18,10 @@ jobs:
   test:
     name: Test on Flutter ${{ matrix.flutter-version }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      checks: write
     
     # Test on multiple Flutter versions
     strategy:
@@ -110,6 +114,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: always()
+    permissions:
+      contents: read
     
     steps:
       - name: Check test results
