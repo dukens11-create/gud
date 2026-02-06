@@ -41,8 +41,8 @@ void main() {
       await tester.enterText(passwordField, 'admin123');
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
-      // Tap login button
-      final loginButton = find.widgetWithText(ElevatedButton, 'Login');
+      // Tap login button (labeled "Sign In")
+      final loginButton = find.text('Sign In');
       await tester.tap(loginButton);
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
@@ -71,8 +71,8 @@ void main() {
       await tester.enterText(passwordField, 'driver123');
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
-      // Tap login button
-      final loginButton = find.widgetWithText(ElevatedButton, 'Login');
+      // Tap login button (labeled "Sign In")
+      final loginButton = find.text('Sign In');
       await tester.tap(loginButton);
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
@@ -101,8 +101,8 @@ void main() {
       await tester.enterText(passwordField, 'wrongpassword');
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
-      // Tap login button
-      final loginButton = find.widgetWithText(ElevatedButton, 'Login');
+      // Tap login button (labeled "Sign In")
+      final loginButton = find.text('Sign In');
       await tester.tap(loginButton);
       await tester.pumpAndSettle(const Duration(seconds: 1));
 
@@ -111,7 +111,7 @@ void main() {
       
       // Verify we're still on the login screen
       expect(find.text('GUD Express'), findsOneWidget);
-      expect(find.text('Login'), findsAtLeastNWidget(1));
+      expect(find.text('Sign In'), findsAtLeastNWidget(1));
     });
 
     testWidgets('Login with empty credentials shows error', (tester) async {
@@ -181,7 +181,7 @@ void main() {
       await tester.enterText(passwordField, 'driver123');
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
-      final loginButton = find.widgetWithText(ElevatedButton, 'Login');
+      final loginButton = find.text('Sign In');
       await tester.tap(loginButton);
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
