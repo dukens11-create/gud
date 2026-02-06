@@ -46,6 +46,7 @@ dependencies:
   csv: ^5.1.0  # CSV export
   image_cropper: ^5.0.0  # Image cropping
   cached_network_image: ^3.3.0  # Image caching
+  flutter_image_compress: ^2.1.0  # Image compression
 
 dev_dependencies:
   flutter_test:
