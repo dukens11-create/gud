@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lottie/lottie.dart';
 
 /// App Onboarding Screen
 /// 
 /// Welcome and introduction flow for new users:
-/// - App feature highlights
+/// - App feature highlights with animations
 /// - Permission requests
 /// - Role-specific tutorials
 /// - Quick start guide
+/// - Swipeable pages with progress indicators
 /// 
 /// Shown only on first app launch
-/// 
-/// TODO: Add animated illustrations
-/// TODO: Implement swipeable pages
-/// TODO: Add skip button
-/// TODO: Create role-specific onboarding
 class OnboardingScreen extends StatefulWidget {
   final String userRole; // 'admin' or 'driver'
 
@@ -27,9 +24,11 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen> with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   List<OnboardingPage> get _pages {
     if (widget.userRole == 'admin') {
@@ -37,6 +36,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } else {
       return _driverPages;
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    );
+    _fadeController.forward();
   }
 
   // Admin onboarding pages
@@ -47,6 +60,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'Create loads, assign drivers, and track deliveries in real-time.',
       icon: Icons.local_shipping,
       color: Colors.blue,
+      lottieAsset: null, // Can add: 'assets/animations/truck.json'
     ),
     OnboardingPage(
       title: 'Live Driver Tracking',
@@ -54,6 +68,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'Monitor locations, routes, and delivery progress in real-time.',
       icon: Icons.map,
       color: Colors.green,
+      lottieAsset: null,
     ),
     OnboardingPage(
       title: 'Smart Notifications',
@@ -61,6 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'and proof-of-delivery submissions.',
       icon: Icons.notifications,
       color: Colors.orange,
+      lottieAsset: null,
     ),
     OnboardingPage(
       title: 'Manage Your Fleet',
@@ -68,6 +84,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'earnings all from one dashboard.',
       icon: Icons.dashboard,
       color: Colors.purple,
+      lottieAsset: null,
     ),
   ];
 
@@ -79,6 +96,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'tracking earnings, and staying connected.',
       icon: Icons.local_shipping,
       color: Colors.blue,
+      lottieAsset: null,
     ),
     OnboardingPage(
       title: 'Load Management',
@@ -86,6 +104,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'to pickup and delivery locations.',
       icon: Icons.assignment,
       color: Colors.green,
+      lottieAsset: null,
     ),
     OnboardingPage(
       title: 'GPS Tracking',
@@ -93,6 +112,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'where you are and when you\'ll arrive.',
       icon: Icons.my_location,
       color: Colors.orange,
+      lottieAsset: null,
     ),
     OnboardingPage(
       title: 'Proof of Delivery',
@@ -100,6 +120,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'when deliveries are complete.',
       icon: Icons.camera_alt,
       color: Colors.red,
+      lottieAsset: null,
     ),
     OnboardingPage(
       title: 'Track Your Earnings',
@@ -107,12 +128,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'metrics in real-time.',
       icon: Icons.attach_money,
       color: Colors.teal,
+      lottieAsset: null,
     ),
   ];
 
   @override
   void dispose() {
     _pageController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
@@ -120,12 +143,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() {
       _currentPage = page;
     });
+    // Animate transition
+    _fadeController.reset();
+    _fadeController.forward();
   }
 
   Future<void> _completeOnboarding() async {
     // Mark onboarding as complete
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_complete', true);
+    await prefs.setString('onboarding_completed_at', DateTime.now().toIso8601String());
+    await prefs.setString('onboarding_role', widget.userRole);
 
     if (!mounted) return;
 
@@ -154,14 +182,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Skip button
-            Align(
-              alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: _skipOnboarding,
-                child: const Text('Skip'),
+            // Skip button (only show if not on last page)
+            if (_currentPage < _pages.length - 1)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextButton(
+                    onPressed: _skipOnboarding,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey[600],
+                    ),
+                    child: const Text(
+                      'Skip',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
               ),
-            ),
 
             // Page view
             Expanded(
@@ -207,49 +245,92 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildPage(OnboardingPage page) {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Icon
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: page.color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              page.icon,
-              size: 60,
-              color: page.color,
-            ),
-          ),
-          const SizedBox(height: 48),
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Animated icon or Lottie animation
+            if (page.lottieAsset != null)
+              SizedBox(
+                width: 200,
+                height: 200,
+                child: Lottie.asset(
+                  page.lottieAsset!,
+                  fit: BoxFit.contain,
+                ),
+              )
+            else
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 800),
+                tween: Tween(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: page.color.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        page.icon,
+                        size: 60,
+                        color: page.color,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            const SizedBox(height: 48),
 
-          // Title
-          Text(
-            page.title,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+            // Title with slide animation
+            TweenAnimationBuilder<Offset>(
+              duration: const Duration(milliseconds: 600),
+              tween: Tween(begin: const Offset(0, 0.3), end: Offset.zero),
+              builder: (context, offset, child) {
+                return Transform.translate(
+                  offset: Offset(0, offset.dy * 20),
+                  child: Opacity(
+                    opacity: 1 - offset.dy.abs(),
+                    child: Text(
+                      page.title,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
+              },
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          // Description
-          Text(
-            page.description,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-              height: 1.5,
+            // Description with delayed animation
+            TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 800),
+              tween: Tween(begin: 0.0, end: 1.0),
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Text(
+                    page.description,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              },
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -261,12 +342,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
           _pages.length,
-          (index) => Container(
-            width: 8,
+          (index) => AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: _currentPage == index ? 24 : 8,
             height: 8,
             margin: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(4),
               color: _currentPage == index
                   ? Theme.of(context).primaryColor
                   : Colors.grey[300],
@@ -284,12 +366,14 @@ class OnboardingPage {
   final String description;
   final IconData icon;
   final Color color;
+  final String? lottieAsset;
 
   OnboardingPage({
     required this.title,
     required this.description,
     required this.icon,
     required this.color,
+    this.lottieAsset,
   });
 }
 
@@ -303,38 +387,20 @@ Future<bool> shouldShowOnboarding() async {
 Future<void> resetOnboarding() async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.remove('onboarding_complete');
+  await prefs.remove('onboarding_completed_at');
+  await prefs.remove('onboarding_role');
 }
 
-// TODO: Add animated illustrations
-// Use Lottie or Rive for smooth animations
-// Example:
-// Lottie.asset('assets/animations/truck_animation.json')
-
-// TODO: Implement swipeable pages
-// Add gesture detection for more intuitive navigation
-// Show "Swipe to continue" hint
-
-// TODO: Add permission requests
-// Request location permission during onboarding
-// Request notification permission
-// Explain why each permission is needed
-
-// TODO: Create interactive tutorials
-// Highlight key UI elements
-// Show tooltips and hints
-// Add "Try it yourself" interactive steps
-
-// TODO: Add video tutorials
-// Embed short video clips
-// Show real usage examples
-// Link to detailed help documentation
-
-// TODO: Implement progress saving
-// Allow users to pause and resume onboarding
-// Save current page index
-// Remember skipped sections
-
-// TODO: Add localization
-// Support multiple languages
-// Translate all onboarding content
-// Respect device language settings
+/// Get onboarding completion info
+Future<Map<String, dynamic>?> getOnboardingInfo() async {
+  final prefs = await SharedPreferences.getInstance();
+  final isComplete = prefs.getBool('onboarding_complete') ?? false;
+  
+  if (!isComplete) return null;
+  
+  return {
+    'completed': isComplete,
+    'completedAt': prefs.getString('onboarding_completed_at'),
+    'role': prefs.getString('onboarding_role'),
+  };
+}

@@ -37,6 +37,7 @@ dependencies:
   shared_preferences: ^2.3.2  # Local storage
   flutter_local_notifications: ^17.2.3  # Local notifications
   permission_handler: ^11.3.1  # Permission management
+  path: ^1.9.0  # File path utilities
   
   # Advanced Features
   local_auth: ^2.1.0  # Biometric authentication
@@ -47,6 +48,9 @@ dependencies:
   image_cropper: ^5.0.0  # Image cropping
   cached_network_image: ^3.3.0  # Image caching
   flutter_image_compress: ^2.1.0  # Image compression
+  connectivity_plus: ^6.0.5  # Network connectivity monitoring
+  sqflite: ^2.3.0  # Local database for offline support
+  lottie: ^3.1.0  # Lottie animations
 
 dev_dependencies:
   flutter_test:
