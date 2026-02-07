@@ -1,19 +1,32 @@
-// Build settings for dart code
+buildscript {
+    ext.kotlin_version = '2.0.21'
+    repositories {
+        google()
+        mavenCentral()
+    }
 
-// This build.gradle file is used specifically for the Flutter project to define the build configuration.
-
-// Clean build task
-
-task clean(type: Delete) {
-    delete rootProject.buildDir
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.9.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.google.gms:google-services:4.4.2'
+    }
 }
 
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            android { 
-                // Configuration specific to Android subprojects can be added here.
-            }
-        }
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
     }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
 }
