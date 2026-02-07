@@ -106,7 +106,17 @@ class SyncService {
     switch (type) {
       case 'create_load':
         // Sync load creation
-        await _firestoreService.createLoad(data);
+        await _firestoreService.createLoad(
+          loadNumber: data['loadNumber'] as String,
+          driverId: data['driverId'] as String,
+          driverName: data['driverName'] as String,
+          pickupAddress: data['pickupAddress'] as String,
+          deliveryAddress: data['deliveryAddress'] as String,
+          rate: (data['rate'] as num).toDouble(),
+          miles: data['miles'] != null ? (data['miles'] as num).toDouble() : null,
+          notes: data['notes'] as String?,
+          createdBy: data['createdBy'] as String,
+        );
         break;
       case 'update_load':
         // Sync load update
