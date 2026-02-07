@@ -1,15 +1,49 @@
 workflows:
-  android-apk:
-    name: Build Android APK
-    max_build_duration: 60
-    scripts:
-      - script: flutter pub get
-      - script: flutter build apk
-
   ios-workflow:
-    name: Build iOS
+    name: iOS Build
     max_build_duration: 120
+    instance_type: mac_mini_m1
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
     scripts:
-      - script: flutter pub get
-      - script: cd ios && pod install
-      - script: flutter build ios
+      - name: Install Flutter dependencies
+        script: |
+          flutter pub get
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+      - name: Build iOS
+        script: |
+          flutter build ios --release --no-codesign
+    artifacts:
+      - build/ios/iphoneos/*.app
+
+  android-apk:
+    name: Android APK Build
+    max_build_duration: 60
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+    environment:
+      flutter: stable
+    scripts:
+      - name: Install Flutter dependencies
+        script: |
+          flutter pub get
+      - name: Build Android APK
+        script: |
+          flutter build apk --release
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
