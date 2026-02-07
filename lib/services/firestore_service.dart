@@ -235,7 +235,10 @@ class FirestoreService {
 
   /// Update load with arbitrary data
   /// 
-  /// Updates the load document with provided data map
+  /// Generic method for updating load document with any data map.
+  /// Used primarily by sync service for offline-to-online sync operations.
+  /// For specific status updates, consider using updateLoadStatus() instead.
+  /// 
   /// Parameters:
   /// - [loadId]: Load's document ID
   /// - [data]: Map of fields to update
