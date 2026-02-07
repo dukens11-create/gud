@@ -5,6 +5,14 @@ All notable changes to the GUD Express app will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Firebase Package Compatibility**: Updated `firebase_remote_config` from `^4.3.9` to `^5.5.0` to resolve version conflict with `firebase_core ^3.6.0`
+  - Fixes build failure caused by incompatible Firebase package versions
+  - All Firebase packages now compatible with `firebase_core ^3.6.0`
+  - No breaking changes to existing Remote Config functionality
+
 ## [2.1.0] - 2026-02-06
 
 ### Added - Production Readiness Features
