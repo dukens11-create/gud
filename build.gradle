@@ -1,0 +1,19 @@
+// Build script for Gradle.
+
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2' // JUnit testing framework
+}
+
+tasks.register('hello') {
+    doLast {
+        println 'Hello, World!'
+    }
+}
