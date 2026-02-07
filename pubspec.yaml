@@ -26,7 +26,7 @@ dependencies:
   google_maps_flutter: ^2.9.0  # Google Maps integration
   flutter_background_geolocation: ^4.16.2  # Background location tracking
   flutter_background_service: ^5.0.5  # Background service
-  geofence_service: ^5.2.5  # Geofencing
+  geofence_service: ^6.0.0  # Geofencing
   
   # Authentication
   google_sign_in: ^6.2.1  # Google OAuth
