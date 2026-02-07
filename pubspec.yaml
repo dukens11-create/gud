@@ -46,7 +46,7 @@ dependencies:
   path_provider: ^2.1.0  # File system paths
   pdf: ^3.10.0  # PDF generation
   csv: ^5.1.0  # CSV export
-  image_cropper: ^5.0.0  # Image cropping
+  image_cropper: ^8.0.2  # Image cropping
   cached_network_image: ^3.3.0  # Image caching
 
 dev_dependencies:
