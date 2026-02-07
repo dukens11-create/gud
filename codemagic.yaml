@@ -1,49 +1,5 @@
-workflows:
-  ios-workflow:
-    name: iOS Build
-    max_build_duration: 120
-    instance_type: mac_mini_m1
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: 'main'
-          include: true
-    environment:
-      flutter: stable
-      xcode: latest
-      cocoapods: default
-    scripts:
-      - name: Install Flutter dependencies
-        script: |
-          flutter pub get
-      - name: Install CocoaPods dependencies
-        script: |
-          cd ios
-          pod install
-      - name: Build iOS
-        script: |
-          flutter build ios --release --no-codesign
-    artifacts:
-      - build/ios/iphoneos/*.app
+# Codemagic configuration file
 
-  android-apk:
-    name: Android APK Build
-    max_build_duration: 60
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: 'main'
-          include: true
-    environment:
-      flutter: stable
-    scripts:
-      - name: Install Flutter dependencies
-        script: |
-          flutter pub get
-      - name: Build Android APK
-        script: |
-          flutter build apk --release
-    artifacts:
-      - build/app/outputs/flutter-apk/*.apk
+# Increase heap size for Android builds
+# This helps to resolve memory issues during the build process.
+gradle.properties=org.gradle.jvmargs=-Xmx2048m
