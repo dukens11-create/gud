@@ -59,9 +59,7 @@ class _AdminHomeState extends State<AdminHome> {
             load.loadNumber.toLowerCase().contains(_searchQuery) ||
             load.driverId.toLowerCase().contains(_searchQuery) ||
             load.pickupAddress.toLowerCase().contains(_searchQuery) ||
-            load.deliveryAddress.toLowerCase().contains(_searchQuery) ||
-            load.pickupCity.toLowerCase().contains(_searchQuery) ||
-            load.deliveryCity.toLowerCase().contains(_searchQuery);
+            load.deliveryAddress.toLowerCase().contains(_searchQuery);
 
         // Status filter
         final matchesStatus = _statusFilter == 'all' || load.status == _statusFilter;

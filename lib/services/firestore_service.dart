@@ -233,6 +233,19 @@ class FirestoreService {
     await _db.collection('loads').doc(loadId).update(updates);
   }
 
+  /// Update load with arbitrary data
+  /// 
+  /// Generic method for updating load document with any data map.
+  /// Used primarily by sync service for offline-to-online sync operations.
+  /// For specific status updates, consider using updateLoadStatus() instead.
+  /// 
+  /// Parameters:
+  /// - [loadId]: Load's document ID
+  /// - [data]: Map of fields to update
+  Future<void> updateLoad(String loadId, Map<String, dynamic> data) async {
+    await _db.collection('loads').doc(loadId).update(data);
+  }
+
   /// Mark a load as in transit
   /// 
   /// Sets status to 'in_transit' and records trip start time
