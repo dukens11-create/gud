@@ -244,7 +244,7 @@ class CrashReportingService {
   Future<void> logCustomEvent(String eventName, Map<String, dynamic>? parameters) async {
     await _analytics.logEvent(
       name: eventName,
-      parameters: parameters?.map((key, value) => MapEntry(key, value as Object)),
+      parameters: parameters?.map((key, value) => MapEntry(key, value as Object?)),
     );
     print('📊 Custom event logged: $eventName');
   }
