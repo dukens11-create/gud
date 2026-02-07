@@ -87,6 +87,8 @@ flutter {
 dependencies {
     implementation platform('com.google.firebase:firebase-bom:33.5.1')
     implementation 'com.google.firebase:firebase-analytics'
+    // Override the background geolocation native library version to fix dependency mismatch
+    implementation 'com.transistorsoft:tslocationmanager:4.0.12'
 }
 
 // Only apply google-services plugin if file exists
