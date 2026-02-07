@@ -1,26 +1,21 @@
 {
   "project_info": {
-    "project_number": "123456789",
-    "project_id": "gud-demo",
-    "storage_bucket": "gud-demo.appspot.com"
+    "project_number": "750390855294",
+    "project_id": "gud-express",
+    "storage_bucket": "gud-express.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789:android:abc123",
+        "mobilesdk_app_id": "1:750390855294:android:8026ddff01618792f97a2f",
         "android_client_info": {
           "package_name": "com.gudexpress.gud_app"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "123456789-dummy.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaDummyKeyForBuildOnly-NotForProduction"
+          "current_key": "AIzaSyAaXuqdrgjL20QCjs66DbDhc2D3IzjLtf4"
         }
       ],
       "services": {
