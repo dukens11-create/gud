@@ -80,6 +80,13 @@ android {
     }
 }
 
+// Force dependency version to resolve conflict with flutter_background_geolocation
+configurations.all {
+    resolutionStrategy {
+        force 'com.transistorsoft:tslocationmanager:4.0.12'
+    }
+}
+
 flutter {
     source '../..'
 }
