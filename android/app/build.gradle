@@ -1,17 +1,51 @@
+plugins {
+    id 'com.android.application'
+    id 'com.google.gms.google-services'
+}
+
 android {
+    compileSdkVersion 31
+    defaultConfig {
+        applicationId "com.example.app"
+        minSdkVersion 21
+        targetSdkVersion 31
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
+    }
     buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
         debug {
             minifyEnabled false
             shrinkResources false
         }
+    }
+    signingConfigs {
         release {
-            minifyEnabled false
-            shrinkResources false
+            storeFile file("keystore.jks")
+            storePassword "password"
+            keyAlias "alias"
+            keyPassword "keyPassword"
         }
     }
-    packaging {
-        options {
-            // Specify your packaging options here
-        }
-    }
+}
+
+dependencies {
+    implementation 'com.google.firebase:firebase-analytics:20.0.0'
+    implementation 'com.google.android.gms:play-services-location:19.0.1'
+    implementation 'com.google.android.gms:play-services-base:17.6.0'
+    // Add desugaring support
+    implementation 'com.android.tools:desugar_jdk_libs:1.1.5'
+    implementation 'com.transistorsoft/flutter_background_location:1.0.0'
+}
+
+// Exclude META-INF files
+packagingOptions {
+    exclude 'META-INF/NOTICE'
+    exclude 'META-INF/LICENSE'
 }
