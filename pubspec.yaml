@@ -1,9 +1,5 @@
 name: my_app
-
 description: A new Flutter project.
-
-# The following defines the version and build number for your application.
-# Read more about versioning at semver.org
 version: 1.0.0+1
 
 environment:
@@ -12,12 +8,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.2
-  # flutter_background_geolocation: ^4.16.2  # DISABLED - Requires paid license
 
-# Additional dependencies can be added here
+  # flutter_background_geolocation: ^4.16.2  # DISABLED - Requires paid license
+  another_dependency: ^1.0.0
 
 flutter:
   uses-material-design: true
-  assets:
-    - images/
