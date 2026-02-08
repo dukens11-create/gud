@@ -9,6 +9,9 @@ import 'screens/admin/create_load_screen.dart';
 import 'screens/admin/expenses_screen.dart';
 import 'screens/admin/add_expense_screen.dart';
 import 'screens/admin/statistics_screen.dart';
+import 'screens/admin/document_verification_screen.dart';
+import 'screens/admin/driver_performance_dashboard.dart';
+import 'screens/admin/maintenance_tracking_screen.dart';
 
 import 'screens/driver/driver_home.dart';
 import 'screens/driver/earnings_screen.dart';
@@ -41,6 +44,9 @@ final Map<String, WidgetBuilder> routes = {
   '/admin/expenses': (_) => const ExpensesScreen(),
   '/admin/add-expense': (_) => const AddExpenseScreen(),
   '/admin/statistics': (_) => const StatisticsScreen(),
+  '/admin/document-verification': (_) => const DocumentVerificationScreen(),
+  '/admin/driver-performance': (_) => const DriverPerformanceDashboard(),
+  '/admin/maintenance': (_) => const MaintenanceTrackingScreen(),
   '/driver/earnings': (_) => const EarningsScreen(),
   '/driver/expenses': (_) => const DriverExpensesScreen(),
   
