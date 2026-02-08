@@ -12,8 +12,12 @@ import 'package:gud_app/services/mock_data_service.dart';
 /// 
 /// To run these tests, you must:
 /// 1. Set up Firebase Authentication with test accounts
-/// 2. Update the credentials in these tests with your Firebase test account credentials
-/// 3. Ensure Firebase is properly initialized before running tests
+/// 2. Create a test configuration file or use environment variables for credentials
+/// 3. Update the test account credentials in each test method (search for "enterText" calls)
+/// 4. Ensure Firebase is properly initialized before running tests
+/// 
+/// Example: Replace 'admin@gud.com' and 'admin123' with your Firebase test account credentials
+/// in the enterText calls throughout this file.
 /// 
 /// Tests cover:
 /// - Admin views all loads
