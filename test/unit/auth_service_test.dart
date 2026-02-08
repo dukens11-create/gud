@@ -57,29 +57,14 @@ void main() {
         // we can't easily inject mocks. We'll test the offline mode instead.
       });
 
-      test('signIn with invalid credentials throws exception in offline mode', () async {
+      test('signIn throws exception in offline mode', () async {
         final service = AuthService();
 
-        // In offline mode, invalid credentials should throw
+        // In offline mode, all sign-in attempts should throw
         expect(
           () => service.signIn('invalid@example.com', 'wrong'),
           throwsA(isA<FirebaseAuthException>()),
         );
-      });
-
-      test('signIn with admin credentials succeeds in offline mode', () async {
-        final service = AuthService();
-
-        // In offline mode, admin credentials should work
-        final result = await service.signIn('admin@gud.com', 'admin123');
-        expect(result, isNull); // Returns null in offline mode
-      });
-
-      test('signIn with driver credentials succeeds in offline mode', () async {
-        final service = AuthService();
-
-        final result = await service.signIn('driver@gud.com', 'driver123');
-        expect(result, isNull);
       });
     });
 
@@ -186,27 +171,15 @@ void main() {
         expect(service.currentUser, isNull);
       });
 
-      test('signIn validates offline credentials correctly', () async {
+      test('signIn rejects all credentials in offline mode', () async {
         final service = AuthService();
 
-        // Valid admin credentials
-        await expectLater(
-          service.signIn('admin@gud.com', 'admin123'),
-          completes,
-        );
-
-        // Valid driver credentials
-        await expectLater(
-          service.signIn('driver@gud.com', 'driver123'),
-          completes,
-        );
-
-        // Invalid credentials
+        // All sign-in attempts should fail in offline mode
         expect(
-          () => service.signIn('wrong@example.com', 'wrong'),
+          () => service.signIn('any@example.com', 'password'),
           throwsA(predicate((e) =>
             e is FirebaseAuthException &&
-            e.code == 'invalid-credential'
+            e.code == 'unavailable'
           )),
         );
       });
@@ -266,13 +239,13 @@ void main() {
         final service = AuthService();
 
         try {
-          await service.signIn('invalid@example.com', 'wrong');
+          await service.signIn('any@example.com', 'password');
           fail('Should have thrown exception');
         } catch (e) {
           expect(e, isA<FirebaseAuthException>());
           final authException = e as FirebaseAuthException;
-          expect(authException.code, 'invalid-credential');
-          expect(authException.message, contains('offline mode'));
+          expect(authException.code, 'unavailable');
+          expect(authException.message, contains('not available in offline mode'));
         }
       });
 

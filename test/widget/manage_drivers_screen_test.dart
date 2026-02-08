@@ -318,7 +318,6 @@ void main() {
         (WidgetTester tester) async {
       // First, delete all drivers
       final mockService = MockDataService();
-      await mockService.signIn('admin@gud.com', 'admin123');
       final drivers = await mockService.getDrivers();
       for (final driver in drivers) {
         await mockService.deleteDriver(driver.id);

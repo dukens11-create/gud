@@ -97,7 +97,7 @@ void main() {
     testWidgets('Load card displays correct information',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(const DriverHome(driverId: 'driver@gud.com')),
+        makeTestableWidget(const DriverHome(driverId: 'test-driver-001')),
       );
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
@@ -117,7 +117,7 @@ void main() {
     testWidgets('Tapping a load card navigates to load detail',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(const DriverHome(driverId: 'driver@gud.com')),
+        makeTestableWidget(const DriverHome(driverId: 'test-driver-001')),
       );
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
@@ -228,7 +228,7 @@ void main() {
     testWidgets('Load status is displayed as a Chip',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(const DriverHome(driverId: 'driver@gud.com')),
+        makeTestableWidget(const DriverHome(driverId: 'test-driver-001')),
       );
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
@@ -241,7 +241,7 @@ void main() {
     testWidgets('Load card displays CircleAvatar with first letter of status',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(const DriverHome(driverId: 'driver@gud.com')),
+        makeTestableWidget(const DriverHome(driverId: 'test-driver-001')),
       );
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
@@ -303,7 +303,7 @@ void main() {
     testWidgets('Multiple loads are displayed in a scrollable list',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(const DriverHome(driverId: 'driver@gud.com')),
+        makeTestableWidget(const DriverHome(driverId: 'test-driver-001')),
       );
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
@@ -317,7 +317,7 @@ void main() {
     testWidgets('Load card displays all required fields',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(const DriverHome(driverId: 'driver@gud.com')),
+        makeTestableWidget(const DriverHome(driverId: 'test-driver-001')),
       );
       await tester.pumpAndSettle(const Duration(seconds: 2));
 

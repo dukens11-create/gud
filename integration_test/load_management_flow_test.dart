@@ -6,6 +6,15 @@ import 'package:gud_app/services/mock_data_service.dart';
 
 /// Integration tests for load management flows
 /// 
+/// **IMPORTANT**: These tests require Firebase to be configured and running.
+/// The demo credentials (admin@gud.com/admin123 and driver@gud.com/driver123) 
+/// have been removed from the codebase for production readiness.
+/// 
+/// To run these tests, you must:
+/// 1. Set up Firebase Authentication with test accounts
+/// 2. Update the credentials in these tests with your Firebase test account credentials
+/// 3. Ensure Firebase is properly initialized before running tests
+/// 
 /// Tests cover:
 /// - Admin views all loads
 /// - Driver views assigned loads
