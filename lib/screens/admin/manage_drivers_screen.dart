@@ -47,9 +47,9 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
     final phoneController = TextEditingController();
     final truckController = TextEditingController();
 
-    final confirmed = await showDialog<bool>(
+    final result = await showDialog<Map<String, String>?>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Add New Driver'),
         content: SingleChildScrollView(
           child: Column(
@@ -84,31 +84,37 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, null),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              // Validate before closing dialog
+              if (nameController.text.isEmpty || 
+                  phoneController.text.isEmpty || 
+                  truckController.text.isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('Please fill in all fields')),
+                );
+                return;
+              }
+              Navigator.pop(dialogContext, {
+                'name': nameController.text,
+                'phone': phoneController.text,
+                'truckNumber': truckController.text,
+              });
+            },
             child: const Text('Add'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true && mounted) {
-      if (nameController.text.isEmpty || 
-          phoneController.text.isEmpty || 
-          truckController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please fill in all fields')),
-        );
-        return;
-      }
-
+    if (result != null && mounted) {
       await mockService.addDriver(
-        name: nameController.text,
-        phone: phoneController.text,
-        truckNumber: truckController.text,
+        name: result['name']!,
+        phone: result['phone']!,
+        truckNumber: result['truckNumber']!,
       );
 
       if (mounted) {
@@ -125,9 +131,9 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
     final phoneController = TextEditingController(text: driver.phone);
     final truckController = TextEditingController(text: driver.truckNumber);
 
-    final confirmed = await showDialog<bool>(
+    final result = await showDialog<Map<String, String>?>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Edit Driver'),
         content: SingleChildScrollView(
           child: Column(
@@ -162,23 +168,38 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, null),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              // Validate before closing dialog
+              if (nameController.text.isEmpty || 
+                  phoneController.text.isEmpty || 
+                  truckController.text.isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('Please fill in all fields')),
+                );
+                return;
+              }
+              Navigator.pop(dialogContext, {
+                'name': nameController.text,
+                'phone': phoneController.text,
+                'truckNumber': truckController.text,
+              });
+            },
             child: const Text('Save'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true && mounted) {
+    if (result != null && mounted) {
       await mockService.updateDriver(
         driverId: driver.id,
-        name: nameController.text,
-        phone: phoneController.text,
-        truckNumber: truckController.text,
+        name: result['name']!,
+        phone: result['phone']!,
+        truckNumber: result['truckNumber']!,
       );
 
       if (mounted) {

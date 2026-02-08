@@ -41,8 +41,8 @@ void main() {
 
       // Should show at least one driver (John Driver from mock data)
       expect(find.text('John Driver'), findsOneWidget);
-      expect(find.textContaining('Phone:', findRichText: true), findsWidgets);
-      expect(find.textContaining('Truck:', findRichText: true), findsWidgets);
+      expect(find.textContaining('Phone:'), findsWidgets);
+      expect(find.textContaining('Truck:'), findsWidgets);
     });
 
     testWidgets('FloatingActionButton is present and enabled',
@@ -189,6 +189,32 @@ void main() {
       expect(find.text('Driver updated successfully'), findsOneWidget);
     });
 
+    testWidgets('Validation: Empty fields show error when editing driver',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(makeTestableWidget(const ManageDriversScreen()));
+      await tester.pumpAndSettle();
+
+      // Open edit dialog
+      await tester.tap(find.byType(PopupMenuButton<String>).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+
+      // Clear all fields
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Driver Name'),
+        '',
+      );
+
+      // Try to save with empty fields
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      // Verify error message appears (dialog should stay open)
+      expect(find.text('Please fill in all fields'), findsOneWidget);
+      expect(find.text('Edit Driver'), findsOneWidget); // Dialog still open
+    });
+
     testWidgets('Can open delete driver dialog',
         (WidgetTester tester) async {
       await tester.pumpWidget(makeTestableWidget(const ManageDriversScreen()));
@@ -204,7 +230,7 @@ void main() {
 
       // Verify delete confirmation dialog appears
       expect(find.text('Delete Driver'), findsOneWidget);
-      expect(find.textContaining('Are you sure', findRichText: true), findsOneWidget);
+      expect(find.textContaining('Are you sure'), findsOneWidget);
     });
 
     testWidgets('Delete dialog has Cancel and Delete buttons',
@@ -261,8 +287,9 @@ void main() {
       await tester.tap(find.text('Add'));
       await tester.pumpAndSettle();
 
-      // Verify error message
+      // Verify error message appears (dialog should stay open)
       expect(find.text('Please fill in all fields'), findsOneWidget);
+      expect(find.text('Add New Driver'), findsOneWidget); // Dialog still open
     });
 
     testWidgets('Driver card displays all information correctly',
@@ -272,9 +299,9 @@ void main() {
 
       // Verify driver information is displayed
       expect(find.text('John Driver'), findsOneWidget);
-      expect(find.textContaining('Phone: 555-0123', findRichText: true), findsOneWidget);
-      expect(find.textContaining('Truck: TRK-001', findRichText: true), findsOneWidget);
-      expect(find.textContaining('Status: available', findRichText: true), findsOneWidget);
+      expect(find.textContaining('Phone: 555-0123'), findsOneWidget);
+      expect(find.textContaining('Truck: TRK-001'), findsOneWidget);
+      expect(find.textContaining('Status: available'), findsOneWidget);
     });
 
     testWidgets('Driver card displays earnings and completed loads',
@@ -283,8 +310,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify earnings and loads are displayed
-      expect(find.textContaining('\$', findRichText: true), findsWidgets);
-      expect(find.textContaining('loads', findRichText: true), findsWidgets);
+      expect(find.textContaining('\$'), findsWidgets);
+      expect(find.textContaining('loads'), findsWidgets);
     });
 
     testWidgets('Screen shows empty state when no drivers exist',
