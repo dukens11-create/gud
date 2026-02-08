@@ -3,17 +3,14 @@
 ## Live Demo
 **🚀 Try it now:** https://dukens11-create.github.io/gud/
 
-This is a demo version using mock data - no backend required!
+This demo requires Firebase authentication to be configured.
 
-## Demo Credentials
+## Authentication
 
-**Admin Account:**
-- Email: admin@gud.com
-- Password: admin123
-
-**Driver Account:**
-- Email: driver@gud.com
-- Password: driver123
+**Production Ready:**
+- Demo credentials have been removed for security
+- Set up Firebase Authentication for your deployment
+- Create test accounts through Firebase Console if needed
 
 ## Install as PWA
 

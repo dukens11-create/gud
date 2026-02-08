@@ -109,13 +109,10 @@ gud/
 
 #### 1. Test Login Flow
 
-**Admin Credentials** (development):
-- Email: admin@gud.com
-- Password: admin123
-
-**Driver Credentials** (development):
-- Email: driver@gud.com
-- Password: driver123
+**Test Credentials:**
+- Set up Firebase test accounts for development/testing
+- Demo credentials have been removed for production readiness
+- Create test accounts through Firebase Console
 
 #### 2. Test Admin Features
 

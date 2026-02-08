@@ -76,11 +76,14 @@ service cloud.firestore {
 
 **Important:** The `isAdmin` field should only be set manually by administrators through the Firebase Console or Cloud Functions. Regular users should not be able to modify this field.
 
-## Demo/Offline Mode
+## Production Authentication
 
-When Firebase is not initialized (offline/demo mode), the app falls back to mock authentication:
-- `admin@gud.com` with password `admin123` is treated as an admin user
-- `driver@gud.com` with password `driver123` is treated as a regular user
+The app now requires Firebase Authentication to be properly configured. Demo credentials have been removed for production readiness.
+
+To set up authentication:
+1. Configure Firebase Authentication in your Firebase project
+2. Create user accounts through Firebase Console or your admin tools
+3. Set the `isAdmin` field appropriately for admin users in Firestore
 
 ## Troubleshooting
 
