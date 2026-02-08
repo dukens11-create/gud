@@ -24,6 +24,11 @@ service firebase.storage {
       return request.auth != null;
     }
     
+    // Check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+    
     // Check if uploaded file is an image
     function isImage() {
       return request.resource.contentType.matches('image/.*');
@@ -52,6 +57,42 @@ service firebase.storage {
       
       // Allow deletion only by authenticated users
       // (typically handled by admins through app logic)
+      allow delete: if isAuthenticated();
+    }
+    
+    // Receipt images
+    // Path structure: /receipts/{driverId}/{fileName}
+    match /receipts/{driverId}/{fileName} {
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == driverId);
+      allow write: if isAuthenticated() && 
+        request.resource.size < 10 * 1024 * 1024 && 
+        request.resource.contentType.matches('image/.*');
+      allow delete: if isAdmin();
+    }
+    
+    // Driver documents
+    // Path structure: /drivers/{driverId}/{fileName}
+    match /drivers/{driverId}/{fileName} {
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == driverId);
+      allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == driverId);
+      allow delete: if isAdmin();
+    }
+    
+    // Profile photos
+    // Path structure: /profile_photos/{fileName}
+    // Format: {userId}.{ext}
+    match /profile_photos/{fileName} {
+      // All authenticated users can read profile photos
+      allow read: if isAuthenticated();
+      
+      // Authenticated users can upload/update profile photos
+      // Must be an image file under 10MB with valid extension
+      allow write: if isAuthenticated() && 
+        request.resource.size < 10 * 1024 * 1024 && 
+        request.resource.contentType.matches('image/.*') &&
+        fileName.matches('[^/]+\\.(jpg|jpeg|png|gif|webp)');
+      
+      // Users can delete their own profile photos
       allow delete: if isAuthenticated();
     }
     
@@ -115,6 +156,17 @@ service firebase.storage {
 
 ---
 
+#### `isAdmin()`
+**Purpose**: Verify user has admin role
+
+**Returns**: 
+- `true` if user is authenticated and has admin role
+- `false` if user is not authenticated or not admin
+
+**Usage**: Required for admin-only operations
+
+---
+
 ## Path-Specific Rules
 
 ### `/pods/{loadId}/{fileName}`
@@ -155,6 +207,112 @@ service firebase.storage {
 - ✅ Authenticated users can delete PODs
 - **Note**: App logic should restrict this to admins only
 - **Rationale**: Allow cleanup of incorrect uploads
+
+---
+
+### `/receipts/{driverId}/{fileName}`
+
+**Purpose**: Store expense receipts for drivers
+
+**Path Structure**:
+```
+/receipts/
+  ├── driver-uid-1/
+  │   ├── receipt_1709380800000.jpg
+  │   └── receipt_1709381200000.jpg
+  └── driver-uid-2/
+      └── receipt_1709382600000.jpg
+```
+
+**Read Access**:
+- ✅ Admins can read all receipts
+- ✅ Drivers can read their own receipts
+- ❌ Drivers cannot read other drivers' receipts
+- **Rationale**: Privacy and access control
+
+**Write Access**:
+- ✅ Authenticated users can upload receipts
+- ✅ Must be under 10MB
+- ✅ Must be an image file
+- **Rationale**: Drivers upload expense receipts
+
+**Delete Access**:
+- ✅ Only admins can delete receipts
+- **Rationale**: Prevent accidental deletion of expense records
+
+---
+
+### `/drivers/{driverId}/{fileName}`
+
+**Purpose**: Store driver documents and files
+
+**Path Structure**:
+```
+/drivers/
+  ├── driver-uid-1/
+  │   ├── license.jpg
+  │   └── insurance.pdf
+  └── driver-uid-2/
+      └── cdl.jpg
+```
+
+**Read Access**:
+- ✅ Admins can read all driver documents
+- ✅ Drivers can read their own documents
+- ❌ Drivers cannot read other drivers' documents
+- **Rationale**: Privacy and access control
+
+**Write Access**:
+- ✅ Admins can upload any driver documents
+- ✅ Drivers can upload their own documents
+- **Rationale**: Allow document management
+
+**Delete Access**:
+- ✅ Only admins can delete documents
+- **Rationale**: Prevent accidental deletion
+
+---
+
+### `/profile_photos/{fileName}`
+
+**Purpose**: Store user profile photos
+
+**Path Structure**:
+```
+/profile_photos/
+  ├── user-uid-1.jpg
+  ├── user-uid-2.png
+  ├── user-uid-3.webp
+  └── ...
+```
+
+**File Naming Convention**:
+- Format: `{userId}.{ext}`
+- Example: `abc123xyz789.jpg`
+- Supported extensions: jpg, jpeg, png, gif, webp
+- One photo per user (overwrites on upload)
+
+**Read Access**:
+- ✅ All authenticated users can read profile photos
+- ❌ Unauthenticated users cannot access photos
+- **Rationale**: Profile photos visible to logged-in users
+
+**Write Access**:
+- ✅ Authenticated users can upload profile photos
+- ✅ Must be under 10MB
+- ✅ Must be an image file
+- ✅ Filename must match pattern: `{userId}.{ext}`
+- ❌ Invalid file extensions rejected
+- **Rationale**: Users manage their own profile photos
+
+**Delete Access**:
+- ✅ Authenticated users can delete profile photos
+- **Note**: Users should only delete their own photos (enforced by app logic)
+- **Rationale**: Allow users to remove their profile photos
+
+**Web Frontend**:
+- Profile photos can be managed via the web frontend at `/web/profile.html`
+- See `PROFILE_PHOTO_FRONTEND_SETUP.md` for setup instructions
 
 ---
 
