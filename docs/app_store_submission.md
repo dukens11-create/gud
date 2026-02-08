@@ -381,8 +381,8 @@ Professional trucking management for modern fleets. Track loads, manage drivers,
 **App Review Information:**
 - **Sign-in required:** Yes
 - **Demo account credentials:**
-  - **Admin:** admin@gud.com / admin123
-  - **Driver:** driver@gud.com / driver123
+  - Set up Firebase test accounts and provide those credentials to Apple/Google during review
+  - Demo credentials have been removed from the codebase for security
 - **Notes:** Provide testing instructions if needed
 - **Contact:** support@gudexpress.com / +1-XXX-XXX-XXXX
 

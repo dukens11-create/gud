@@ -6,6 +6,19 @@ import 'package:gud_app/services/mock_data_service.dart';
 
 /// Integration tests for POD (Proof of Delivery) upload flow
 /// 
+/// **IMPORTANT**: These tests require Firebase to be configured and running.
+/// The demo credentials (admin@gud.com/admin123 and driver@gud.com/driver123) 
+/// have been removed from the codebase for production readiness.
+/// 
+/// To run these tests, you must:
+/// 1. Set up Firebase Authentication with test accounts
+/// 2. Create a test configuration file or use environment variables for credentials
+/// 3. Update the test account credentials in each test method (search for "enterText" calls)
+/// 4. Ensure Firebase is properly initialized before running tests
+/// 
+/// Example: Replace 'driver@gud.com' and 'driver123' with your Firebase test account credentials
+/// in the enterText calls throughout this file.
+/// 
 /// Tests cover:
 /// - Driver navigates to upload POD screen
 /// - Driver selects image source (camera/gallery mock)

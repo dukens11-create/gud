@@ -53,35 +53,32 @@ class _LoginScreenState extends State<LoginScreen> {
       
       if (!mounted) return;
       
-      // Get the user ID - if null, we're in offline mode
+      // Get the user ID from authentication
       final uid = userCredential?.user?.uid;
       
-      // Query Firestore for isAdmin field
+      if (uid == null) {
+        throw Exception('Authentication succeeded but no user ID returned');
+      }
+      
+      // Query Firestore for user role
       bool isAdmin = false;
       String role = 'driver';
       
-      if (uid != null) {
-        // Online mode - query Firestore
-        try {
-          final userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .get();
-          
-          if (userDoc.exists) {
-            isAdmin = userDoc.data()?['isAdmin'] ?? false;
-            role = userDoc.data()?['role'] ?? (isAdmin ? 'admin' : 'driver');
-          }
-        } catch (e) {
-          debugPrint('Error fetching user document: $e');
-          // If Firestore query fails, default to false
-          isAdmin = false;
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
+        
+        if (userDoc.exists) {
+          isAdmin = userDoc.data()?['isAdmin'] ?? false;
+          role = userDoc.data()?['role'] ?? (isAdmin ? 'admin' : 'driver');
         }
-      } else {
-        // Offline mode - use email-based check for admin role
-        // This matches the offline authentication logic in AuthService
-        isAdmin = (email == 'admin@gud.com');
-        role = isAdmin ? 'admin' : 'driver';
+      } catch (e) {
+        debugPrint('Error fetching user document: $e');
+        // If Firestore query fails, default to driver role
+        isAdmin = false;
+        role = 'driver';
       }
       
       // Log successful login
@@ -109,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => DriverHome(driverId: uid ?? email),
+            builder: (_) => DriverHome(driverId: uid),
           ),
         );
       }

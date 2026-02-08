@@ -13,22 +13,6 @@ class MockDataService {
   String? _currentUserRole;
   String? _currentUserName;
 
-  // Mock users for testing
-  static const Map<String, Map<String, String>> _demoUsers = {
-    'admin@gud.com': {
-      'password': 'admin123',
-      'role': 'admin',
-      'name': 'Admin User',
-      'uid': 'admin-uid-001',
-    },
-    'driver@gud.com': {
-      'password': 'driver123',
-      'role': 'driver',
-      'name': 'John Driver',
-      'uid': 'driver-uid-001',
-    },
-  };
-
   // Mock data
   final List<LoadModel> _mockLoads = [
     LoadModel(
@@ -97,14 +81,9 @@ class MockDataService {
   Future<Map<String, String>?> signIn(String email, String password) async {
     await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
     
-    final user = _demoUsers[email];
-    if (user != null && user['password'] == password) {
-      _currentUserId = user['uid'];
-      _currentUserRole = user['role'];
-      _currentUserName = user['name'];
-      return user;
-    }
-    throw Exception('Invalid email or password');
+    // Mock data service is for offline development only
+    // No hardcoded credentials for production use
+    throw Exception('Authentication requires Firebase connection');
   }
 
   Future<void> signOut() async {

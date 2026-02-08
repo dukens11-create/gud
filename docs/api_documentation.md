@@ -62,16 +62,14 @@ Sign in an existing user with email and password.
 **Example:**
 ```dart
 try {
-  final credential = await authService.signIn('driver@gud.com', 'password123');
+  final credential = await authService.signIn('user@example.com', 'password123');
   print('Signed in: ${credential?.user?.email}');
 } on FirebaseAuthException catch (e) {
   print('Error: ${e.message}');
 }
 ```
 
-**Offline Mode:**
-- `admin@gud.com` / `admin123`
-- `driver@gud.com` / `driver123`
+**Note:** Requires Firebase Authentication to be configured. Demo credentials have been removed for production readiness.
 
 ---
 
@@ -91,7 +89,7 @@ Register a new user with full profile information.
 **Example:**
 ```dart
 await authService.register(
-  email: 'newdriver@gud.com',
+  email: 'newuser@example.com',
   password: 'securepass',
   name: 'John Doe',
   role: 'driver',
