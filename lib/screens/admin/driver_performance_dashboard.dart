@@ -247,9 +247,11 @@ class _DriverPerformanceDashboardState
                   CircleAvatar(
                     backgroundColor: Theme.of(context).primaryColor,
                     child: Text(
-                      (driver['driverName'] as String)
-                          .substring(0, 1)
-                          .toUpperCase(),
+                      (driver['driverName'] as String).isNotEmpty
+                          ? (driver['driverName'] as String)
+                              .substring(0, 1)
+                              .toUpperCase()
+                          : '?',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,

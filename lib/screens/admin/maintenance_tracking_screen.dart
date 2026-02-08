@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../services/driver_extended_service.dart';
+
+/// Helper function to format dates consistently
+String _formatDate(DateTime date) {
+  return DateFormat('dd/MM/yyyy').format(date);
+}
 
 /// Truck Maintenance Tracking Screen
 /// 
@@ -424,10 +430,6 @@ class _MaintenanceTrackingScreenState extends State<MaintenanceTrackingScreen>
       }
     }
   }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
 }
 
 class _MaintenanceCard extends StatelessWidget {
@@ -499,10 +501,6 @@ class _MaintenanceCard extends StatelessWidget {
       ),
     );
   }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
 }
 
 class _UpcomingMaintenanceCard extends StatelessWidget {
@@ -556,10 +554,6 @@ class _UpcomingMaintenanceCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
   }
 }
 
