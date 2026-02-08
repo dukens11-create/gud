@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/firestore_service.dart';
 import '../../services/mock_data_service.dart';
 import '../../models/driver.dart';
+import '../../config/constants.dart';
 
 /// Create load screen - Create a new load assignment
 class CreateLoadScreen extends StatefulWidget {
@@ -81,7 +82,7 @@ class _CreateLoadScreenState extends State<CreateLoadScreen> {
 
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
-      final createdBy = currentUser?.uid ?? 'offline-user';
+      final createdBy = currentUser?.uid ?? kOfflineUserId;
 
       await _firestoreService.createLoad(
         loadNumber: _loadNumberController.text,

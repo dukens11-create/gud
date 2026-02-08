@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../services/expense_service.dart';
+import '../../config/constants.dart';
 
 /// Add expense screen - Create a new expense record
 class AddExpenseScreen extends StatefulWidget {
@@ -45,7 +46,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
-      final createdBy = currentUser?.uid ?? 'offline-user';
+      final createdBy = currentUser?.uid ?? kOfflineUserId;
 
       await _expenseService.createExpense(
         amount: double.parse(_amountController.text),

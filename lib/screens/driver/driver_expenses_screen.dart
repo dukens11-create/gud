@@ -11,7 +11,35 @@ class DriverExpensesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mockService = MockDataService();
-    final currentUserId = mockService.currentUserId ?? 'driver-uid-001';
+    final currentUserId = mockService.currentUserId;
+    
+    // If no user is authenticated, show error state
+    if (currentUserId == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('My Expenses'),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 80, color: Colors.red),
+              SizedBox(height: 16),
+              Text(
+                'Authentication required',
+                style: TextStyle(fontSize: 18, color: Colors.red),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Please log in to view your expenses',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final expenseService = ExpenseService();
 
     return Scaffold(
