@@ -579,6 +579,30 @@ class _AdminHomeState extends State<AdminHome> {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.verified_user),
+            title: const Text('Document Verification'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/admin/document-verification');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.analytics),
+            title: const Text('Driver Performance'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/admin/driver-performance');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.build),
+            title: const Text('Maintenance Tracking'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/admin/maintenance');
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.file_download),
             title: const Text('Export & Reports'),
             onTap: () {
