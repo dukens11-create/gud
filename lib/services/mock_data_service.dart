@@ -142,6 +142,58 @@ class MockDataService {
     );
   }
 
+  /// Add a new driver - enabled in demo mode
+  Future<void> addDriver({
+    required String name,
+    required String phone,
+    required String truckNumber,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final newDriver = Driver(
+      id: 'driver-uid-${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      phone: phone,
+      truckNumber: truckNumber,
+      status: 'available',
+      totalEarnings: 0.0,
+      completedLoads: 0,
+      isActive: true,
+    );
+    _mockDrivers.add(newDriver);
+  }
+
+  /// Update an existing driver - enabled in demo mode
+  Future<void> updateDriver({
+    required String driverId,
+    String? name,
+    String? phone,
+    String? truckNumber,
+    String? status,
+    bool? isActive,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final index = _mockDrivers.indexWhere((d) => d.id == driverId);
+    if (index != -1) {
+      final driver = _mockDrivers[index];
+      _mockDrivers[index] = Driver(
+        id: driver.id,
+        name: name ?? driver.name,
+        phone: phone ?? driver.phone,
+        truckNumber: truckNumber ?? driver.truckNumber,
+        status: status ?? driver.status,
+        totalEarnings: driver.totalEarnings,
+        completedLoads: driver.completedLoads,
+        isActive: isActive ?? driver.isActive,
+      );
+    }
+  }
+
+  /// Delete a driver - enabled in demo mode
+  Future<void> deleteDriver(String driverId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    _mockDrivers.removeWhere((d) => d.id == driverId);
+  }
+
   // Loads
   Future<List<LoadModel>> getAllLoads() async {
     await Future.delayed(const Duration(milliseconds: 300));
