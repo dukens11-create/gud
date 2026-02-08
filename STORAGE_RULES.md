@@ -87,15 +87,23 @@ service firebase.storage {
       
       // Authenticated users can upload/update their own profile photos
       // Must be an image file under 10MB with valid extension
-      // Filename must match user's ID to prevent overwriting others' photos
+      // Filename must be exactly: {userId}.{ext} where userId is auth user's ID
       allow write: if isAuthenticated() && 
         request.resource.size < 10 * 1024 * 1024 && 
         request.resource.contentType.matches('image/.*') &&
-        fileName.matches(request.auth.uid + '\\.(jpg|jpeg|png|gif|webp)');
+        (fileName == request.auth.uid + '.jpg' ||
+         fileName == request.auth.uid + '.jpeg' ||
+         fileName == request.auth.uid + '.png' ||
+         fileName == request.auth.uid + '.gif' ||
+         fileName == request.auth.uid + '.webp');
       
       // Users can delete only their own profile photos
       allow delete: if isAuthenticated() && 
-        fileName.matches(request.auth.uid + '\\.(jpg|jpeg|png|gif|webp)');
+        (fileName == request.auth.uid + '.jpg' ||
+         fileName == request.auth.uid + '.jpeg' ||
+         fileName == request.auth.uid + '.png' ||
+         fileName == request.auth.uid + '.gif' ||
+         fileName == request.auth.uid + '.webp');
     }
     
     // Catch-all: deny access to all other paths
@@ -303,17 +311,20 @@ service firebase.storage {
 - ✅ Authenticated users can upload profile photos
 - ✅ Must be under 10MB
 - ✅ Must be an image file
-- ✅ Filename must match pattern: `{userId}.{ext}` where userId is the authenticated user's ID
-- ✅ Users can only upload to files named with their own user ID
+- ✅ Filename must be exactly: `{userId}.{ext}` where userId is the authenticated user's ID
+- ✅ Supported extensions: jpg, jpeg, png, gif, webp
+- ✅ Users can only upload to files named with their exact user ID
 - ❌ Invalid file extensions rejected
 - ❌ Users cannot overwrite other users' profile photos
 - **Rationale**: Users manage only their own profile photos, preventing unauthorized overwrites
+- **Security**: Uses exact string matching instead of regex to prevent injection attacks
 
 **Delete Access**:
 - ✅ Authenticated users can delete their own profile photos only
-- ✅ Filename must match the user's ID to prevent deleting others' photos
+- ✅ Filename must exactly match the user's ID with a valid extension
 - ❌ Users cannot delete other users' profile photos
 - **Rationale**: Users can remove their own profile photos but cannot affect others
+- **Security**: Uses exact string matching for maximum security
 
 **Web Frontend**:
 - Profile photos can be managed via the web frontend at `/web/profile.html`
