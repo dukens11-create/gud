@@ -37,7 +37,7 @@ Before using the frontend, ensure you have:
 ### 1.2 Update profile.html
 
 1. Open `/web/profile.html` in your editor
-2. Find the `firebaseConfig` object (around line 390)
+2. Find the `firebaseConfig` object (around line 362)
 3. Replace the placeholder values with your actual Firebase configuration:
 
 ```javascript
@@ -52,6 +52,12 @@ const firebaseConfig = {
 ```
 
 4. Save the file
+
+**⚠️ SECURITY WARNING:**
+- **NEVER commit this file with real Firebase credentials to a public repository**
+- For production deployments, use Firebase Hosting which automatically injects credentials
+- Alternatively, use environment-specific configuration files
+- Consider using a separate Firebase project for development and testing
 
 ## Step 2: Enable Firebase Authentication
 
