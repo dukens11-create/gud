@@ -89,19 +89,19 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
           ),
           TextButton(
             onPressed: () {
-              // Validate before closing dialog
-              if (nameController.text.isEmpty || 
-                  phoneController.text.isEmpty || 
-                  truckController.text.isEmpty) {
+              // Validate before closing dialog (trim to prevent whitespace-only entries)
+              if (nameController.text.trim().isEmpty || 
+                  phoneController.text.trim().isEmpty || 
+                  truckController.text.trim().isEmpty) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   const SnackBar(content: Text('Please fill in all fields')),
                 );
                 return;
               }
               Navigator.pop(dialogContext, {
-                'name': nameController.text,
-                'phone': phoneController.text,
-                'truckNumber': truckController.text,
+                'name': nameController.text.trim(),
+                'phone': phoneController.text.trim(),
+                'truckNumber': truckController.text.trim(),
               });
             },
             child: const Text('Add'),
@@ -173,19 +173,19 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
           ),
           TextButton(
             onPressed: () {
-              // Validate before closing dialog
-              if (nameController.text.isEmpty || 
-                  phoneController.text.isEmpty || 
-                  truckController.text.isEmpty) {
+              // Validate before closing dialog (trim to prevent whitespace-only entries)
+              if (nameController.text.trim().isEmpty || 
+                  phoneController.text.trim().isEmpty || 
+                  truckController.text.trim().isEmpty) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   const SnackBar(content: Text('Please fill in all fields')),
                 );
                 return;
               }
               Navigator.pop(dialogContext, {
-                'name': nameController.text,
-                'phone': phoneController.text,
-                'truckNumber': truckController.text,
+                'name': nameController.text.trim(),
+                'phone': phoneController.text.trim(),
+                'truckNumber': truckController.text.trim(),
               });
             },
             child: const Text('Save'),
@@ -261,7 +261,7 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
                       margin: const EdgeInsets.all(8),
                       child: ListTile(
                         leading: CircleAvatar(
-                          child: Text(driver.name[0]),
+                          child: Text(driver.name.isNotEmpty ? driver.name[0] : '?'),
                         ),
                         title: Text(driver.name),
                         subtitle: Column(
