@@ -301,7 +301,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       applicationName: 'GUD Express',
       applicationVersion: '2.1.0',
-      applicationIcon: const Icon(Icons.local_shipping, size: 48),
+      applicationIcon: Image.asset('assets/images/logo.png', width: 48, height: 48),
       children: [
         const Text(
           'GUD Express is a comprehensive trucking management application '

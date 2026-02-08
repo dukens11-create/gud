@@ -135,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.local_shipping, size: 100, color: Colors.blue),
+              Image.asset('assets/images/logo.png', width: 120, height: 120),
               const SizedBox(height: 24),
               const Text(
                 'GUD Express',
