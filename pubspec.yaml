@@ -1,16 +1,67 @@
-name: my_app
-description: A new Flutter project.
-version: 1.0.0+1
+name: gud_app
+description: GUD Express Trucking Management App - Production Ready
+publish_to: 'none'
+version: 2.1.0+2
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
+  
+  # Firebase - Updated for Flutter 3.24.0 web compatibility
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.0
+  cloud_firestore: ^5.4.0
+  firebase_storage: ^12.3.0
+  firebase_messaging: ^15.1.3
+  firebase_crashlytics: ^4.1.3
+  firebase_analytics: ^11.3.3
+  firebase_app_check: ^0.3.1+3
+  firebase_remote_config: ^5.5.0
+  
+  # Location & Maps
+  geolocator: ^10.1.0
+  google_maps_flutter: ^2.9.0
+  flutter_background_service: ^5.0.5
+  geofence_service: ^6.0.0
+  
+  # Authentication
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^6.1.2
+  
+  # Utilities
+  image_picker: ^1.1.2
+  intl: ^0.19.0
+  url_strategy: ^0.2.0
+  shared_preferences: ^2.3.2
+  flutter_local_notifications: ^17.2.3
+  permission_handler: ^11.3.1
+  
+  # Advanced Features
+  local_auth: ^2.1.0
+  share_plus: ^7.2.0
+  path_provider: ^2.1.0
+  pdf: ^3.10.0
+  csv: ^5.1.0
+  image_cropper: ^8.0.2
+  cached_network_image: ^3.3.0
 
-  # flutter_background_geolocation: ^4.16.2  # DISABLED - Requires paid license
-  another_dependency: ^1.0.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  mockito: ^5.4.0
+  build_runner: ^2.4.0
+  flutter_dotenv: ^5.1.0
+  integration_test:
+    sdk: flutter
+  flutter_driver:
+    sdk: flutter
 
 flutter:
   uses-material-design: true
+  
+  assets:
+    - .env
