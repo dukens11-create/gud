@@ -125,7 +125,7 @@ void main() async {
     
   } catch (e) {
     print('⚠️ Firebase initialization failed: $e');
-    print('📱 Running in offline/demo mode');
+    print('📱 Running in offline mode');
   }
   
   runApp(const GUDApp());

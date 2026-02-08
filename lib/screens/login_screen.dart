@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
           isAdmin = false;
         }
       } else {
-        // Offline/demo mode - use email-based check
+        // Offline mode - use email-based check for admin role
         // This matches the offline authentication logic in AuthService
         isAdmin = (email == 'admin@gud.com');
         role = isAdmin ? 'admin' : 'driver';
@@ -142,30 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Demo Mode',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Demo Credentials:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8),
-                    Text('Admin: admin@gud.com / admin123'),
-                    Text('Driver: driver@gud.com / driver123'),
-                  ],
-                ),
-              ),
+
               const SizedBox(height: 32),
               AppTextField(
                 controller: _emailController,

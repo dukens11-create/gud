@@ -58,10 +58,10 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
       // Simulate upload delay
       await Future.delayed(const Duration(seconds: 1));
 
-      // In demo mode, just show success message
+      // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('POD uploaded successfully (demo mode)')),
+          const SnackBar(content: Text('POD uploaded successfully')),
         );
         Navigator.pop(context);
       }

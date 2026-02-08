@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gud_app/screens/admin/manage_drivers_screen.dart';
 import 'package:gud_app/services/mock_data_service.dart';
 
-/// Tests for ManageDriversScreen - verifying driver management is enabled in demo mode
+/// Tests for ManageDriversScreen - verifying driver management functionality
 void main() {
   group('ManageDriversScreen Widget Tests', () {
     setUp(() {

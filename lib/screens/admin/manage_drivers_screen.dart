@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import '../../services/mock_data_service.dart';
 import '../../models/driver.dart';
 
-/// Manage Drivers Screen - Driver management is now ENABLED in demo mode
+/// Manage Drivers Screen - Full driver management functionality
 /// 
-/// This screen allows admins to add, edit, and delete drivers regardless of
-/// whether the app is running in demo mode or production mode.
+/// This screen allows admins to add, edit, and delete drivers.
 class ManageDriversScreen extends StatefulWidget {
   const ManageDriversScreen({super.key});
 
@@ -327,7 +326,6 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
                   },
                 ),
       floatingActionButton: FloatingActionButton(
-        // Driver management is now enabled in demo mode
         onPressed: _showAddDriverDialog,
         child: const Icon(Icons.add),
       ),
