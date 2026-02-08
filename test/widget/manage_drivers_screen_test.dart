@@ -37,7 +37,7 @@ void main() {
     testWidgets('Displays list of drivers after loading',
         (WidgetTester tester) async {
       await tester.pumpWidget(makeTestableWidget(const ManageDriversScreen()));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
 
       // Should show at least one driver (John Driver from mock data)
       expect(find.text('John Driver'), findsOneWidget);
