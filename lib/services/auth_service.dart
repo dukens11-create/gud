@@ -5,14 +5,13 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 /// Authentication service for managing user authentication and user data.
 /// 
 /// Provides methods for sign in, sign out, user registration, and role management.
-/// Supports both online Firebase authentication and offline mock authentication for development.
+/// Supports Firebase authentication for production use.
 /// 
 /// Features:
 /// - Email/password authentication
 /// - User registration with role assignment
 /// - Password reset functionality
 /// - Automatic error logging to Crashlytics
-/// - Offline mode support for testing
 class AuthService {
   final FirebaseAuth? _auth;
   final FirebaseFirestore? _db;
@@ -54,25 +53,14 @@ class AuthService {
 
   /// Sign in a user with email and password
   /// 
-  /// Returns [UserCredential] on success, null in offline mode
+  /// Returns [UserCredential] on success
   /// Throws [FirebaseAuthException] on authentication failure
-  /// 
-  /// Offline mode credentials:
-  /// - admin@gud.com / admin123
-  /// - driver@gud.com / driver123
   Future<UserCredential?> signIn(String email, String password) async {
     try {
       if (_isOffline) {
-        // Mock authentication for offline mode
-        if (email == 'admin@gud.com' && password == 'admin123') {
-          return null; // Mock success
-        }
-        if (email == 'driver@gud.com' && password == 'driver123') {
-          return null; // Mock success
-        }
         throw FirebaseAuthException(
-          code: 'invalid-credential',
-          message: 'Invalid credentials (offline mode)',
+          code: 'unavailable',
+          message: 'Authentication not available in offline mode',
         );
       }
       return await _auth!.signInWithEmailAndPassword(email: email, password: password);

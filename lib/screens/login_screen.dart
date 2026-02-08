@@ -78,10 +78,9 @@ class _LoginScreenState extends State<LoginScreen> {
           isAdmin = false;
         }
       } else {
-        // Offline mode - use email-based check for admin role
-        // This matches the offline authentication logic in AuthService
-        isAdmin = (email == 'admin@gud.com');
-        role = isAdmin ? 'admin' : 'driver';
+        // Offline mode - default to driver role
+        isAdmin = false;
+        role = 'driver';
       }
       
       // Log successful login
