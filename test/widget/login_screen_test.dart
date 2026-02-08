@@ -28,12 +28,6 @@ void main() {
 
       // Verify app title
       expect(find.text('GUD Express'), findsOneWidget);
-      expect(find.text('Demo Mode'), findsOneWidget);
-
-      // Verify demo credentials section
-      expect(find.text('Demo Credentials:'), findsOneWidget);
-      expect(find.text('Admin: admin@gud.com / admin123'), findsOneWidget);
-      expect(find.text('Driver: driver@gud.com / driver123'), findsOneWidget);
 
       // Verify email field
       expect(find.widgetWithText(AppTextField, 'Email'), findsOneWidget);
@@ -201,19 +195,6 @@ void main() {
 
       // Verify SingleChildScrollView exists
       expect(find.byType(SingleChildScrollView), findsOneWidget);
-    });
-
-    testWidgets('Demo credentials section has correct styling',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(makeTestableWidget(const LoginScreen()));
-
-      // Find the demo credentials container
-      final containerFinder = find.ancestor(
-        of: find.text('Demo Credentials:'),
-        matching: find.byType(Container),
-      );
-
-      expect(containerFinder, findsWidgets);
     });
 
     testWidgets('Sign In button spans full width',

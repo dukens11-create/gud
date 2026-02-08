@@ -1,19 +1,19 @@
 import '../models/driver.dart';
 import '../models/load.dart';
 
-/// Mock data service for demo mode (no Firebase)
-/// Provides 3 demo loads for testing the app functionality
+/// Mock data service for offline mode (no Firebase)
+/// Provides sample data for testing the app functionality
 class MockDataService {
   static final MockDataService _instance = MockDataService._internal();
   factory MockDataService() => _instance;
   MockDataService._internal();
 
-  // Demo user state
+  // Sample user state
   String? _currentUserId;
   String? _currentUserRole;
   String? _currentUserName;
 
-  // Mock users for demo
+  // Mock users for testing
   static const Map<String, Map<String, String>> _demoUsers = {
     'admin@gud.com': {
       'password': 'admin123',
@@ -142,7 +142,7 @@ class MockDataService {
     );
   }
 
-  /// Add a new driver - enabled in demo mode
+  /// Add a new driver
   Future<void> addDriver({
     required String name,
     required String phone,
@@ -162,7 +162,7 @@ class MockDataService {
     _mockDrivers.add(newDriver);
   }
 
-  /// Update an existing driver - enabled in demo mode
+  /// Update an existing driver
   Future<void> updateDriver({
     required String driverId,
     String? name,
@@ -188,7 +188,7 @@ class MockDataService {
     }
   }
 
-  /// Delete a driver - enabled in demo mode
+  /// Delete a driver
   Future<void> deleteDriver(String driverId) async {
     await Future.delayed(const Duration(milliseconds: 300));
     _mockDrivers.removeWhere((d) => d.id == driverId);
