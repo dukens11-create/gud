@@ -35,5 +35,24 @@ service firebase.storage {
       allow write: if isAdmin() || (isAuthenticated() && request.auth.uid == driverId);
       allow delete: if isAdmin();
     }
+    
+    // Profile photos - in profile_photos/{userId}.{ext}
+    match /profile_photos/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+        request.resource.contentType.matches('image/.*') &&
+        (fileName == request.auth.uid + '.jpg' ||
+         fileName == request.auth.uid + '.jpeg' ||
+         fileName == request.auth.uid + '.png' ||
+         fileName == request.auth.uid + '.gif' ||
+         fileName == request.auth.uid + '.webp');
+      allow delete: if isAuthenticated() && 
+        (fileName == request.auth.uid + '.jpg' ||
+         fileName == request.auth.uid + '.jpeg' ||
+         fileName == request.auth.uid + '.png' ||
+         fileName == request.auth.uid + '.gif' ||
+         fileName == request.auth.uid + '.webp');
+    }
   }
 }

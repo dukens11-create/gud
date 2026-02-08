@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Photo - GUD Express</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      color: #333;
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .profile-photo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .profile-photo {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 5px solid #667eea;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      background: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .profile-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-photo .placeholder {
+      font-size: 80px;
+      color: #999;
+    }
+
+    .user-info {
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .user-email {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .user-status {
+      color: #28a745;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .upload-section {
+      margin-bottom: 20px;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+
+    .file-input-wrapper input[type=file] {
+      position: absolute;
+      left: -9999px;
+    }
+
+    .file-input-label {
+      display: block;
+      padding: 12px 20px;
+      background: #f8f9fa;
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: #666;
+    }
+
+    .file-input-label:hover {
+      background: #e9ecef;
+      border-color: #667eea;
+    }
+
+    .file-input-label.has-file {
+      background: #e7f3ff;
+      border-color: #667eea;
+      color: #667eea;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 10px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #5a6268;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #c82333;
+    }
+
+    .message {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .message.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .loading.show {
+      display: block;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .auth-section {
+      display: none;
+    }
+
+    .auth-section.show {
+      display: block;
+    }
+
+    .auth-form {
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #333;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .info-text {
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Authentication Section -->
+    <div id="authSection" class="auth-section show">
+      <div class="header">
+        <h1>🚚 GUD Express</h1>
+        <p>Profile Photo Manager</p>
+      </div>
+
+      <div id="authMessage" class="message"></div>
+
+      <div class="auth-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="your@email.com" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+        <button id="loginBtn" class="btn btn-primary">Sign In</button>
+      </div>
+
+      <p class="info-text">Sign in to manage your profile photo</p>
+    </div>
+
+    <!-- Profile Section -->
+    <div id="profileSection" style="display: none;">
+      <div class="header">
+        <h1>Profile Photo</h1>
+        <p>Upload and manage your profile picture</p>
+      </div>
+
+      <div id="message" class="message"></div>
+
+      <div class="profile-photo-container">
+        <div class="profile-photo" id="profilePhotoContainer">
+          <img id="profilePhoto" src="" alt="Profile" style="display: none;">
+          <span class="placeholder" id="profilePlaceholder">👤</span>
+        </div>
+        <div class="user-info">
+          <div class="user-email" id="userEmail"></div>
+          <div class="user-status">● Authenticated</div>
+        </div>
+      </div>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+      </div>
+
+      <div class="upload-section" id="uploadSection">
+        <div class="file-input-wrapper">
+          <input type="file" id="fileInput" accept="image/*">
+          <label for="fileInput" class="file-input-label" id="fileInputLabel">
+            📁 Choose a photo to upload
+          </label>
+        </div>
+        <button id="uploadBtn" class="btn btn-primary" disabled>Upload Photo</button>
+        <button id="removeBtn" class="btn btn-danger" style="display: none;">Remove Photo</button>
+        <button id="logoutBtn" class="btn btn-secondary">Sign Out</button>
+        
+        <p class="info-text">Supported formats: JPG, PNG, GIF, WEBP (max 10MB)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    // Import Firebase SDK
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+
+    // Firebase configuration
+    // TODO: Replace with your Firebase project configuration
+    // Get this from Firebase Console > Project Settings > General > Your apps > Web app
+    // 
+    // SECURITY NOTE: 
+    // - Do NOT commit this file with real credentials to public repositories
+    // - For production, use Firebase Hosting which auto-injects credentials
+    // - Or use environment-specific configuration files
+    // - Consider using a separate Firebase project for development/testing
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    let app, auth, storage;
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      storage = getStorage(app);
+    } catch (error) {
+      console.error('Firebase initialization error:', error);
+      showMessage('error', 'Firebase configuration error. Please check the console and update firebaseConfig.');
+    }
+
+    // DOM elements
+    const authSection = document.getElementById('authSection');
+    const profileSection = document.getElementById('profileSection');
+    const authMessage = document.getElementById('authMessage');
+    const message = document.getElementById('message');
+    const loading = document.getElementById('loading');
+    const fileInput = document.getElementById('fileInput');
+    const fileInputLabel = document.getElementById('fileInputLabel');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const removeBtn = document.getElementById('removeBtn');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const userEmail = document.getElementById('userEmail');
+    const profilePhoto = document.getElementById('profilePhoto');
+    const profilePlaceholder = document.getElementById('profilePlaceholder');
+
+    let currentUser = null;
+    let selectedFile = null;
+
+    // Show/hide message
+    function showMessage(type, text, elementId = 'message') {
+      const msgElement = document.getElementById(elementId);
+      msgElement.className = `message ${type} show`;
+      msgElement.textContent = text;
+      setTimeout(() => {
+        msgElement.classList.remove('show');
+      }, 5000);
+    }
+
+    // Show/hide loading
+    function setLoading(show) {
+      if (show) {
+        loading.classList.add('show');
+        document.getElementById('uploadSection').style.display = 'none';
+      } else {
+        loading.classList.remove('show');
+        document.getElementById('uploadSection').style.display = 'block';
+      }
+    }
+
+    // Get file extension
+    function getFileExtension(file) {
+      const name = file.name;
+      const lastDot = name.lastIndexOf('.');
+      return lastDot > 0 ? name.substring(lastDot) : '.jpg';
+    }
+
+    // Load profile photo
+    async function loadProfilePhoto(userId) {
+      try {
+        // Try common image extensions
+        const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+        
+        for (const ext of extensions) {
+          try {
+            const photoRef = ref(storage, `profile_photos/${userId}${ext}`);
+            const url = await getDownloadURL(photoRef);
+            
+            profilePhoto.src = url;
+            profilePhoto.style.display = 'block';
+            profilePlaceholder.style.display = 'none';
+            removeBtn.style.display = 'block';
+            return;
+          } catch (err) {
+            // Try next extension
+            continue;
+          }
+        }
+        
+        // No photo found - show default
+        showDefaultPhoto();
+      } catch (error) {
+        console.error('Error loading profile photo:', error);
+        showDefaultPhoto();
+      }
+    }
+
+    // Show default photo
+    function showDefaultPhoto() {
+      profilePhoto.style.display = 'none';
+      profilePlaceholder.style.display = 'block';
+      removeBtn.style.display = 'none';
+    }
+
+    // Upload profile photo
+    async function uploadProfilePhoto() {
+      if (!selectedFile || !currentUser) {
+        showMessage('error', 'Please select a file first');
+        return;
+      }
+
+      // Validate file size (10MB)
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        showMessage('error', 'File size must be less than 10MB');
+        return;
+      }
+
+      // Validate file type
+      if (!selectedFile.type.startsWith('image/')) {
+        showMessage('error', 'Only image files are allowed');
+        return;
+      }
+
+      setLoading(true);
+      
+      try {
+        const ext = getFileExtension(selectedFile);
+        const photoRef = ref(storage, `profile_photos/${currentUser.uid}${ext}`);
+        
+        await uploadBytes(photoRef, selectedFile);
+        const downloadURL = await getDownloadURL(photoRef);
+        
+        profilePhoto.src = downloadURL;
+        profilePhoto.style.display = 'block';
+        profilePlaceholder.style.display = 'none';
+        removeBtn.style.display = 'block';
+        
+        showMessage('success', 'Profile photo uploaded successfully!');
+        
+        // Reset file input
+        fileInput.value = '';
+        selectedFile = null;
+        fileInputLabel.textContent = '📁 Choose a photo to upload';
+        fileInputLabel.classList.remove('has-file');
+        uploadBtn.disabled = true;
+      } catch (error) {
+        console.error('Upload error:', error);
+        showMessage('error', `Upload failed: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Remove profile photo
+    async function removeProfilePhoto() {
+      if (!currentUser) return;
+
+      const confirmed = confirm('Are you sure you want to remove your profile photo?');
+      if (!confirmed) return;
+
+      setLoading(true);
+
+      try {
+        // Try to delete all possible extensions
+        const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+        let deleted = false;
+
+        for (const ext of extensions) {
+          try {
+            const photoRef = ref(storage, `profile_photos/${currentUser.uid}${ext}`);
+            await deleteObject(photoRef);
+            deleted = true;
+          } catch (err) {
+            // File might not exist with this extension
+            continue;
+          }
+        }
+
+        if (deleted) {
+          showDefaultPhoto();
+          showMessage('success', 'Profile photo removed successfully!');
+        } else {
+          showMessage('info', 'No profile photo found to remove');
+        }
+      } catch (error) {
+        console.error('Remove error:', error);
+        showMessage('error', `Failed to remove photo: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Handle file selection
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        selectedFile = file;
+        fileInputLabel.textContent = `📄 ${file.name}`;
+        fileInputLabel.classList.add('has-file');
+        uploadBtn.disabled = false;
+      } else {
+        selectedFile = null;
+        fileInputLabel.textContent = '📁 Choose a photo to upload';
+        fileInputLabel.classList.remove('has-file');
+        uploadBtn.disabled = true;
+      }
+    });
+
+    // Handle upload button click
+    uploadBtn.addEventListener('click', uploadProfilePhoto);
+
+    // Handle remove button click
+    removeBtn.addEventListener('click', removeProfilePhoto);
+
+    // Handle login
+    loginBtn.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!email || !password) {
+        showMessage('error', 'Please enter both email and password', 'authMessage');
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Signing in...';
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        showMessage('success', 'Signed in successfully!', 'authMessage');
+      } catch (error) {
+        console.error('Login error:', error);
+        let errorMessage = 'Sign in failed. Please check your credentials.';
+        
+        if (error.code === 'auth/invalid-credential') {
+          errorMessage = 'Invalid email or password';
+        } else if (error.code === 'auth/user-not-found') {
+          errorMessage = 'No account found with this email';
+        } else if (error.code === 'auth/wrong-password') {
+          errorMessage = 'Incorrect password';
+        } else if (error.code === 'auth/too-many-requests') {
+          errorMessage = 'Too many failed attempts. Please try again later.';
+        }
+        
+        showMessage('error', errorMessage, 'authMessage');
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In';
+      }
+    });
+
+    // Handle logout
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+        showMessage('success', 'Signed out successfully', 'authMessage');
+      } catch (error) {
+        console.error('Logout error:', error);
+        showMessage('error', 'Sign out failed', 'authMessage');
+      }
+    });
+
+    // Allow Enter key to submit login
+    passwordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        loginBtn.click();
+      }
+    });
+
+    // Monitor authentication state
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+
+      if (user) {
+        // User is signed in
+        authSection.style.display = 'none';
+        profileSection.style.display = 'block';
+        userEmail.textContent = user.email;
+        
+        // Load profile photo
+        loadProfilePhoto(user.uid);
+        
+        // Reset login form
+        emailInput.value = '';
+        passwordInput.value = '';
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In';
+      } else {
+        // User is signed out
+        authSection.style.display = 'block';
+        profileSection.style.display = 'none';
+        showDefaultPhoto();
+      }
+    });
+  </script>
+</body>
+</html>
