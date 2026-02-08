@@ -12,7 +12,7 @@ This directory contains the official GUD Express logo and branding assets.
 The GUD Express logo features:
 - Solid royal blue background (#2654C1)
 - White "GUD" text in large, bold, stylized font with italic appearance
-- Yellow/orange "Express" text (#FFA500) in cursive/script style positioned below and to the right of "GUD"
+- Orange "Express" text (#FFA500) in cursive/script style positioned below and to the right of "GUD"
 - Text-only design on blue background, no icons or graphics
 - Clean, modern design suitable for all platforms
 
