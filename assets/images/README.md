@@ -51,11 +51,32 @@ App icons generated for all required sizes (15 files total):
 
 If the logo needs to be updated, modify `logo.svg` and then regenerate all platform icons:
 
+### Linux (Ubuntu/Debian)
 ```bash
 # Install required tools
 sudo apt-get install imagemagick librsvg2-bin
+```
 
-# Regenerate all icons (run from repository root)
+### macOS
+```bash
+# Install required tools via Homebrew
+brew install imagemagick librsvg
+```
+
+### Windows
+```powershell
+# Install via Chocolatey
+choco install imagemagick rsvg-convert
+
+# Or download installers:
+# - ImageMagick: https://imagemagick.org/script/download.php
+# - librsvg: https://github.com/miyako/console-rsvg-convert
+```
+
+### Regenerate All Icons
+```bash
+# Run from repository root after installing tools
+
 # Web icons
 rsvg-convert -w 192 -h 192 assets/images/logo.svg -o web/icons/icon-192.png
 rsvg-convert -w 512 -h 512 assets/images/logo.svg -o web/icons/icon-512.png
