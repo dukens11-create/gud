@@ -200,19 +200,19 @@ class DocumentExpirationService {
     required DateTime expiryDate,
   }) async {
     // Check if alert already exists
-    final existingAlertQuery = _db
+    Query existingAlertQuery = _db
         .collection('expiration_alerts')
         .where('type', isEqualTo: type.value)
         .where('expiryDate', isEqualTo: Timestamp.fromDate(expiryDate));
 
     if (driverId != null) {
-      existingAlertQuery.where('driverId', isEqualTo: driverId);
+      existingAlertQuery = existingAlertQuery.where('driverId', isEqualTo: driverId);
     }
     if (documentId != null) {
-      existingAlertQuery.where('documentId', isEqualTo: documentId);
+      existingAlertQuery = existingAlertQuery.where('documentId', isEqualTo: documentId);
     }
     if (truckNumber != null) {
-      existingAlertQuery.where('truckNumber', isEqualTo: truckNumber);
+      existingAlertQuery = existingAlertQuery.where('truckNumber', isEqualTo: truckNumber);
     }
 
     final existingAlerts = await existingAlertQuery.get();
@@ -263,8 +263,8 @@ class DocumentExpirationService {
       body += ' for truck $truckNumber';
     }
 
-    // Determine channel based on urgency
-    String channelId = daysRemaining < 7 ? 'load_assignments' : 'announcements';
+    // Determine channel - use expiration_alerts for all expiration notifications
+    String channelId = 'expiration_alerts';
 
     // Send notification to specific driver if available
     if (driverId != null) {

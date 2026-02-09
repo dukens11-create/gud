@@ -730,7 +730,7 @@ class _AdminHomeState extends State<AdminHome> {
               stream: _driverService.streamExpirationAlerts(),
               builder: (context, snapshot) {
                 final count = snapshot.data?.length ?? 0;
-                if (count == 0) return null;
+                if (count == 0) return const SizedBox.shrink();
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:intl/intl.dart';
 import '../../services/mock_data_service.dart';
 import '../../services/location_service.dart';
 import '../../services/firestore_service.dart';
@@ -819,10 +820,6 @@ class _DriverHomeState extends State<DriverHome> {
   }
 
   String _formatDate(DateTime date) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    return DateFormat('MMM dd, yyyy').format(date);
   }
 }
