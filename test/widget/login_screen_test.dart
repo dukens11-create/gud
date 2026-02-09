@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gud_app/screens/login_screen.dart';
 import 'package:gud_app/screens/admin/admin_home.dart';
 import 'package:gud_app/screens/driver/driver_home.dart';
@@ -23,11 +24,11 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(makeTestableWidget(const LoginScreen()));
 
-      // Verify app icon is displayed
-      expect(find.byIcon(Icons.local_shipping), findsOneWidget);
+      // Verify logo image is displayed
+      expect(find.byType(Image), findsOneWidget);
 
-      // Verify app title
-      expect(find.text('GUD Express'), findsOneWidget);
+      // Verify truck icon SVG is displayed
+      expect(find.byType(SvgPicture), findsOneWidget);
 
       // Verify email field
       expect(find.widgetWithText(AppTextField, 'Email'), findsOneWidget);
@@ -266,7 +267,7 @@ void main() {
       await tester.pump();
 
       // Verify elements exist in portrait
-      expect(find.text('GUD Express'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Sign In'), findsOneWidget);
 
       // Change to landscape
@@ -274,7 +275,7 @@ void main() {
       await tester.pump();
 
       // Elements should still be visible
-      expect(find.text('GUD Express'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Sign In'), findsOneWidget);
 
       // Reset to default

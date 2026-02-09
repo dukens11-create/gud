@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../services/auth_service.dart';
 import '../services/analytics_service.dart';
 import '../widgets/app_button.dart';
@@ -133,13 +134,12 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset('assets/images/logo.png', width: 120, height: 120),
-              const SizedBox(height: 24),
-              const Text(
-                'GUD Express',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+              const SizedBox(height: 16),
+              SvgPicture.asset(
+                'assets/images/truck_icon.svg',
+                width: 80,
+                height: 48,
               ),
-              const SizedBox(height: 8),
-
               const SizedBox(height: 32),
               AppTextField(
                 controller: _emailController,
