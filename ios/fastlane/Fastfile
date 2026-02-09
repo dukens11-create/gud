@@ -1,0 +1,165 @@
+# Fastfile for GUD Express iOS App
+# This file contains the fastlane.tools configuration for building and deploying the iOS app
+
+# Fastlane configuration
+default_platform(:ios)
+
+platform :ios do
+  
+  # Before all lanes
+  before_all do
+    # Ensure we're in the iOS directory
+    Dir.chdir("..") do
+      # Any global setup can go here
+    end
+  end
+
+  # Lane for building the IPA
+  desc "Build IPA for App Store"
+  lane :build do
+    # Clear derived data to ensure clean build
+    clear_derived_data
+    
+    # Install CocoaPods dependencies
+    cocoapods(
+      clean_install: true,
+      podfile: "./Podfile"
+    )
+    
+    # Build the IPA
+    build_app(
+      scheme: "Runner",
+      workspace: "Runner.xcworkspace",
+      export_method: "app-store",
+      export_options: {
+        method: "app-store",
+        uploadSymbols: true,
+        compileBitcode: false,
+        uploadBitcode: false,
+        signingStyle: "automatic",
+        stripSwiftSymbols: true,
+        iCloudContainerEnvironment: "Production"
+      },
+      output_directory: "./build",
+      output_name: "gud_app.ipa",
+      clean: true,
+      suppress_xcode_output: false,
+      xcargs: "-allowProvisioningUpdates"
+    )
+    
+    UI.success("✅ Successfully built IPA!")
+  end
+
+  # Lane for uploading to TestFlight
+  desc "Upload IPA to TestFlight"
+  lane :upload_testflight do
+    # Upload to TestFlight using App Store Connect API
+    upload_to_testflight(
+      api_key_path: ENV["APP_STORE_CONNECT_API_KEY_PATH"],
+      skip_waiting_for_build_processing: true,
+      skip_submission: false,
+      distribute_external: false,
+      notify_external_testers: false,
+      ipa: "./build/gud_app.ipa",
+      changelog: "Bug fixes and improvements"
+    )
+    
+    UI.success("✅ Successfully uploaded to TestFlight!")
+  end
+
+  # Lane for uploading using altool (alternative method)
+  desc "Upload IPA to App Store Connect using altool"
+  lane :upload_altool do
+    # Get credentials from environment
+    apple_id = ENV["APPLE_ID"]
+    app_specific_password = ENV["APPLE_APP_SPECIFIC_PASSWORD"]
+    
+    unless apple_id && app_specific_password
+      UI.user_error!("APPLE_ID and APPLE_APP_SPECIFIC_PASSWORD must be set")
+    end
+    
+    # Upload using altool
+    upload_to_app_store(
+      api_key_path: ENV["APP_STORE_CONNECT_API_KEY_PATH"],
+      skip_metadata: true,
+      skip_screenshots: true,
+      skip_binary_upload: false,
+      ipa: "./build/gud_app.ipa",
+      force: true,
+      run_precheck_before_submit: false
+    )
+    
+    UI.success("✅ Successfully uploaded to App Store Connect!")
+  end
+
+  # Combined lane: build and upload to TestFlight
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    build
+    upload_testflight
+  end
+
+  # Combined lane: build and upload to App Store Connect
+  desc "Build and upload to App Store Connect"
+  lane :release do
+    build
+    upload_altool
+  end
+
+  # Lane for submitting to App Store review
+  desc "Submit app for App Store review"
+  lane :submit_review do
+    deliver(
+      api_key_path: ENV["APP_STORE_CONNECT_API_KEY_PATH"],
+      submit_for_review: true,
+      automatic_release: false,
+      force: true,
+      skip_metadata: true,
+      skip_screenshots: true,
+      skip_binary_upload: true,
+      submission_information: {
+        add_id_info_uses_idfa: false
+      }
+    )
+    
+    UI.success("✅ Successfully submitted for review!")
+  end
+
+  # Lane for generating screenshots (optional)
+  desc "Generate screenshots for App Store"
+  lane :screenshots do
+    capture_screenshots(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      output_directory: "./fastlane/screenshots",
+      clear_previous_screenshots: true,
+      stop_after_first_error: false
+    )
+    
+    UI.success("✅ Screenshots generated!")
+  end
+
+  # Lane for updating metadata (optional)
+  desc "Update App Store metadata"
+  lane :metadata do
+    deliver(
+      api_key_path: ENV["APP_STORE_CONNECT_API_KEY_PATH"],
+      skip_binary_upload: true,
+      skip_screenshots: false,
+      force: true,
+      run_precheck_before_submit: false
+    )
+    
+    UI.success("✅ Metadata updated!")
+  end
+
+  # Error handling
+  error do |lane, exception|
+    UI.error("❌ Error in lane #{lane}: #{exception.message}")
+  end
+
+  # After all lanes
+  after_all do |lane|
+    UI.success("🎉 Lane #{lane} completed successfully!")
+  end
+end

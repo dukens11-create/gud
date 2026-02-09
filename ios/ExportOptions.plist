@@ -23,6 +23,7 @@
     <!-- 
     TEAM ID: Your Apple Developer Team ID
     Find it in Apple Developer Console under Membership
+    Set via TEAM_ID secret in GitHub Actions
     -->
     <key>teamID</key>
     <string>YOUR_TEAM_ID</string>
@@ -52,7 +53,7 @@
     -->
     <key>provisioningProfiles</key>
     <dict>
-        <key>com.gud.express</key>
+        <key>com.gudexpress.gud_app</key>
         <string>YOUR_PROVISIONING_PROFILE_NAME</string>
     </dict>
     
