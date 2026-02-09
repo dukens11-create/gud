@@ -363,16 +363,20 @@ cd android
 
 ### Updating Version
 
+Version numbers must be updated in TWO locations:
+
 1. Edit `pubspec.yaml`:
    ```yaml
    version: 2.2.0+3
    ```
 
-2. Update `android/app/build.gradle`:
+2. Edit `android/app/build.gradle`:
    ```gradle
    versionCode 3
    versionName "2.2.0"
    ```
+
+**Important:** Keep these synchronized! The version in `build.gradle` is what Google Play uses.
 
 3. Rebuild the AAB:
    ```bash

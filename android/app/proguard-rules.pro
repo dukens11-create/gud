@@ -177,7 +177,8 @@
 -keepattributes Exceptions
 
 # General optimizations
--optimizationpasses 5
+# Using 3 optimization passes for balance between build time and size reduction
+-optimizationpasses 3
 -dontusemixedcaseclassnames
 -dontskipnonpubliclibraryclasses
 -dontpreverify

@@ -102,4 +102,4 @@ workflows:
     publishing:
       email:
         recipients:
-          - build@gudexpress.com
+          - developer@example.com  # Update with actual email address
