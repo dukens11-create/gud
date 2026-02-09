@@ -1,6 +1,107 @@
 workflows:
+  # iOS Debug Build - For testing and development
+  ios-debug:
+    name: iOS Debug Build
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'develop'
+          include: true
+        - pattern: 'feature/*'
+          include: true
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      vars:
+        GRADLE_OPTS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m"
+    scripts:
+      - name: Install Flutter dependencies
+        script: |
+          flutter pub get
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+      - name: Build iOS Debug
+        script: |
+          flutter build ios --debug --no-codesign
+    artifacts:
+      - build/ios/iphoneos/*.app
+
+  # iOS Release Build - With automatic code signing
+  ios-release:
+    name: iOS Release Build
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+        - pattern: 'release/*'
+          include: true
+      tag_patterns:
+        - pattern: 'v*.*.*'
+          include: true
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store  # Options: app_store, ad_hoc, development
+        bundle_identifier: com.gudexpress.gud_app
+      vars:
+        GRADLE_OPTS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m"
+    scripts:
+      - name: Set up Flutter version
+        script: |
+          flutter --version
+      - name: Install Flutter dependencies
+        script: |
+          flutter pub get
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+      - name: Build iOS Release IPA
+        script: |
+          flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+      - name: Verify IPA
+        script: |
+          if [ -f "build/ios/ipa/*.ipa" ]; then
+            echo "✅ IPA build successful"
+            ls -lh build/ios/ipa/*.ipa
+          else
+            echo "❌ IPA build failed"
+            exit 1
+          fi
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - developer@example.com  # Update with actual email
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        # Requires App Store Connect API key to be configured
+        # Uncomment and configure when ready for automatic TestFlight upload
+        # api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        # key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        # issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: false  # Set to true to auto-submit to TestFlight
+
+  # iOS Build (Basic) - No code signing
   ios-workflow:
-    name: iOS Build
+    name: iOS Build (No Signing)
     max_build_duration: 120
     instance_type: mac_mini_m1
     triggering:
@@ -29,8 +130,36 @@ workflows:
     artifacts:
       - build/ios/iphoneos/*.app
 
+  # Android Debug APK - For testing
+  android-debug:
+    name: Android Debug APK
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'develop'
+          include: true
+        - pattern: 'feature/*'
+          include: true
+    environment:
+      flutter: stable
+      vars:
+        GRADLE_OPTS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m"
+    scripts:
+      - name: Install Flutter dependencies
+        script: |
+          flutter pub get
+      - name: Build Android Debug APK
+        script: |
+          flutter build apk --debug
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+
+  # Android Release APK - For direct distribution (unsigned for testing)
   android-apk:
-    name: Android APK Build
+    name: Android APK Build (Release)
     max_build_duration: 120
     instance_type: mac_mini_m1
     triggering:
@@ -50,11 +179,28 @@ workflows:
       - name: Build Android APK
         script: |
           flutter build apk --release
+      - name: Verify APK
+        script: |
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+            echo "✅ APK build successful"
+            ls -lh build/app/outputs/flutter-apk/app-release.apk
+          else
+            echo "❌ APK build failed"
+            exit 1
+          fi
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
+    publishing:
+      email:
+        recipients:
+          - developer@example.com  # Update with actual email
+        notify:
+          success: true
+          failure: true
 
+  # Android App Bundle (AAB) - For Google Play Store (SIGNED)
   android-aab:
-    name: Android App Bundle (AAB) Build
+    name: Android App Bundle (AAB) Build - Play Store
     max_build_duration: 120
     instance_type: mac_mini_m1
     triggering:
@@ -72,34 +218,70 @@ workflows:
     environment:
       flutter: stable
       android_signing:
-        - gud_keystore
+        - gud_keystore  # References the keystore uploaded to Codemagic with reference name "gud_keystore"
       vars:
         GRADLE_OPTS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m"
     scripts:
+      - name: Set up Flutter version
+        script: |
+          flutter --version
       - name: Set up key.properties
         script: |
+          # Create key.properties file with keystore configuration
+          # These environment variables are automatically populated by Codemagic when keystore is uploaded
           echo "storePassword=$CM_KEYSTORE_PASSWORD" > android/key.properties
           echo "keyPassword=$CM_KEY_PASSWORD" >> android/key.properties
           echo "keyAlias=$CM_KEY_ALIAS" >> android/key.properties
           echo "storeFile=$CM_KEYSTORE_PATH" >> android/key.properties
+          echo "✅ key.properties created successfully"
+      - name: Verify keystore configuration
+        script: |
+          # Verify that keystore environment variables are set
+          if [ -z "$CM_KEYSTORE_PASSWORD" ]; then
+            echo "❌ ERROR: CM_KEYSTORE_PASSWORD is not set"
+            echo "⚠️  Please ensure keystore 'gud_keystore' is uploaded to Codemagic"
+            exit 1
+          fi
+          if [ -z "$CM_KEY_ALIAS" ]; then
+            echo "❌ ERROR: CM_KEY_ALIAS is not set"
+            echo "⚠️  Expected key alias: gud_key"
+            exit 1
+          fi
+          echo "✅ Keystore configuration verified"
+          echo "   Key alias: $CM_KEY_ALIAS"
       - name: Install Flutter dependencies
         script: |
           flutter pub get
       - name: Build Android App Bundle
         script: |
+          # Build signed AAB for Play Store release
           flutter build appbundle --release
       - name: Verify AAB
         script: |
           if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
             echo "✅ AAB build successful"
             ls -lh build/app/outputs/bundle/release/app-release.aab
+            # Display AAB info
+            echo ""
+            echo "📦 AAB Details:"
+            ls -lh build/app/outputs/bundle/release/app-release.aab | awk '{print "   Size: " $5}'
           else
             echo "❌ AAB build failed"
+            echo "Expected file: build/app/outputs/bundle/release/app-release.aab"
             exit 1
           fi
     artifacts:
       - build/app/outputs/bundle/release/*.aab
+      - android/key.properties  # For debugging (passwords are masked)
     publishing:
       email:
         recipients:
           - developer@example.com  # Update with actual email address
+        notify:
+          success: true
+          failure: true
+      # Uncomment to enable automatic Play Store publishing
+      # google_play:
+      #   credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS  # JSON key for service account
+      #   track: internal  # Options: internal, alpha, beta, production
+      #   submit_as_draft: true  # Set to false to publish immediately
