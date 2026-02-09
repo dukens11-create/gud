@@ -2,6 +2,14 @@
 
 This guide provides detailed instructions for setting up Android keystores and iOS code signing in Codemagic to resolve the **"No keystores with reference 'gud_keystore' were found"** error.
 
+## Important: Before You Begin
+
+⚠️ **Configuration Checklist:**
+1. Update email addresses in `codemagic.yaml` (lines 90, 196, 279) from `developer@example.com` to your actual team email addresses
+2. Ensure you have access to Codemagic dashboard at [codemagic.io](https://codemagic.io)
+3. Have your Apple Developer account credentials ready (for iOS builds)
+4. Prepare a secure location for storing keystore backups
+
 ## Table of Contents
 1. [Android Keystore Setup](#android-keystore-setup)
 2. [Uploading Keystore to Codemagic](#uploading-keystore-to-codemagic)
