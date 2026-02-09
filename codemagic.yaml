@@ -52,3 +52,54 @@ workflows:
           flutter build apk --release
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
+
+  android-aab:
+    name: Android App Bundle (AAB) Build
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+        - pattern: 'release/*'
+          include: true
+      tag_patterns:
+        - pattern: 'v*.*.*'
+          include: true
+    environment:
+      flutter: stable
+      android_signing:
+        - gud_keystore
+      vars:
+        GRADLE_OPTS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m"
+    scripts:
+      - name: Set up key.properties
+        script: |
+          echo "storePassword=$CM_KEYSTORE_PASSWORD" > android/key.properties
+          echo "keyPassword=$CM_KEY_PASSWORD" >> android/key.properties
+          echo "keyAlias=$CM_KEY_ALIAS" >> android/key.properties
+          echo "storeFile=$CM_KEYSTORE_PATH" >> android/key.properties
+      - name: Install Flutter dependencies
+        script: |
+          flutter pub get
+      - name: Build Android App Bundle
+        script: |
+          flutter build appbundle --release
+      - name: Verify AAB
+        script: |
+          if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
+            echo "✅ AAB build successful"
+            ls -lh build/app/outputs/bundle/release/app-release.aab
+          else
+            echo "❌ AAB build failed"
+            exit 1
+          fi
+    artifacts:
+      - build/app/outputs/bundle/release/*.aab
+    publishing:
+      email:
+        recipients:
+          - build@gudexpress.com
