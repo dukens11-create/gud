@@ -39,9 +39,10 @@ flutter run
 #### Automated Build via GitHub Actions
 The easiest way to build a signed AAB is through GitHub Actions:
 
-1. **Setup**: Follow the [GitHub Actions AAB Guide](GITHUB_ACTIONS_AAB_GUIDE.md)
-2. **Trigger**: Create a version tag or manually trigger the workflow
-3. **Download**: Get the built AAB from Actions artifacts
+1. **Setup**: Follow the [GitHub Actions AAB Guide](GITHUB_ACTIONS_AAB_GUIDE.md) or [Quick Start](AAB_QUICK_START_GITHUB_ACTIONS.md)
+2. **Verify Setup**: Run `./scripts/verify-aab-setup.sh` to check prerequisites
+3. **Trigger**: Create a version tag or manually trigger the workflow
+4. **Download**: Get the built AAB from Actions artifacts
 
 See [GITHUB_ACTIONS_AAB_GUIDE.md](GITHUB_ACTIONS_AAB_GUIDE.md) for detailed instructions.
 
