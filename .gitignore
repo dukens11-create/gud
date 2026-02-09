@@ -43,6 +43,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Android build outputs
+*.aab
+*.apk
+!gradle-wrapper.jar
+
 # Firebase
 google-services.json
 GoogleService-Info.plist
