@@ -445,4 +445,173 @@ class DriverExtendedService {
 
     return performanceList;
   }
+
+  // ========== TRUCK DOCUMENT MANAGEMENT ==========
+  
+  /// Upload truck document
+  Future<String> uploadTruckDocument({
+    required String truckNumber,
+    required String documentType,
+    required String url,
+    required DateTime expiryDate,
+  }) async {
+    final docRef = await _db
+        .collection('trucks')
+        .doc(truckNumber)
+        .collection('documents')
+        .add({
+      'truckNumber': truckNumber,
+      'type': documentType,
+      'url': url,
+      'uploadedAt': FieldValue.serverTimestamp(),
+      'expiryDate': Timestamp.fromDate(expiryDate),
+      'status': 'pending',
+    });
+
+    return docRef.id;
+  }
+
+  /// Get truck documents expiring soon (within 30 days)
+  Future<List<TruckDocument>> getExpiringTruckDocuments() async {
+    final thirtyDaysFromNow =
+        DateTime.now().add(const Duration(days: 30));
+
+    final snapshot = await _db
+        .collectionGroup('documents')
+        .where('truckNumber', isNotEqualTo: null)
+        .where('status', isEqualTo: 'valid')
+        .where('expiryDate', isLessThan: Timestamp.fromDate(thirtyDaysFromNow))
+        .get();
+
+    return snapshot.docs.map((doc) => TruckDocument.fromDoc(doc)).toList();
+  }
+
+  /// Stream truck documents for a specific truck
+  Stream<List<TruckDocument>> streamTruckDocuments(String truckNumber) {
+    return _db
+        .collection('trucks')
+        .doc(truckNumber)
+        .collection('documents')
+        .orderBy('expiryDate')
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => TruckDocument.fromDoc(doc)).toList());
+  }
+
+  // ========== EXPIRATION ALERT MANAGEMENT ==========
+  
+  /// Create expiration alert
+  Future<String> createExpirationAlert({
+    String? driverId,
+    String? documentId,
+    String? truckNumber,
+    required ExpirationAlertType type,
+    required DateTime expiryDate,
+  }) async {
+    final daysRemaining = expiryDate.difference(DateTime.now()).inDays;
+    
+    final docRef = await _db.collection('expiration_alerts').add({
+      'driverId': driverId,
+      'documentId': documentId,
+      'truckNumber': truckNumber,
+      'type': type.value,
+      'expiryDate': Timestamp.fromDate(expiryDate),
+      'status': 'pending',
+      'daysRemaining': daysRemaining,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    return docRef.id;
+  }
+
+  /// Get all active expiration alerts
+  Stream<List<ExpirationAlert>> streamExpirationAlerts() {
+    return _db
+        .collection('expiration_alerts')
+        .where('status', whereIn: ['pending', 'sent'])
+        .orderBy('expiryDate')
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => ExpirationAlert.fromDoc(doc)).toList());
+  }
+
+  /// Get expiration alerts for a specific driver
+  Stream<List<ExpirationAlert>> streamDriverExpirationAlerts(String driverId) {
+    return _db
+        .collection('expiration_alerts')
+        .where('driverId', isEqualTo: driverId)
+        .where('status', whereIn: ['pending', 'sent'])
+        .orderBy('expiryDate')
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => ExpirationAlert.fromDoc(doc)).toList());
+  }
+
+  /// Acknowledge expiration alert
+  Future<void> acknowledgeExpirationAlert({
+    required String alertId,
+    required String userId,
+  }) async {
+    await _db.collection('expiration_alerts').doc(alertId).update({
+      'status': 'acknowledged',
+      'acknowledgedAt': FieldValue.serverTimestamp(),
+      'acknowledgedBy': userId,
+    });
+  }
+
+  /// Dismiss expiration alert
+  Future<void> dismissExpirationAlert(String alertId) async {
+    await _db.collection('expiration_alerts').doc(alertId).update({
+      'status': 'dismissed',
+    });
+  }
+
+  /// Get expiration alert summary for admin dashboard
+  Future<Map<String, dynamic>> getExpirationAlertSummary() async {
+    final alertsSnapshot = await _db
+        .collection('expiration_alerts')
+        .where('status', whereIn: ['pending', 'sent'])
+        .get();
+
+    final alerts = alertsSnapshot.docs
+        .map((doc) => ExpirationAlert.fromDoc(doc))
+        .toList();
+
+    int criticalCount = 0;
+    int warningCount = 0;
+    
+    for (var alert in alerts) {
+      if (alert.isCritical) {
+        criticalCount++;
+      } else {
+        warningCount++;
+      }
+    }
+
+    return {
+      'totalAlerts': alerts.length,
+      'criticalAlerts': criticalCount,
+      'warningAlerts': warningCount,
+      'alerts': alerts,
+    };
+  }
+
+  /// Update days remaining for all active alerts
+  Future<void> updateAlertsRemainingDays() async {
+    final alertsSnapshot = await _db
+        .collection('expiration_alerts')
+        .where('status', whereIn: ['pending', 'sent'])
+        .get();
+
+    final batch = _db.batch();
+    
+    for (var doc in alertsSnapshot.docs) {
+      final alert = ExpirationAlert.fromDoc(doc);
+      final daysRemaining = alert.expiryDate.difference(DateTime.now()).inDays;
+      
+      batch.update(doc.reference, {'daysRemaining': daysRemaining});
+    }
+
+    await batch.commit();
+  }
 }

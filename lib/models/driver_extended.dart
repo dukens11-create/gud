@@ -399,3 +399,287 @@ class TruckInspection {
     };
   }
 }
+
+/// Truck document model for registration and insurance
+class TruckDocument {
+  final String id;
+  final String truckNumber;
+  final TruckDocumentType type;
+  final String url;
+  final DateTime uploadedAt;
+  final DateTime expiryDate;
+  final DocumentStatus status;
+  final String? verifiedBy;
+  final DateTime? verifiedAt;
+  final String? notes;
+
+  TruckDocument({
+    required this.id,
+    required this.truckNumber,
+    required this.type,
+    required this.url,
+    required this.uploadedAt,
+    required this.expiryDate,
+    this.status = DocumentStatus.pending,
+    this.verifiedBy,
+    this.verifiedAt,
+    this.notes,
+  });
+
+  /// Create from Firestore document
+  factory TruckDocument.fromDoc(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    
+    return TruckDocument(
+      id: doc.id,
+      truckNumber: data['truckNumber'] ?? '',
+      type: TruckDocumentType.fromString(data['type'] ?? 'other'),
+      url: data['url'] ?? '',
+      uploadedAt: (data['uploadedAt'] as Timestamp).toDate(),
+      expiryDate: (data['expiryDate'] as Timestamp).toDate(),
+      status: DocumentStatus.fromString(data['status'] ?? 'pending'),
+      verifiedBy: data['verifiedBy'],
+      verifiedAt: (data['verifiedAt'] as Timestamp?)?.toDate(),
+      notes: data['notes'],
+    );
+  }
+
+  /// Convert to Firestore map
+  Map<String, dynamic> toMap() {
+    return {
+      'truckNumber': truckNumber,
+      'type': type.value,
+      'url': url,
+      'uploadedAt': Timestamp.fromDate(uploadedAt),
+      'expiryDate': Timestamp.fromDate(expiryDate),
+      'status': status.value,
+      'verifiedBy': verifiedBy,
+      'verifiedAt': verifiedAt != null 
+          ? Timestamp.fromDate(verifiedAt!) 
+          : null,
+      'notes': notes,
+    };
+  }
+
+  /// Check if document is expiring soon (within 30 days)
+  bool get isExpiringSoon {
+    final now = DateTime.now();
+    final daysUntilExpiry = expiryDate.difference(now).inDays;
+    return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  }
+
+  /// Check if document is expired
+  bool get isExpired {
+    return DateTime.now().isAfter(expiryDate);
+  }
+
+  /// Get days until expiry
+  int get daysUntilExpiry {
+    return expiryDate.difference(DateTime.now()).inDays;
+  }
+}
+
+/// Truck document type enum
+enum TruckDocumentType {
+  registration('registration'),
+  insurance('insurance'),
+  inspection('inspection'),
+  other('other');
+
+  final String value;
+  const TruckDocumentType(this.value);
+
+  static TruckDocumentType fromString(String value) {
+    return TruckDocumentType.values.firstWhere(
+      (type) => type.value == value,
+      orElse: () => TruckDocumentType.other,
+    );
+  }
+
+  String get displayName {
+    switch (this) {
+      case TruckDocumentType.registration:
+        return 'Truck Registration';
+      case TruckDocumentType.insurance:
+        return 'Truck Insurance';
+      case TruckDocumentType.inspection:
+        return 'Truck Inspection';
+      case TruckDocumentType.other:
+        return 'Other';
+    }
+  }
+}
+
+/// Expiration alert model
+class ExpirationAlert {
+  final String id;
+  final String? driverId;
+  final String? documentId;
+  final String? truckNumber;
+  final ExpirationAlertType type;
+  final DateTime expiryDate;
+  final AlertStatus status;
+  final int daysRemaining;
+  final DateTime createdAt;
+  final DateTime? sentAt;
+  final DateTime? acknowledgedAt;
+  final String? acknowledgedBy;
+
+  ExpirationAlert({
+    required this.id,
+    this.driverId,
+    this.documentId,
+    this.truckNumber,
+    required this.type,
+    required this.expiryDate,
+    this.status = AlertStatus.pending,
+    required this.daysRemaining,
+    required this.createdAt,
+    this.sentAt,
+    this.acknowledgedAt,
+    this.acknowledgedBy,
+  });
+
+  /// Create from Firestore document
+  factory ExpirationAlert.fromDoc(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    
+    return ExpirationAlert(
+      id: doc.id,
+      driverId: data['driverId'],
+      documentId: data['documentId'],
+      truckNumber: data['truckNumber'],
+      type: ExpirationAlertType.fromString(data['type'] ?? 'other'),
+      expiryDate: (data['expiryDate'] as Timestamp).toDate(),
+      status: AlertStatus.fromString(data['status'] ?? 'pending'),
+      daysRemaining: data['daysRemaining'] ?? 0,
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      sentAt: (data['sentAt'] as Timestamp?)?.toDate(),
+      acknowledgedAt: (data['acknowledgedAt'] as Timestamp?)?.toDate(),
+      acknowledgedBy: data['acknowledgedBy'],
+    );
+  }
+
+  /// Convert to Firestore map
+  Map<String, dynamic> toMap() {
+    return {
+      'driverId': driverId,
+      'documentId': documentId,
+      'truckNumber': truckNumber,
+      'type': type.value,
+      'expiryDate': Timestamp.fromDate(expiryDate),
+      'status': status.value,
+      'daysRemaining': daysRemaining,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'sentAt': sentAt != null ? Timestamp.fromDate(sentAt!) : null,
+      'acknowledgedAt': acknowledgedAt != null 
+          ? Timestamp.fromDate(acknowledgedAt!) 
+          : null,
+      'acknowledgedBy': acknowledgedBy,
+    };
+  }
+
+  /// Check if alert is critical (less than 7 days)
+  bool get isCritical {
+    return daysRemaining < 7;
+  }
+
+  /// Get priority color
+  String get priorityColor {
+    if (daysRemaining < 7) return 'red';
+    if (daysRemaining <= 30) return 'yellow';
+    return 'green';
+  }
+
+  /// Copy with updated fields
+  ExpirationAlert copyWith({
+    AlertStatus? status,
+    DateTime? sentAt,
+    DateTime? acknowledgedAt,
+    String? acknowledgedBy,
+    int? daysRemaining,
+  }) {
+    return ExpirationAlert(
+      id: id,
+      driverId: driverId,
+      documentId: documentId,
+      truckNumber: truckNumber,
+      type: type,
+      expiryDate: expiryDate,
+      status: status ?? this.status,
+      daysRemaining: daysRemaining ?? this.daysRemaining,
+      createdAt: createdAt,
+      sentAt: sentAt ?? this.sentAt,
+      acknowledgedAt: acknowledgedAt ?? this.acknowledgedAt,
+      acknowledgedBy: acknowledgedBy ?? this.acknowledgedBy,
+    );
+  }
+}
+
+/// Expiration alert type enum
+enum ExpirationAlertType {
+  driverLicense('driver_license'),
+  medicalCard('medical_card'),
+  truckRegistration('truck_registration'),
+  truckInsurance('truck_insurance'),
+  certification('certification'),
+  other('other');
+
+  final String value;
+  const ExpirationAlertType(this.value);
+
+  static ExpirationAlertType fromString(String value) {
+    return ExpirationAlertType.values.firstWhere(
+      (type) => type.value == value,
+      orElse: () => ExpirationAlertType.other,
+    );
+  }
+
+  String get displayName {
+    switch (this) {
+      case ExpirationAlertType.driverLicense:
+        return 'Driver License';
+      case ExpirationAlertType.medicalCard:
+        return 'DOT Medical Card';
+      case ExpirationAlertType.truckRegistration:
+        return 'Truck Registration';
+      case ExpirationAlertType.truckInsurance:
+        return 'Truck Insurance';
+      case ExpirationAlertType.certification:
+        return 'Certification';
+      case ExpirationAlertType.other:
+        return 'Other';
+    }
+  }
+}
+
+/// Alert status enum
+enum AlertStatus {
+  pending('pending'),
+  sent('sent'),
+  acknowledged('acknowledged'),
+  dismissed('dismissed');
+
+  final String value;
+  const AlertStatus(this.value);
+
+  static AlertStatus fromString(String value) {
+    return AlertStatus.values.firstWhere(
+      (status) => status.value == value,
+      orElse: () => AlertStatus.pending,
+    );
+  }
+
+  String get displayName {
+    switch (this) {
+      case AlertStatus.pending:
+        return 'Pending';
+      case AlertStatus.sent:
+        return 'Sent';
+      case AlertStatus.acknowledged:
+        return 'Acknowledged';
+      case AlertStatus.dismissed:
+        return 'Dismissed';
+    }
+  }
+}

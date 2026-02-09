@@ -12,6 +12,7 @@ import 'services/background_location_service.dart';
 import 'services/geofence_service.dart';
 import 'services/sync_service.dart';
 import 'services/remote_config_service.dart';
+import 'services/document_expiration_service.dart';
 import 'app.dart';
 
 /// Initialize all background services
@@ -65,6 +66,10 @@ Future<void> initializeServices() async {
     // Initialize sync service
     await SyncService.instance.initialize();
     print('✅ Sync Service initialized');
+
+    // Initialize document expiration monitoring
+    DocumentExpirationService().startMonitoring();
+    print('✅ Document Expiration Service initialized');
 
     // Log successful initialization
     await AnalyticsService.instance.logEvent('services_initialized');
