@@ -59,3 +59,6 @@ key.properties
 *.jks
 *.keystore
 upload-keystore.jks
+keystore.properties
+gud_keystore.jks
+keystore_base64.txt
