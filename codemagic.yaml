@@ -71,11 +71,22 @@ workflows:
           include: true
     environment:
       flutter: stable
+      # Android code signing configuration
+      # This references the keystore uploaded to Codemagic dashboard
+      # Reference name MUST be exactly: gud_keystore
+      # See CODEMAGIC_KEYSTORE_SETUP.md for setup instructions
       android_signing:
-        - gud_keystore
+        - gud_keystore  # Must match the reference name in Codemagic dashboard
       vars:
         GRADLE_OPTS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m"
     scripts:
+      # Create key.properties file with keystore credentials
+      # Codemagic automatically injects these environment variables when
+      # a keystore with reference name 'gud_keystore' is found:
+      # - $CM_KEYSTORE_PASSWORD: Keystore password from Codemagic
+      # - $CM_KEY_PASSWORD: Key password from Codemagic
+      # - $CM_KEY_ALIAS: Key alias from Codemagic
+      # - $CM_KEYSTORE_PATH: Path to keystore file during build
       - name: Set up key.properties
         script: |
           echo "storePassword=$CM_KEYSTORE_PASSWORD" > android/key.properties
