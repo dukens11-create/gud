@@ -146,6 +146,16 @@ class NotificationService {
       playSound: false,
     );
 
+    // High priority channel for document expiration alerts
+    const AndroidNotificationChannel expirationAlertsChannel = AndroidNotificationChannel(
+      'expiration_alerts',
+      'Document Expiration Alerts',
+      description: 'Notifications for expiring driver and truck documents',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
     // Create channels
     await _localNotifications
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
@@ -162,6 +172,10 @@ class NotificationService {
     await _localNotifications
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(announcementsChannel);
+    
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(expirationAlertsChannel);
 
     print('✅ Android notification channels created');
   }
@@ -180,6 +194,8 @@ class NotificationService {
       channelId = 'pod_events';
     } else if (message.data['type'] == 'announcement') {
       channelId = 'announcements';
+    } else if (message.data['type'] == 'expiration_alert') {
+      channelId = 'expiration_alerts';
     }
     
     // Display local notification with appropriate channel
@@ -282,6 +298,11 @@ class NotificationService {
       channelDescription = 'General announcements and notifications';
       importance = Importance.low;
       priority = Priority.low;
+    } else if (channelId == 'expiration_alerts') {
+      channelName = 'Document Expiration Alerts';
+      channelDescription = 'Notifications for expiring driver and truck documents';
+      importance = Importance.high;
+      priority = Priority.high;
     }
 
     final AndroidNotificationDetails androidDetails = 

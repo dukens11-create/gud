@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:intl/intl.dart';
 import '../../services/mock_data_service.dart';
 import '../../services/location_service.dart';
 import '../../services/firestore_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/driver_extended_service.dart';
 import '../../models/load.dart';
+import '../../models/driver_extended.dart';
 import 'load_detail_screen.dart';
 import '../login_screen.dart';
 
@@ -20,6 +23,7 @@ class DriverHome extends StatefulWidget {
 class _DriverHomeState extends State<DriverHome> {
   final LocationService _locationService = LocationService();
   final FirestoreService _firestoreService = FirestoreService();
+  final DriverExtendedService _driverService = DriverExtendedService();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _statusFilter = 'all';
@@ -157,6 +161,54 @@ class _DriverHomeState extends State<DriverHome> {
           child: const Text('My Loads'),
         ),
         actions: [
+          // Expiration alerts notification badge
+          StreamBuilder<List<ExpirationAlert>>(
+            stream: _driverService.streamDriverExpirationAlerts(widget.driverId),
+            builder: (context, snapshot) {
+              final alertCount = snapshot.data?.length ?? 0;
+              final criticalCount = snapshot.data
+                      ?.where((alert) => alert.isCritical)
+                      .length ??
+                  0;
+              
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications),
+                    tooltip: 'My Expiration Alerts',
+                    onPressed: () {
+                      _showExpirationAlertsDialog();
+                    },
+                  ),
+                  if (alertCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: criticalCount > 0 ? Colors.red : Colors.orange,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          alertCount > 99 ? '99+' : alertCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             tooltip: 'More options',
@@ -269,6 +321,95 @@ class _DriverHomeState extends State<DriverHome> {
       ),
       body: Column(
         children: [
+          // Expiration Alerts Banner
+          StreamBuilder<List<ExpirationAlert>>(
+            stream: _driverService.streamDriverExpirationAlerts(widget.driverId),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              final alerts = snapshot.data!;
+              final criticalCount = alerts.where((a) => a.isCritical).length;
+
+              return Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: criticalCount > 0
+                      ? Colors.red.shade50
+                      : Colors.orange.shade50,
+                  border: Border.all(
+                    color: criticalCount > 0
+                        ? Colors.red.shade300
+                        : Colors.orange.shade300,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _showExpirationAlertsDialog,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Icon(
+                            criticalCount > 0 ? Icons.error : Icons.warning,
+                            color: criticalCount > 0
+                                ? Colors.red.shade700
+                                : Colors.orange.shade700,
+                            size: 32,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  criticalCount > 0
+                                      ? '⚠️ Urgent: Document${criticalCount != 1 ? 's' : ''} Expiring Soon!'
+                                      : '📄 Document Expiration Notice',
+                                  style: TextStyle(
+                                    color: criticalCount > 0
+                                        ? Colors.red.shade900
+                                        : Colors.orange.shade900,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  criticalCount > 0
+                                      ? '$criticalCount document${criticalCount != 1 ? 's' : ''} expiring in less than 7 days'
+                                      : '${alerts.length} document${alerts.length != 1 ? 's' : ''} expiring within 30 days',
+                                  style: TextStyle(
+                                    color: criticalCount > 0
+                                        ? Colors.red.shade700
+                                        : Colors.orange.shade700,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            color: criticalCount > 0
+                                ? Colors.red.shade700
+                                : Colors.orange.shade700,
+                            size: 16,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
           // Send Location button at the top
           Container(
             width: double.infinity,
@@ -523,5 +664,162 @@ class _DriverHomeState extends State<DriverHome> {
       default:
         return Colors.grey;
     }
+  }
+
+  void _showExpirationAlertsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.notification_important, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Document Expiration Alerts'),
+          ],
+        ),
+        content: StreamBuilder<List<ExpirationAlert>>(
+          stream: _driverService.streamDriverExpirationAlerts(widget.driverId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, size: 64, color: Colors.green),
+                  SizedBox(height: 16),
+                  Text(
+                    'All your documents are up to date!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              );
+            }
+
+            final alerts = snapshot.data!;
+            alerts.sort((a, b) => a.daysRemaining.compareTo(b.daysRemaining));
+
+            return SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: alerts.length,
+                itemBuilder: (context, index) {
+                  final alert = alerts[index];
+                  final color = alert.isCritical ? Colors.red : Colors.orange;
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: color.withOpacity(0.3), width: 2),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    alert.daysRemaining.toString(),
+                                    style: TextStyle(
+                                      color: color,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    'days',
+                                    style: TextStyle(
+                                      color: color,
+                                      fontSize: 8,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  alert.type.displayName,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Expires: ${_formatDate(alert.expiryDate)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (alert.status != AlertStatus.acknowledged)
+                            IconButton(
+                              icon: const Icon(Icons.check_circle_outline),
+                              color: Colors.green,
+                              tooltip: 'Mark as read',
+                              onPressed: () async {
+                                await _driverService.acknowledgeExpirationAlert(
+                                  alertId: alert.id,
+                                  userId: widget.driverId,
+                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Alert acknowledged'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('MMM dd, yyyy').format(date);
   }
 }

@@ -108,3 +108,321 @@ exports.sendOverdueLoadReminders = functions.pubsub.schedule('every day 09:00').
   if (notifications.length > 0) await Promise.all(notifications);
   return { sent: notifications.length };
 });
+
+// 7. Daily document expiration check
+exports.checkDocumentExpirations = functions.pubsub
+  .schedule('every day 08:00')
+  .timeZone('America/New_York')
+  .onRun(async () => {
+    console.log('🔍 Checking for expiring documents...');
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    let alertsCreated = 0;
+    let notificationsSent = 0;
+
+    // Check driver documents
+    const driversSnapshot = await admin.firestore().collection('drivers').get();
+    
+    for (const driverDoc of driversSnapshot.docs) {
+      const driverId = driverDoc.id;
+      const driverData = driverDoc.data();
+      
+      // Check driver license expiration
+      if (driverData.licenseExpiry) {
+        const licenseExpiry = driverData.licenseExpiry.toDate();
+        if (licenseExpiry > now && licenseExpiry < thirtyDaysFromNow) {
+          const daysRemaining = Math.floor((licenseExpiry - now) / (1000 * 60 * 60 * 24));
+          
+          // Check if alert already exists
+          const existingAlert = await admin.firestore()
+            .collection('expiration_alerts')
+            .where('driverId', '==', driverId)
+            .where('type', '==', 'driver_license')
+            .where('status', 'in', ['pending', 'sent'])
+            .get();
+          
+          if (existingAlert.empty) {
+            // Create new alert
+            await admin.firestore().collection('expiration_alerts').add({
+              driverId: driverId,
+              type: 'driver_license',
+              expiryDate: admin.firestore.Timestamp.fromDate(licenseExpiry),
+              status: 'sent',
+              daysRemaining: daysRemaining,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              sentAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            alertsCreated++;
+            
+            // Send notification
+            const userSnapshot = await admin.firestore()
+              .collection('users')
+              .where('driverId', '==', driverId)
+              .limit(1)
+              .get();
+            
+            if (!userSnapshot.empty) {
+              const userData = userSnapshot.docs[0].data();
+              if (userData.fcmToken) {
+                await admin.messaging().send({
+                  notification: {
+                    title: '📄 Driver License Expiring Soon',
+                    body: `Your driver license expires in ${daysRemaining} days`
+                  },
+                  data: {
+                    type: 'expiration_alert',
+                    alertType: 'driver_license',
+                    daysRemaining: daysRemaining.toString()
+                  },
+                  token: userData.fcmToken
+                });
+                notificationsSent++;
+              }
+            }
+          }
+        }
+      }
+      
+      // Check driver documents (medical cards, etc.)
+      const documentsSnapshot = await admin.firestore()
+        .collection('drivers')
+        .doc(driverId)
+        .collection('documents')
+        .where('status', '==', 'valid')
+        .get();
+      
+      for (const docSnapshot of documentsSnapshot.docs) {
+        const docData = docSnapshot.data();
+        const expiryDate = docData.expiryDate.toDate();
+        
+        if (expiryDate > now && expiryDate < thirtyDaysFromNow) {
+          const daysRemaining = Math.floor((expiryDate - now) / (1000 * 60 * 60 * 24));
+          
+          // Check if alert already exists
+          const existingAlert = await admin.firestore()
+            .collection('expiration_alerts')
+            .where('documentId', '==', docSnapshot.id)
+            .where('status', 'in', ['pending', 'sent'])
+            .get();
+          
+          if (existingAlert.empty) {
+            // Map document type to alert type
+            let alertType = 'other';
+            if (docData.type === 'medical_card') alertType = 'medical_card';
+            else if (docData.type === 'license') alertType = 'driver_license';
+            else if (docData.type === 'certification') alertType = 'certification';
+            
+            // Create new alert
+            await admin.firestore().collection('expiration_alerts').add({
+              driverId: driverId,
+              documentId: docSnapshot.id,
+              type: alertType,
+              expiryDate: admin.firestore.Timestamp.fromDate(expiryDate),
+              status: 'sent',
+              daysRemaining: daysRemaining,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              sentAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            alertsCreated++;
+            
+            // Send notification
+            const userSnapshot = await admin.firestore()
+              .collection('users')
+              .where('driverId', '==', driverId)
+              .limit(1)
+              .get();
+            
+            if (!userSnapshot.empty) {
+              const userData = userSnapshot.docs[0].data();
+              if (userData.fcmToken) {
+                const docTypeDisplayName = docData.type === 'medical_card' 
+                  ? 'DOT Medical Card'
+                  : docData.type === 'license'
+                  ? 'Driver License'
+                  : docData.type === 'certification'
+                  ? 'Certification'
+                  : 'Document';
+                
+                await admin.messaging().send({
+                  notification: {
+                    title: `📄 ${docTypeDisplayName} Expiring Soon`,
+                    body: `Your ${docTypeDisplayName.toLowerCase()} expires in ${daysRemaining} days`
+                  },
+                  data: {
+                    type: 'expiration_alert',
+                    alertType: alertType,
+                    daysRemaining: daysRemaining.toString()
+                  },
+                  token: userData.fcmToken
+                });
+                notificationsSent++;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Check truck documents
+    const trucksSnapshot = await admin.firestore().collection('trucks').get();
+    
+    for (const truckDoc of trucksSnapshot.docs) {
+      const truckNumber = truckDoc.id;
+      
+      const documentsSnapshot = await admin.firestore()
+        .collection('trucks')
+        .doc(truckNumber)
+        .collection('documents')
+        .where('status', '==', 'valid')
+        .get();
+      
+      for (const docSnapshot of documentsSnapshot.docs) {
+        const docData = docSnapshot.data();
+        const expiryDate = docData.expiryDate.toDate();
+        
+        if (expiryDate > now && expiryDate < thirtyDaysFromNow) {
+          const daysRemaining = Math.floor((expiryDate - now) / (1000 * 60 * 60 * 24));
+          
+          // Check if alert already exists
+          const existingAlert = await admin.firestore()
+            .collection('expiration_alerts')
+            .where('documentId', '==', docSnapshot.id)
+            .where('truckNumber', '==', truckNumber)
+            .where('status', 'in', ['pending', 'sent'])
+            .get();
+          
+          if (existingAlert.empty) {
+            // Map document type to alert type
+            let alertType = 'other';
+            if (docData.type === 'registration') alertType = 'truck_registration';
+            else if (docData.type === 'insurance') alertType = 'truck_insurance';
+            
+            // Get driver assigned to this truck
+            const driverSnapshot = await admin.firestore()
+              .collection('drivers')
+              .where('truckNumber', '==', truckNumber)
+              .limit(1)
+              .get();
+            
+            const driverId = !driverSnapshot.empty ? driverSnapshot.docs[0].id : null;
+            
+            // Create new alert
+            await admin.firestore().collection('expiration_alerts').add({
+              driverId: driverId,
+              documentId: docSnapshot.id,
+              truckNumber: truckNumber,
+              type: alertType,
+              expiryDate: admin.firestore.Timestamp.fromDate(expiryDate),
+              status: 'sent',
+              daysRemaining: daysRemaining,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              sentAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            alertsCreated++;
+            
+            // Send notification to driver and admins
+            if (driverId) {
+              const userSnapshot = await admin.firestore()
+                .collection('users')
+                .where('driverId', '==', driverId)
+                .limit(1)
+                .get();
+              
+              if (!userSnapshot.empty) {
+                const userData = userSnapshot.docs[0].data();
+                if (userData.fcmToken) {
+                  const docTypeDisplayName = docData.type === 'registration'
+                    ? 'Truck Registration'
+                    : docData.type === 'insurance'
+                    ? 'Truck Insurance'
+                    : 'Truck Document';
+                  
+                  await admin.messaging().send({
+                    notification: {
+                      title: `🚛 ${docTypeDisplayName} Expiring Soon`,
+                      body: `${docTypeDisplayName} for truck ${truckNumber} expires in ${daysRemaining} days`
+                    },
+                    data: {
+                      type: 'expiration_alert',
+                      alertType: alertType,
+                      truckNumber: truckNumber,
+                      daysRemaining: daysRemaining.toString()
+                    },
+                    token: userData.fcmToken
+                  });
+                  notificationsSent++;
+                }
+              }
+            }
+            
+            // Notify admins
+            const adminSnapshot = await admin.firestore()
+              .collection('users')
+              .where('role', '==', 'admin')
+              .get();
+            
+            for (const adminDoc of adminSnapshot.docs) {
+              const adminData = adminDoc.data();
+              if (adminData.fcmToken) {
+                const docTypeDisplayName = docData.type === 'registration'
+                  ? 'Truck Registration'
+                  : docData.type === 'insurance'
+                  ? 'Truck Insurance'
+                  : 'Truck Document';
+                
+                await admin.messaging().send({
+                  notification: {
+                    title: `🚛 ${docTypeDisplayName} Expiring Soon`,
+                    body: `${docTypeDisplayName} for truck ${truckNumber} expires in ${daysRemaining} days`
+                  },
+                  data: {
+                    type: 'expiration_alert',
+                    alertType: alertType,
+                    truckNumber: truckNumber,
+                    daysRemaining: daysRemaining.toString()
+                  },
+                  token: adminData.fcmToken
+                });
+                notificationsSent++;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    console.log(`✅ Document expiration check completed: ${alertsCreated} alerts created, ${notificationsSent} notifications sent`);
+    return { alertsCreated, notificationsSent };
+  });
+
+// 8. Update days remaining for active alerts (runs daily)
+exports.updateAlertDaysRemaining = functions.pubsub
+  .schedule('every day 00:00')
+  .timeZone('America/New_York')
+  .onRun(async () => {
+    console.log('🔄 Updating days remaining for active alerts...');
+    
+    const now = new Date();
+    const alertsSnapshot = await admin.firestore()
+      .collection('expiration_alerts')
+      .where('status', 'in', ['pending', 'sent'])
+      .get();
+    
+    const batch = admin.firestore().batch();
+    let updated = 0;
+    
+    for (const alertDoc of alertsSnapshot.docs) {
+      const alertData = alertDoc.data();
+      const expiryDate = alertData.expiryDate.toDate();
+      const daysRemaining = Math.floor((expiryDate - now) / (1000 * 60 * 60 * 24));
+      
+      batch.update(alertDoc.ref, { daysRemaining: daysRemaining });
+      updated++;
+    }
+    
+    await batch.commit();
+    console.log(`✅ Updated ${updated} alerts`);
+    return { updated };
+  });
+

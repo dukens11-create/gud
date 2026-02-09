@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:intl/intl.dart';
 import '../../services/mock_data_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/driver_extended_service.dart';
 import '../../models/load.dart';
+import '../../models/driver_extended.dart';
 import '../login_screen.dart';
 
 class AdminHome extends StatefulWidget {
@@ -15,6 +17,7 @@ class AdminHome extends StatefulWidget {
 
 class _AdminHomeState extends State<AdminHome> {
   final mockService = MockDataService();
+  final _driverService = DriverExtendedService();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _statusFilter = 'all';
@@ -122,6 +125,54 @@ class _AdminHomeState extends State<AdminHome> {
           child: const Text('Admin Dashboard'),
         ),
         actions: [
+          // Expiration alerts notification badge
+          StreamBuilder<List<ExpirationAlert>>(
+            stream: _driverService.streamExpirationAlerts(),
+            builder: (context, snapshot) {
+              final alertCount = snapshot.data?.length ?? 0;
+              final criticalCount = snapshot.data
+                      ?.where((alert) => alert.isCritical)
+                      .length ??
+                  0;
+              
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications),
+                    tooltip: 'Expiration Alerts',
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/admin/expiration-alerts');
+                    },
+                  ),
+                  if (alertCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: criticalCount > 0 ? Colors.red : Colors.orange,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          alertCount > 99 ? '99+' : alertCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.exit_to_app),
             tooltip: 'Sign out',
@@ -140,6 +191,100 @@ class _AdminHomeState extends State<AdminHome> {
       drawer: _buildDrawer(context),
       body: Column(
         children: [
+          // Expiration Alerts Summary Widget
+          StreamBuilder<List<ExpirationAlert>>(
+            stream: _driverService.streamExpirationAlerts(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              final alerts = snapshot.data!;
+              final criticalCount = alerts.where((a) => a.isCritical).length;
+              final warningCount = alerts.length - criticalCount;
+
+              return Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: criticalCount > 0
+                        ? [Colors.red.shade400, Colors.red.shade600]
+                        : [Colors.orange.shade400, Colors.orange.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/admin/expiration-alerts');
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Icon(
+                            criticalCount > 0 ? Icons.error : Icons.warning,
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${alerts.length} Document${alerts.length != 1 ? 's' : ''} Expiring Soon',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                if (criticalCount > 0)
+                                  Text(
+                                    '$criticalCount critical (< 7 days)',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
+                                  )
+                                else
+                                  Text(
+                                    '$warningCount warning${warningCount != 1 ? 's' : ''} (< 30 days)',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
           // Search Bar
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -576,6 +721,36 @@ class _AdminHomeState extends State<AdminHome> {
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/admin/statistics');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.notification_important),
+            title: const Text('Expiration Alerts'),
+            trailing: StreamBuilder<List<ExpirationAlert>>(
+              stream: _driverService.streamExpirationAlerts(),
+              builder: (context, snapshot) {
+                final count = snapshot.data?.length ?? 0;
+                if (count == 0) return const SizedBox.shrink();
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    count.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                );
+              },
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/admin/expiration-alerts');
             },
           ),
           ListTile(
