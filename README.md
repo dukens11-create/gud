@@ -6,6 +6,29 @@
 
 GUD Express Trucking Management App - Production Ready
 
+---
+
+## 🚨 Fix Build Error: "No keystores found"
+
+**Are you seeing this error in Codemagic?**
+```
+No keystores with reference 'gud_keystore' were found from code signing identities.
+```
+
+**Quick Fix:**
+1. 📋 See [QUICK_FIX_CHECKLIST.md](QUICK_FIX_CHECKLIST.md) for immediate step-by-step fix
+2. 📖 See [CODEMAGIC_KEYSTORE_SETUP.md](CODEMAGIC_KEYSTORE_SETUP.md) for detailed guide with navigation help
+3. 🆘 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) if you're stuck
+
+**TL;DR**: You need to upload a keystore to Codemagic dashboard with reference name **exactly** `gud_keystore`
+
+**Generate keystore:**
+```bash
+./generate_keystore.sh
+```
+
+---
+
 ## Version
 **Current Version**: 2.1.0+2
 
