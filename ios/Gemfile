@@ -1,0 +1,18 @@
+# Gemfile for GUD Express iOS App
+# This file manages Ruby dependencies for iOS automation
+
+source "https://rubygems.org"
+
+# Fastlane - iOS and Android automation
+gem "fastlane", "~> 2.220"
+
+# CocoaPods - iOS dependency manager
+gem "cocoapods", "~> 1.15"
+
+# Additional gems for enhanced functionality
+gem "xcodeproj"        # Xcode project manipulation
+gem "xcpretty"         # Xcode output formatting
+
+# Optional: For enhanced CI/CD
+# gem "slather"        # Code coverage
+# gem "danger"         # PR automation
