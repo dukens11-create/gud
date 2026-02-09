@@ -62,7 +62,7 @@ jobs:
           storePassword=$KEYSTORE_PASSWORD
           keyPassword=$KEY_PASSWORD
           keyAlias=$KEY_ALIAS
-          storeFile=upload-keystore.jks
+          storeFile=app/upload-keystore.jks
           EOF
           echo "✅ key.properties created successfully"
 

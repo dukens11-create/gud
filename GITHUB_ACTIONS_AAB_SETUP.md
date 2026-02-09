@@ -183,8 +183,8 @@ After adding all four secrets, you should see them listed:
 ### Method 2: Push a Version Tag
 
 ```bash
-git tag v2.1.1
-git push origin v2.1.1
+git tag v1.0.0  # Replace with your actual version number
+git push origin v1.0.0
 ```
 
 The workflow will trigger automatically for any tag starting with `v`.
@@ -193,7 +193,7 @@ The workflow will trigger automatically for any tag starting with `v`.
 
 1. Go to your repository on GitHub
 2. Click **Releases** → **Create a new release**
-3. Choose or create a tag (e.g., `v2.1.1`)
+3. Choose or create a tag (e.g., `v1.0.0` - replace with your version)
 4. Fill in release details
 5. Click **Publish release**
 
