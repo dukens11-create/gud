@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/driver_extended.dart';
 
 /// Service for managing extended driver features including:
@@ -7,8 +8,20 @@ import '../models/driver_extended.dart';
 /// - Document verification
 /// - Performance tracking
 /// - Availability management
+/// 
+/// **Security**: All methods verify user authentication before executing queries.
 class DriverExtendedService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  void _requireAuth() {
+    if (_auth.currentUser == null) {
+      throw FirebaseAuthException(
+        code: 'unauthenticated',
+        message: 'User must be signed in to access driver data',
+      );
+    }
+  }
 
   // ========== RATING SYSTEM ==========
   
@@ -27,6 +40,7 @@ class DriverExtendedService {
     required String adminId,
     String? comment,
   }) async {
+    _requireAuth();
     // Validate rating
     if (rating < 1 || rating > 5) {
       throw ArgumentError('Rating must be between 1 and 5');
@@ -51,6 +65,7 @@ class DriverExtendedService {
 
   /// Calculate and update driver's average rating
   Future<void> _updateAverageRating(String driverId) async {
+    _requireAuth();
     final ratingsSnapshot = await _db
         .collection('drivers')
         .doc(driverId)
@@ -75,6 +90,7 @@ class DriverExtendedService {
 
   /// Get driver's rating history
   Stream<List<Map<String, dynamic>>> streamDriverRatings(String driverId) {
+    _requireAuth();
     return _db
         .collection('drivers')
         .doc(driverId)
@@ -100,6 +116,7 @@ class DriverExtendedService {
     required DateTime expiryDate,
     String? issuingAuthority,
   }) async {
+    _requireAuth();
     await _db
         .collection('drivers')
         .doc(driverId)
@@ -118,6 +135,7 @@ class DriverExtendedService {
   /// Get driver's certifications
   Stream<List<Map<String, dynamic>>> streamDriverCertifications(
       String driverId) {
+    _requireAuth();
     return _db
         .collection('drivers')
         .doc(driverId)
@@ -138,6 +156,7 @@ class DriverExtendedService {
     required String certificationId,
     required String status,
   }) async {
+    _requireAuth();
     await _db
         .collection('drivers')
         .doc(driverId)
@@ -158,6 +177,7 @@ class DriverExtendedService {
     required String url,
     required DateTime expiryDate,
   }) async {
+    _requireAuth();
     final docRef = await _db
         .collection('drivers')
         .doc(driverId)
@@ -176,6 +196,7 @@ class DriverExtendedService {
 
   /// Get pending documents for verification
   Stream<List<DriverDocument>> streamPendingDocuments() {
+    _requireAuth();
     return _db
         .collectionGroup('documents')
         .where('status', isEqualTo: 'pending')
@@ -192,6 +213,7 @@ class DriverExtendedService {
     required String adminId,
     String? notes,
   }) async {
+    _requireAuth();
     await _db
         .collection('drivers')
         .doc(driverId)
@@ -207,6 +229,7 @@ class DriverExtendedService {
 
   /// Get documents expiring soon (within 30 days)
   Future<List<DriverDocument>> getExpiringDocuments() async {
+    _requireAuth();
     final thirtyDaysFromNow =
         DateTime.now().add(const Duration(days: 30));
 
@@ -229,6 +252,7 @@ class DriverExtendedService {
     required bool isAvailable,
     String? reason,
   }) async {
+    _requireAuth();
     await _db
         .collection('drivers')
         .doc(driverId)
@@ -248,6 +272,7 @@ class DriverExtendedService {
     required DateTime startDate,
     required DateTime endDate,
   }) {
+    _requireAuth();
     return _db
         .collection('drivers')
         .doc(driverId)
@@ -273,6 +298,7 @@ class DriverExtendedService {
     DateTime? expiryDate,
     String? certificateUrl,
   }) async {
+    _requireAuth();
     await _db
         .collection('drivers')
         .doc(driverId)
@@ -288,6 +314,7 @@ class DriverExtendedService {
 
   /// Get driver training history
   Stream<List<Map<String, dynamic>>> streamDriverTraining(String driverId) {
+    _requireAuth();
     return _db
         .collection('drivers')
         .doc(driverId)
@@ -315,6 +342,7 @@ class DriverExtendedService {
     String? serviceProvider,
     String? notes,
   }) async {
+    _requireAuth();
     await _db.collection('maintenance').add({
       'driverId': driverId,
       'truckNumber': truckNumber,
@@ -332,6 +360,7 @@ class DriverExtendedService {
   /// Get maintenance history for a truck
   Stream<List<Map<String, dynamic>>> streamTruckMaintenance(
       String truckNumber) {
+    _requireAuth();
     return _db
         .collection('maintenance')
         .where('truckNumber', isEqualTo: truckNumber)
@@ -347,6 +376,7 @@ class DriverExtendedService {
 
   /// Get upcoming maintenance due
   Future<List<Map<String, dynamic>>> getUpcomingMaintenance() async {
+    _requireAuth();
     final now = DateTime.now();
     final thirtyDaysFromNow = now.add(const Duration(days: 30));
 
@@ -370,6 +400,7 @@ class DriverExtendedService {
   /// Get driver performance metrics
   Future<Map<String, dynamic>> getDriverPerformanceMetrics(
       String driverId) async {
+    _requireAuth();
     // Get basic driver info
     final driverDoc = await _db.collection('drivers').doc(driverId).get();
     final driverData = driverDoc.data() ?? {};
@@ -429,6 +460,7 @@ class DriverExtendedService {
 
   /// Get all drivers performance summary
   Future<List<Map<String, dynamic>>> getAllDriversPerformance() async {
+    _requireAuth();
     final driversSnapshot = await _db.collection('drivers').get();
     
     final performanceList = <Map<String, dynamic>>[];
@@ -455,6 +487,7 @@ class DriverExtendedService {
     required String url,
     required DateTime expiryDate,
   }) async {
+    _requireAuth();
     final docRef = await _db
         .collection('trucks')
         .doc(truckNumber)
@@ -473,6 +506,7 @@ class DriverExtendedService {
 
   /// Get truck documents expiring soon (within 30 days)
   Future<List<TruckDocument>> getExpiringTruckDocuments() async {
+    _requireAuth();
     final thirtyDaysFromNow =
         DateTime.now().add(const Duration(days: 30));
 
@@ -488,6 +522,7 @@ class DriverExtendedService {
 
   /// Stream truck documents for a specific truck
   Stream<List<TruckDocument>> streamTruckDocuments(String truckNumber) {
+    _requireAuth();
     return _db
         .collection('trucks')
         .doc(truckNumber)
@@ -508,6 +543,7 @@ class DriverExtendedService {
     required ExpirationAlertType type,
     required DateTime expiryDate,
   }) async {
+    _requireAuth();
     final daysRemaining = expiryDate.difference(DateTime.now()).inDays;
     
     final docRef = await _db.collection('expiration_alerts').add({
@@ -526,6 +562,7 @@ class DriverExtendedService {
 
   /// Get all active expiration alerts
   Stream<List<ExpirationAlert>> streamExpirationAlerts() {
+    _requireAuth();
     return _db
         .collection('expiration_alerts')
         .where('status', whereIn: ['pending', 'sent'])
@@ -537,6 +574,7 @@ class DriverExtendedService {
 
   /// Get expiration alerts for a specific driver
   Stream<List<ExpirationAlert>> streamDriverExpirationAlerts(String driverId) {
+    _requireAuth();
     return _db
         .collection('expiration_alerts')
         .where('driverId', isEqualTo: driverId)
@@ -552,6 +590,7 @@ class DriverExtendedService {
     required String alertId,
     required String userId,
   }) async {
+    _requireAuth();
     await _db.collection('expiration_alerts').doc(alertId).update({
       'status': 'acknowledged',
       'acknowledgedAt': FieldValue.serverTimestamp(),
@@ -561,6 +600,7 @@ class DriverExtendedService {
 
   /// Dismiss expiration alert
   Future<void> dismissExpirationAlert(String alertId) async {
+    _requireAuth();
     await _db.collection('expiration_alerts').doc(alertId).update({
       'status': 'dismissed',
     });
@@ -568,6 +608,7 @@ class DriverExtendedService {
 
   /// Get expiration alert summary for admin dashboard
   Future<Map<String, dynamic>> getExpirationAlertSummary() async {
+    _requireAuth();
     final alertsSnapshot = await _db
         .collection('expiration_alerts')
         .where('status', whereIn: ['pending', 'sent'])
@@ -598,6 +639,7 @@ class DriverExtendedService {
 
   /// Update days remaining for all active alerts
   Future<void> updateAlertsRemainingDays() async {
+    _requireAuth();
     final alertsSnapshot = await _db
         .collection('expiration_alerts')
         .where('status', whereIn: ['pending', 'sent'])

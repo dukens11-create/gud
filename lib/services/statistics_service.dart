@@ -1,8 +1,26 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/statistics.dart';
 
+/// Statistics service for calculating and managing business analytics.
+/// 
+/// **Security**: All methods verify user authentication before executing queries.
+/// Throws [FirebaseAuthException] if user is not authenticated.
 class StatisticsService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  /// Verify user is authenticated before executing Firestore operations
+  /// 
+  /// Throws [FirebaseAuthException] with code 'unauthenticated' if user is not signed in
+  void _requireAuth() {
+    if (_auth.currentUser == null) {
+      throw FirebaseAuthException(
+        code: 'unauthenticated',
+        message: 'User must be signed in to access statistics data',
+      );
+    }
+  }
 
   // Calculate statistics for a period
   Future<Statistics> calculateStatistics({
@@ -10,6 +28,7 @@ class StatisticsService {
     required DateTime endDate,
     String? driverId,
   }) async {
+    _requireAuth();
     // Get loads
     Query loadsQuery = _db.collection('loads')
         .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
@@ -92,6 +111,7 @@ class StatisticsService {
     required DateTime endDate,
     String? driverId,
   }) {
+    _requireAuth();
     // Combine loads and expenses streams
     return _db.collection('loads').snapshots().asyncMap((loadsSnapshot) async {
       return await calculateStatistics(
@@ -104,6 +124,7 @@ class StatisticsService {
 
   // Save statistics snapshot
   Future<void> saveStatisticsSnapshot(Statistics stats) async {
+    _requireAuth();
     await _db.collection('statistics_snapshots').add(stats.toMap());
   }
 
@@ -111,6 +132,7 @@ class StatisticsService {
   Future<List<Statistics>> getHistoricalStatistics({
     int limit = 12,
   }) async {
+    _requireAuth();
     final snapshot = await _db
         .collection('statistics_snapshots')
         .orderBy('periodEnd', descending: true)

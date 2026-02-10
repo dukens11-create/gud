@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/driver.dart';
 import '../models/load.dart';
 import '../models/pod.dart';
@@ -13,8 +14,24 @@ import '../models/pod.dart';
 /// - Statistics and analytics
 /// 
 /// All methods use Firebase Firestore for real-time data synchronization.
+/// 
+/// **Security**: All methods verify user authentication before executing queries.
+/// Throws [FirebaseAuthException] if user is not authenticated.
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  /// Verify user is authenticated before executing Firestore operations
+  /// 
+  /// Throws [FirebaseAuthException] with code 'unauthenticated' if user is not signed in
+  void _requireAuth() {
+    if (_auth.currentUser == null) {
+      throw FirebaseAuthException(
+        code: 'unauthenticated',
+        message: 'User must be signed in to access Firestore data',
+      );
+    }
+  }
 
   // User Management
   
@@ -22,6 +39,7 @@ class FirestoreService {
   /// 
   /// Returns 'admin' or 'driver', defaults to 'driver' if not found
   Future<String> getUserRole(String userId) async {
+    _requireAuth();
     DocumentSnapshot doc = await _db.collection('users').doc(userId).get();
     return (doc.data() as Map<String, dynamic>?)?['role'] ?? 'driver';
   }
@@ -41,6 +59,7 @@ class FirestoreService {
     required String phone,
     required String truckNumber,
   }) async {
+    _requireAuth();
     await _db.collection('drivers').doc(driverId).set({
       'name': name,
       'phone': phone,
@@ -54,7 +73,10 @@ class FirestoreService {
   /// 
   /// Returns a stream that emits the complete list of drivers
   /// whenever any driver document changes
+  /// 
+  /// Throws [FirebaseAuthException] if user is not authenticated
   Stream<List<Driver>> streamDrivers() {
+    _requireAuth();
     return _db.collection('drivers').snapshots().map(
       (snapshot) => snapshot.docs.map((doc) => Driver.fromMap(doc.id, doc.data())).toList(),
     );
@@ -78,6 +100,7 @@ class FirestoreService {
     String? status,
     bool? isActive,
   }) async {
+    _requireAuth();
     final Map<String, dynamic> updates = {};
     if (name != null) updates['name'] = name;
     if (phone != null) updates['phone'] = phone;
@@ -94,6 +117,7 @@ class FirestoreService {
   /// 
   /// Returns [Driver] if found, null otherwise
   Future<Driver?> getDriver(String driverId) async {
+    _requireAuth();
     final doc = await _db.collection('drivers').doc(driverId).get();
     if (!doc.exists) return null;
     return Driver.fromMap(doc.id, doc.data() as Map<String, dynamic>);
@@ -111,6 +135,7 @@ class FirestoreService {
     required double earnings,
     required int completedLoads,
   }) async {
+    _requireAuth();
     await _db.collection('drivers').doc(driverId).update({
       'totalEarnings': FieldValue.increment(earnings),
       'completedLoads': FieldValue.increment(completedLoads),
@@ -125,6 +150,7 @@ class FirestoreService {
     required DateTime timestamp,
     double? accuracy,
   }) async {
+    _requireAuth();
     await _db.collection('drivers').doc(driverId).update({
       'lastLocation': {
         'lat': latitude,
@@ -161,6 +187,7 @@ class FirestoreService {
     String? notes,
     required String createdBy,
   }) async {
+    _requireAuth();
     final docRef = await _db.collection('loads').add({
       'loadNumber': loadNumber,
       'driverId': driverId,
@@ -181,6 +208,7 @@ class FirestoreService {
   /// 
   /// Returns loads ordered by creation time (newest first)
   Stream<List<LoadModel>> streamAllLoads() {
+    _requireAuth();
     return _db
         .collection('loads')
         .orderBy('createdAt', descending: true)
@@ -193,6 +221,7 @@ class FirestoreService {
   /// Returns only loads assigned to the specified driver,
   /// ordered by creation time (newest first)
   Stream<List<LoadModel>> streamDriverLoads(String driverId) {
+    _requireAuth();
     return _db
         .collection('loads')
         .where('driverId', isEqualTo: driverId)
@@ -205,6 +234,7 @@ class FirestoreService {
   /// 
   /// Returns [LoadModel] if found, null otherwise
   Future<LoadModel?> getLoad(String loadId) async {
+    _requireAuth();
     final doc = await _db.collection('loads').doc(loadId).get();
     if (!doc.exists) return null;
     return LoadModel.fromDoc(doc);
@@ -226,6 +256,7 @@ class FirestoreService {
     DateTime? tripStartAt,
     DateTime? deliveredAt,
   }) async {
+    _requireAuth();
     final Map<String, dynamic> updates = {'status': status};
     if (pickedUpAt != null) updates['pickedUpAt'] = Timestamp.fromDate(pickedUpAt);
     if (tripStartAt != null) updates['tripStartAt'] = Timestamp.fromDate(tripStartAt);
@@ -243,6 +274,7 @@ class FirestoreService {
   /// - [loadId]: Load's document ID
   /// - [data]: Map of fields to update
   Future<void> updateLoad(String loadId, Map<String, dynamic> data) async {
+    _requireAuth();
     await _db.collection('loads').doc(loadId).update(data);
   }
 
@@ -250,6 +282,7 @@ class FirestoreService {
   /// 
   /// Sets status to 'in_transit' and records trip start time
   Future<void> startTrip(String loadId) async {
+    _requireAuth();
     await _db.collection('loads').doc(loadId).update({
       'status': 'in_transit',
       'tripStartAt': FieldValue.serverTimestamp(),
@@ -263,6 +296,7 @@ class FirestoreService {
   /// - [loadId]: Load's document ID
   /// - [miles]: Final trip miles
   Future<void> endTrip(String loadId, double miles) async {
+    _requireAuth();
     await _db.collection('loads').doc(loadId).update({
       'status': 'delivered',
       'tripEndAt': FieldValue.serverTimestamp(),
@@ -275,6 +309,7 @@ class FirestoreService {
   /// 
   /// Counts loads with status 'delivered' or 'completed'
   Future<int> getDriverCompletedLoads(String driverId) async {
+    _requireAuth();
     final snapshot = await _db
         .collection('loads')
         .where('driverId', isEqualTo: driverId)
@@ -293,6 +328,7 @@ class FirestoreService {
   /// - deliveredLoads: Loads with 'delivered' status
   /// - totalRevenue: Sum of all load rates
   Stream<Map<String, dynamic>> streamDashboardStats() {
+    _requireAuth();
     return _db.collection('loads').snapshots().map((snapshot) {
       final loads = snapshot.docs;
       return {
@@ -309,6 +345,7 @@ class FirestoreService {
   /// 
   /// Cascades delete to all POD documents linked to this load
   Future<void> deleteLoad(String loadId) async {
+    _requireAuth();
     // Delete all PODs for this load from top-level collection
     final pods = await _db.collection('pods').where('loadId', isEqualTo: loadId).get();
     for (var doc in pods.docs) {
@@ -334,6 +371,7 @@ class FirestoreService {
     String? notes,
     required String uploadedBy,
   }) async {
+    _requireAuth();
     final docRef = await _db.collection('pods').add({
       'loadId': loadId,
       'imageUrl': imageUrl,
@@ -348,6 +386,7 @@ class FirestoreService {
   /// 
   /// Returns PODs ordered by upload time (newest first)
   Stream<List<POD>> streamPods(String loadId) {
+    _requireAuth();
     return _db
         .collection('pods')
         .where('loadId', isEqualTo: loadId)
@@ -358,6 +397,7 @@ class FirestoreService {
 
   /// Delete a POD document
   Future<void> deletePod(String podId) async {
+    _requireAuth();
     await _db.collection('pods').doc(podId).delete();
   }
 
@@ -367,6 +407,7 @@ class FirestoreService {
   /// 
   /// Sums rates from all delivered loads
   Future<double> getDriverEarnings(String driverId) async {
+    _requireAuth();
     final snapshot = await _db
         .collection('loads')
         .where('driverId', isEqualTo: driverId)
@@ -382,6 +423,7 @@ class FirestoreService {
   /// 
   /// Updates whenever a new load is marked as delivered
   Stream<double> streamDriverEarnings(String driverId) {
+    _requireAuth();
     return _db
         .collection('loads')
         .where('driverId', isEqualTo: driverId)
@@ -404,6 +446,7 @@ class FirestoreService {
   /// Returns format 'LOAD-XXX' where XXX is a 3-digit number
   /// Starting from 'LOAD-001' if no loads exist
   Future<String> generateLoadNumber() async {
+    _requireAuth();
     final lastLoad = await _db
         .collection('loads')
         .orderBy('createdAt', descending: true)
