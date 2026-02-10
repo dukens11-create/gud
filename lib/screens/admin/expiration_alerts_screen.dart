@@ -28,7 +28,10 @@ class _ExpirationAlertsScreenState extends State<ExpirationAlertsScreen> {
   /// Fetch expiring documents and driver names in a single Future
   Future<_ExpiringDocumentsData> _fetchExpiringDocumentsWithDriverNames() async {
     final documents = await _driverService.getExpiringDocuments();
-    final driverIds = documents.map((d) => d.driverId).toList();
+    final driverIds = documents
+        .map((d) => d.driverId)
+        .where((id) => id.isNotEmpty)
+        .toList();
     final driverNames = await _fetchAllDriverNames(driverIds);
     
     return _ExpiringDocumentsData(
