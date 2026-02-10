@@ -98,6 +98,10 @@ class MaintenanceQueryService {
   /// Useful for displaying maintenance history that updates automatically
   /// when new records are added or existing ones are modified.
   /// 
+  /// Note: The 'now' timestamp is captured at stream creation time, not
+  /// recalculated on each emission. This provides a stable filter boundary
+  /// and consistent results throughout the stream's lifetime.
+  /// 
   /// Parameters:
   /// - [truckNumber]: Optional filter for a specific truck.
   /// - [limit]: Optional limit on number of results.
@@ -115,6 +119,7 @@ class MaintenanceQueryService {
         query = query.where('truckNumber', isEqualTo: truckNumber);
       }
 
+      // Capture 'now' at stream creation for stable filter boundary
       final now = Timestamp.fromDate(DateTime.now());
       query = query.where('serviceDate', isLessThan: now);
 
@@ -212,6 +217,11 @@ class MaintenanceQueryService {
   /// Automatically updates when records are added, modified, or when
   /// records transition from upcoming to historical.
   /// 
+  /// Note: The 'now' timestamp is captured at stream creation time, not
+  /// recalculated on each emission. This provides a stable filter boundary.
+  /// Records that pass from future to past during the stream's lifetime
+  /// will continue to appear in results until the stream is recreated.
+  /// 
   /// Parameters:
   /// - [truckNumber]: Optional filter for a specific truck.
   /// - [limit]: Optional limit on number of results.
@@ -231,6 +241,7 @@ class MaintenanceQueryService {
         query = query.where('truckNumber', isEqualTo: truckNumber);
       }
 
+      // Capture 'now' at stream creation for stable filter boundary
       final now = Timestamp.fromDate(DateTime.now());
       query = query.where('serviceDate', isGreaterThanOrEqualTo: now);
 
@@ -517,10 +528,8 @@ class MaintenanceRecord {
   /// Check if this maintenance is historical (completed in the past).
   bool get isHistory => serviceDate.isBefore(DateTime.now());
 
-  /// Check if this maintenance is upcoming (scheduled for future).
-  bool get isUpcoming =>
-      serviceDate.isAfter(DateTime.now()) ||
-      serviceDate.isAtSameMomentAs(DateTime.now());
+  /// Check if this maintenance is upcoming (scheduled for future or today).
+  bool get isUpcoming => !serviceDate.isBefore(DateTime.now());
 
   /// Get days until service (negative if in the past).
   int get daysUntilService =>
