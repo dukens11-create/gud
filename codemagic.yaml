@@ -14,7 +14,7 @@ workflows:
       xcode: latest
       cocoapods: default
       vars:
-        GRADLE_OPTS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m"
+        GRADLE_OPTS: "-Xmx8192m -XX:MaxMetaspaceSize=2048m"
     scripts:
       - name: Install Flutter dependencies
         script: |
@@ -42,7 +42,7 @@ workflows:
     environment:
       flutter: stable
       vars:
-        GRADLE_OPTS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m"
+        GRADLE_OPTS: "-Xmx8192m -XX:MaxMetaspaceSize=2048m"
     scripts:
       - name: Install Flutter dependencies
         script: |
@@ -78,7 +78,7 @@ workflows:
       android_signing:
         - gud-release-key  # Must match the reference name in Codemagic dashboard
       vars:
-        GRADLE_OPTS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m"
+        GRADLE_OPTS: "-Xmx8192m -XX:MaxMetaspaceSize=2048m"
     scripts:
       # Create key.properties file with keystore credentials
       # Codemagic automatically injects these environment variables when
