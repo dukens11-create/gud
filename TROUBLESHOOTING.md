@@ -4,12 +4,12 @@ This guide covers common issues when setting up the Android keystore in Codemagi
 
 ---
 
-## Error: "No keystores with reference 'gud_keystore' were found"
+## Error: "No keystores with reference 'gud-release-key' were found"
 
 ### Symptoms
 Build fails with error message:
 ```
-No keystores with reference 'gud_keystore' were found from code signing identities.
+No keystores with reference 'gud-release-key' were found from code signing identities.
 ```
 
 ### Root Cause
@@ -24,20 +24,20 @@ The keystore has not been uploaded to Codemagic, or the reference name doesn't m
 4. If not listed → Upload keystore (see [CODEMAGIC_KEYSTORE_SETUP.md](CODEMAGIC_KEYSTORE_SETUP.md))
 
 #### Solution 2: Verify Reference Name
-The reference name **MUST** be exactly: `gud_keystore`
+The reference name **MUST** be exactly: `gud-release-key`
 
 **Common mistakes:**
 - ❌ `keystore` (missing prefix)
-- ❌ `Gud_keystore` (wrong capitalization)
-- ❌ `gud-keystore` (dash instead of underscore)
-- ❌ `gud_keystore ` (trailing space)
-- ✅ `gud_keystore` (correct!)
+- ❌ `Gud-release-key` (wrong capitalization)
+- ❌ `gud_keystore` (underscore instead of dash)
+- ❌ `gud-release-key ` (trailing space)
+- ✅ `gud-release-key` (correct!)
 
 **How to fix:**
 1. Go to Android code signing settings
 2. Find the uploaded keystore
 3. Click "Edit" or "Remove" and re-upload
-4. Ensure reference name is exactly: `gud_keystore`
+4. Ensure reference name is exactly: `gud-release-key`
 
 #### Solution 3: Check You're in App Settings, Not Team Settings
 **Wrong location (don't use):**
@@ -119,7 +119,7 @@ Environment variables are not being injected by Codemagic.
 Check that `codemagic.yaml` contains:
 ```yaml
 android_signing:
-  - gud_keystore
+  - gud-release-key
 ```
 
 This line tells Codemagic to inject environment variables for the keystore.
@@ -136,7 +136,7 @@ echo "storeFile=$CM_KEYSTORE_PATH" >> android/key.properties
 #### Solution 3: Check Build Logs
 In Codemagic build logs, look for:
 ```
-✅ Using keystore: gud_keystore
+✅ Using keystore: gud-release-key
 ✅ Environment variables set
 ```
 
@@ -158,19 +158,19 @@ Reference name in Codemagic doesn't match the name in `codemagic.yaml`.
 **What's in `codemagic.yaml`:**
 ```yaml
 android_signing:
-  - gud_keystore  ← This exact name
+  - gud-release-key  ← This exact name
 ```
 
 **What's in Codemagic UI:**
 ```
-Reference name: gud_keystore  ← Must match exactly
+Reference name: gud-release-key  ← Must match exactly
 ```
 
 **How to fix:**
 1. Go to Android code signing settings
 2. Check the reference name of your uploaded keystore
 3. If it doesn't match, edit or delete and re-upload
-4. Ensure reference name is: `gud_keystore`
+4. Ensure reference name is: `gud-release-key`
 
 ---
 
@@ -186,7 +186,7 @@ Look for specific error messages in Codemagic build logs:
 
 **Good signs (keystore working):**
 ```
-✅ Using keystore: gud_keystore
+✅ Using keystore: gud-release-key
 ✅ Key properties set up successfully
 🔧 Building Android App Bundle...
 ```
@@ -228,7 +228,7 @@ signingConfigs {
 #### Step 4: Manually Test Keystore Locally
 Test if keystore is valid:
 ```bash
-keytool -list -v -keystore gud_keystore.jks -alias gud_key
+keytool -list -v -keystore gud-release-key.jks -alias gud_key
 ```
 
 Enter the password when prompted. If successful, keystore is valid.
@@ -249,7 +249,7 @@ Generate a new keystore and start over:
 ./generate_keystore.sh
 ```
 
-Re-upload to Codemagic with reference name `gud_keystore`.
+Re-upload to Codemagic with reference name `gud-release-key`.
 
 **Note:** This creates a new keystore with different signature.
 
@@ -463,7 +463,7 @@ If you've tried everything and still have issues:
 
 | Error Message | Likely Cause | Solution |
 |---------------|--------------|----------|
-| No keystores with reference 'gud_keystore' found | Keystore not uploaded or wrong reference name | Upload keystore with exact name `gud_keystore` |
+| No keystores with reference 'gud-release-key' found | Keystore not uploaded or wrong reference name | Upload keystore with exact name `gud-release-key` |
 | storePassword is null | Environment variables not set | Verify `android_signing` in codemagic.yaml |
 | Keystore file not found | Wrong keystore path | Check `$CM_KEYSTORE_PATH` is used |
 | Invalid keystore format | Corrupted or wrong file | Re-generate keystore |

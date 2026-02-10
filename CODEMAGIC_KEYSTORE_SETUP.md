@@ -3,7 +3,7 @@
 ## Overview
 This guide provides step-by-step instructions for setting up the Android keystore in Codemagic to fix the build error:
 ```
-No keystores with reference 'gud_keystore' were found from code signing identities.
+No keystores with reference 'gud-release-key' were found from code signing identities.
 ```
 
 ## Prerequisites
@@ -22,7 +22,7 @@ Use the provided script or manual command:
 ./generate_keystore.sh
 
 # Or manually:
-keytool -genkey -v -keystore gud_keystore.jks \
+keytool -genkey -v -keystore gud-release-key.jks \
   -keyalg RSA -keysize 2048 -validity 10000 \
   -alias gud_key
 ```
@@ -70,12 +70,12 @@ Settings → Code signing identities → Android
 
 ### Step 7: Upload Keystore with Correct Reference Name
 
-**⚠️ CRITICAL: The reference name MUST be exactly: `gud_keystore`**
+**⚠️ CRITICAL: The reference name MUST be exactly: `gud-release-key`**
 
 1. Click **"Add keystore"** or **"Upload keystore"** button
 2. Fill in the form:
-   - **Keystore file**: Click "Choose file" and select `gud_keystore.jks`
-   - **Reference name**: Enter **exactly** `gud_keystore` (case-sensitive)
+   - **Keystore file**: Click "Choose file" and select `gud-release-key.jks`
+   - **Reference name**: Enter **exactly** `gud-release-key` (case-sensitive)
    - **Keystore password**: Enter your keystore password
    - **Key alias**: Enter your key alias (default: `gud_key`)
    - **Key password**: Enter your key password
@@ -87,7 +87,7 @@ Settings → Code signing identities → Android
 Add Android keystore
 ┌─────────────────────────────────────────┐
 │ Keystore file:     [Choose file]        │
-│ Reference name:    gud_keystore  ◄──────┼── MUST BE EXACTLY THIS
+│ Reference name:    gud-release-key  ◄───┼── MUST BE EXACTLY THIS
 │ Keystore password: ••••••••••••         │
 │ Key alias:         gud_key               │
 │ Key password:      ••••••••••••         │
@@ -98,7 +98,7 @@ Add Android keystore
 
 ### Step 8: Verify Upload
 1. After saving, you should see the keystore listed under "Android code signing"
-2. The reference name should show as: `gud_keystore`
+2. The reference name should show as: `gud-release-key`
 3. Status should be "Active" or have a green checkmark
 
 ### Step 9: Trigger New Build
@@ -120,7 +120,7 @@ Settings → Code signing identities → Android
 ### Step 2: Generate New Keystore
 1. Click **"Generate keystore"** button (if available)
 2. Fill in the form:
-   - **Reference name**: Enter **exactly** `gud_keystore`
+   - **Reference name**: Enter **exactly** `gud-release-key`
    - **Key alias**: Enter `gud_key` (or your preferred alias)
    - **Organization details**: Fill in as needed
    - **Validity**: Default (10000 days) is fine
@@ -133,7 +133,7 @@ Settings → Code signing identities → Android
 - **You cannot recover these if lost!**
 
 ### Step 3: Verify and Build
-1. Confirm the keystore appears with reference name `gud_keystore`
+1. Confirm the keystore appears with reference name `gud-release-key`
 2. Trigger a new build
 3. Monitor for success
 
@@ -174,17 +174,17 @@ Android code signing management
 ## Important Notes
 
 ### Reference Name Requirements
-- **MUST** be exactly: `gud_keystore`
+- **MUST** be exactly: `gud-release-key`
 - Case-sensitive
 - No spaces or special characters
 - Must match the value in `codemagic.yaml`:
   ```yaml
   android_signing:
-    - gud_keystore
+    - gud-release-key
   ```
 
 ### Environment Variables
-When you upload the keystore with reference name `gud_keystore`, Codemagic automatically creates these environment variables:
+When you upload the keystore with reference name `gud-release-key`, Codemagic automatically creates these environment variables:
 - `$CM_KEYSTORE_PASSWORD` - Your keystore password
 - `$CM_KEY_PASSWORD` - Your key password
 - `$CM_KEY_ALIAS` - Your key alias
@@ -204,7 +204,7 @@ These are used in the build script (`codemagic.yaml`) to create `key.properties`
 
 After setup, verify:
 - ✅ Keystore uploaded to Codemagic
-- ✅ Reference name is exactly `gud_keystore`
+- ✅ Reference name is exactly `gud-release-key`
 - ✅ All passwords entered correctly
 - ✅ Keystore shows as "Active"
 - ✅ Build triggered successfully
@@ -220,11 +220,11 @@ When you trigger the `android-aab` workflow:
 1. **Codemagic reads configuration**
    ```yaml
    android_signing:
-     - gud_keystore  # Looks for this reference name
+     - gud-release-key  # Looks for this reference name
    ```
 
 2. **Injects environment variables**
-   - Finds keystore with reference `gud_keystore`
+   - Finds keystore with reference `gud-release-key`
    - Sets `CM_KEYSTORE_*` environment variables
 
 3. **Creates key.properties**
