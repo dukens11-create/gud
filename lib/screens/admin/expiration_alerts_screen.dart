@@ -602,28 +602,6 @@ class _ExpirationAlertsScreenState extends State<ExpirationAlertsScreen> {
     return driverNames;
   }
 
-  Future<Map<String, String>> _getDriverDetails(String driverId) async {
-    try {
-      final driverDoc = await FirebaseFirestore.instance
-          .collection('drivers')
-          .doc(driverId)
-          .get();
-      
-      if (driverDoc.exists) {
-        final data = driverDoc.data()!;
-        return {
-          'name': data['name'] ?? 'Unknown Driver',
-        };
-      }
-    } catch (e) {
-      debugPrint('Error fetching driver details: $e');
-    }
-    
-    return {
-      'name': 'Unknown Driver',
-    };
-  }
-
   Future<Map<String, String>> _getAlertDetails(ExpirationAlert alert) async {
     if (alert.driverId != null) {
       try {
