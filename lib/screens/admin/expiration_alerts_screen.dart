@@ -25,6 +25,18 @@ class _ExpirationAlertsScreenState extends State<ExpirationAlertsScreen> {
   String _filterType = 'all';
   String _sortBy = 'days'; // days, type, date
 
+  /// Fetch expiring documents and driver names in a single Future
+  Future<_ExpiringDocumentsData> _fetchExpiringDocumentsWithDriverNames() async {
+    final documents = await _driverService.getExpiringDocuments();
+    final driverIds = documents.map((d) => d.driverId).toList();
+    final driverNames = await _fetchAllDriverNames(driverIds);
+    
+    return _ExpiringDocumentsData(
+      documents: documents,
+      driverNames: driverNames,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,8 +56,8 @@ class _ExpirationAlertsScreenState extends State<ExpirationAlertsScreen> {
       body: Column(
         children: [
           // FutureBuilder to query upcoming document expirations
-          FutureBuilder<List<DriverDocument>>(
-            future: _driverService.getExpiringDocuments(),
+          FutureBuilder<_ExpiringDocumentsData>(
+            future: _fetchExpiringDocumentsWithDriverNames(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const LinearProgressIndicator();
@@ -61,7 +73,13 @@ class _ExpirationAlertsScreenState extends State<ExpirationAlertsScreen> {
                 );
               }
 
-              final expiringDocs = snapshot.data ?? [];
+              final data = snapshot.data;
+              if (data == null) {
+                return const SizedBox.shrink();
+              }
+
+              final expiringDocs = data.documents;
+              final driverNames = data.driverNames;
               
               if (expiringDocs.isEmpty) {
                 // All-clear message
@@ -106,151 +124,145 @@ class _ExpirationAlertsScreenState extends State<ExpirationAlertsScreen> {
               }
 
               // Yellow warning banner with expiring documents list
-              return FutureBuilder<Map<String, String>>(
-                future: _fetchAllDriverNames(expiringDocs.map((d) => d.driverId).toList()),
-                builder: (context, driverNamesSnapshot) {
-                  final driverNames = driverNamesSnapshot.data ?? {};
-                  
-                  return Container(
-                    margin: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.yellow.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.yellow.shade700, width: 2),
-                    ),
-                    child: Column(
-                      children: [
-                        // Warning banner header
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.yellow.shade100,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(10),
-                              topRight: Radius.circular(10),
+              return Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.yellow.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.yellow.shade700, width: 2),
+                ),
+                child: Column(
+                  children: [
+                    // Warning banner header
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.yellow.shade100,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(10),
+                          topRight: Radius.circular(10),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning, color: Colors.orange.shade700, size: 32),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Document Expiration Warning',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange.shade900,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${expiringDocs.length} document${expiringDocs.length > 1 ? 's' : ''} expiring in the next 30 days',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.orange.shade800,
+                                  ),
+                                ),
+                              ],
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // List of expiring documents
+                    // Note: Using shrinkWrap for bounded list (max 30 days of expiring docs)
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: expiringDocs.length,
+                      separatorBuilder: (context, index) => const Divider(height: 16),
+                      itemBuilder: (context, index) {
+                        final doc = expiringDocs[index];
+                        final daysRemaining = doc.expiryDate.difference(DateTime.now()).inDays;
+                        final isCritical = daysRemaining < 7;
+                        final color = isCritical ? Colors.red : Colors.orange;
+                        final driverName = driverNames[doc.driverId] ?? 'Unknown Driver';
+
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: color.withOpacity(0.3)),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.warning, color: Colors.orange.shade700, size: 32),
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(_getIconForDocumentType(doc.type), 
+                                             color: color, size: 20),
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Document Expiration Warning',
-                                      style: TextStyle(
-                                        fontSize: 18,
+                                      doc.type.displayName,
+                                      style: const TextStyle(
+                                        fontSize: 14,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.orange.shade900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      driverName,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[700],
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${expiringDocs.length} document${expiringDocs.length > 1 ? 's' : ''} expiring in the next 30 days',
+                                      'Expires: ${_dateFormat.format(doc.expiryDate)}',
                                       style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.orange.shade800,
+                                        fontSize: 11,
+                                        color: Colors.grey[600],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '$daysRemaining days',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                        // List of expiring documents
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
-                          itemCount: expiringDocs.length,
-                          separatorBuilder: (context, index) => const Divider(height: 16),
-                          itemBuilder: (context, index) {
-                            final doc = expiringDocs[index];
-                            final daysRemaining = doc.expiryDate.difference(DateTime.now()).inDays;
-                            final isCritical = daysRemaining < 7;
-                            final color = isCritical ? Colors.red : Colors.orange;
-                            final driverName = driverNames[doc.driverId] ?? 'Unknown Driver';
-
-                            return Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: color.withOpacity(0.3)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: color.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Icon(_getIconForDocumentType(doc.type), 
-                                                 color: color, size: 20),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          doc.type.displayName,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          driverName,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[700],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Expires: ${_dateFormat.format(doc.expiryDate)}',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: color,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '$daysRemaining days',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                        );
+                      },
                     ),
-                  );
-                },
+                  ],
+                ),
               );
             },
           ),
@@ -577,6 +589,11 @@ class _ExpirationAlertsScreenState extends State<ExpirationAlertsScreen> {
     // Remove duplicates and null values
     final uniqueDriverIds = driverIds.where((id) => id.isNotEmpty).toSet().toList();
     
+    // Log if any empty IDs were filtered out (potential data corruption)
+    if (uniqueDriverIds.length < driverIds.length) {
+      debugPrint('Warning: ${driverIds.length - uniqueDriverIds.length} empty driver IDs found in expiring documents');
+    }
+    
     if (uniqueDriverIds.isEmpty) {
       return driverNames;
     }
@@ -699,4 +716,15 @@ class _ExpirationAlertsScreenState extends State<ExpirationAlertsScreen> {
       },
     );
   }
+}
+
+/// Helper class to hold expiring documents data with driver names
+class _ExpiringDocumentsData {
+  final List<DriverDocument> documents;
+  final Map<String, String> driverNames;
+
+  _ExpiringDocumentsData({
+    required this.documents,
+    required this.driverNames,
+  });
 }
