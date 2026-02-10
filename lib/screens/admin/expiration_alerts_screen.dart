@@ -41,86 +41,303 @@ class _ExpirationAlertsScreenState extends State<ExpirationAlertsScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<List<ExpirationAlert>>(
-        stream: _driverService.streamExpirationAlerts(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          // FutureBuilder to query upcoming document expirations
+          FutureBuilder<List<DriverDocument>>(
+            future: _driverService.getExpiringDocuments(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const LinearProgressIndicator();
+              }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-                  const SizedBox(height: 16),
-                  Text('Error: ${snapshot.error}'),
-                ],
-              ),
-            );
-          }
-
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_outline,
-                      size: 64, color: Colors.green[300]),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No expiring documents',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'All documents are up to date',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          List<ExpirationAlert> alerts = snapshot.data!;
-          
-          // Apply filter
-          if (_filterType != 'all') {
-            alerts = alerts
-                .where((alert) => alert.type.value == _filterType)
-                .toList();
-          }
-          
-          // Apply sort
-          if (_sortBy == 'days') {
-            alerts.sort((a, b) => a.daysRemaining.compareTo(b.daysRemaining));
-          } else if (_sortBy == 'type') {
-            alerts.sort((a, b) =>
-                a.type.displayName.compareTo(b.type.displayName));
-          } else if (_sortBy == 'date') {
-            alerts.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
-          }
-
-          final criticalAlerts =
-              alerts.where((alert) => alert.isCritical).length;
-          final warningAlerts = alerts.length - criticalAlerts;
-
-          return Column(
-            children: [
-              _buildSummaryCard(criticalAlerts, warningAlerts),
-              Expanded(
-                child: ListView.builder(
+              if (snapshot.hasError) {
+                return Container(
                   padding: const EdgeInsets.all(16),
-                  itemCount: alerts.length,
-                  itemBuilder: (context, index) {
-                    return _buildAlertCard(alerts[index]);
-                  },
+                  child: Text(
+                    'Error loading expiring documents: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              }
+
+              final expiringDocs = snapshot.data ?? [];
+              
+              if (expiringDocs.isEmpty) {
+                // All-clear message
+                return Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.shade300, width: 2),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green.shade700, size: 32),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'All Clear!',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green.shade900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'No documents are expiring in the next 30 days.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.green.shade800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // Yellow warning banner with expiring documents list
+              return Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.yellow.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.yellow.shade700, width: 2),
                 ),
-              ),
-            ],
-          );
-        },
+                child: Column(
+                  children: [
+                    // Warning banner header
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.yellow.shade100,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(10),
+                          topRight: Radius.circular(10),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning, color: Colors.orange.shade700, size: 32),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Document Expiration Warning',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange.shade900,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${expiringDocs.length} document${expiringDocs.length > 1 ? 's' : ''} expiring in the next 30 days',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.orange.shade800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // List of expiring documents
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: expiringDocs.length,
+                      separatorBuilder: (context, index) => const Divider(height: 16),
+                      itemBuilder: (context, index) {
+                        final doc = expiringDocs[index];
+                        final daysRemaining = doc.expiryDate.difference(DateTime.now()).inDays;
+                        final isCritical = daysRemaining < 7;
+                        final color = isCritical ? Colors.red : Colors.orange;
+
+                        return FutureBuilder<Map<String, String>>(
+                          future: _getDriverDetails(doc.driverId),
+                          builder: (context, driverSnapshot) {
+                            final driverName = driverSnapshot.data?['name'] ?? 'Loading...';
+                            
+                            return Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: color.withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: color.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(_getIconForDocumentType(doc.type), 
+                                                 color: color, size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          doc.type.displayName,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          driverName,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[700],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Expires: ${_dateFormat.format(doc.expiryDate)}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: color,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '$daysRemaining days',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          // Existing StreamBuilder for alerts from expiration_alerts collection
+          Expanded(
+            child: StreamBuilder<List<ExpirationAlert>>(
+              stream: _driverService.streamExpirationAlerts(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                        const SizedBox(height: 16),
+                        Text('Error: ${snapshot.error}'),
+                      ],
+                    ),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_circle_outline,
+                            size: 64, color: Colors.green[300]),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No active alerts',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'All alerts have been addressed',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                List<ExpirationAlert> alerts = snapshot.data!;
+                
+                // Apply filter
+                if (_filterType != 'all') {
+                  alerts = alerts
+                      .where((alert) => alert.type.value == _filterType)
+                      .toList();
+                }
+                
+                // Apply sort
+                if (_sortBy == 'days') {
+                  alerts.sort((a, b) => a.daysRemaining.compareTo(b.daysRemaining));
+                } else if (_sortBy == 'type') {
+                  alerts.sort((a, b) =>
+                      a.type.displayName.compareTo(b.type.displayName));
+                } else if (_sortBy == 'date') {
+                  alerts.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
+                }
+
+                final criticalAlerts =
+                    alerts.where((alert) => alert.isCritical).length;
+                final warningAlerts = alerts.length - criticalAlerts;
+
+                return Column(
+                  children: [
+                    _buildSummaryCard(criticalAlerts, warningAlerts),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: alerts.length,
+                        itemBuilder: (context, index) {
+                          return _buildAlertCard(alerts[index]);
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -334,6 +551,43 @@ class _ExpirationAlertsScreenState extends State<ExpirationAlertsScreen> {
       default:
         return Icons.description;
     }
+  }
+
+  IconData _getIconForDocumentType(DocumentType type) {
+    switch (type) {
+      case DocumentType.license:
+        return Icons.badge;
+      case DocumentType.medicalCard:
+        return Icons.medical_services;
+      case DocumentType.insurance:
+        return Icons.shield;
+      case DocumentType.certification:
+        return Icons.card_membership;
+      default:
+        return Icons.description;
+    }
+  }
+
+  Future<Map<String, String>> _getDriverDetails(String driverId) async {
+    try {
+      final driverDoc = await FirebaseFirestore.instance
+          .collection('drivers')
+          .doc(driverId)
+          .get();
+      
+      if (driverDoc.exists) {
+        final data = driverDoc.data()!;
+        return {
+          'name': data['name'] ?? 'Unknown Driver',
+        };
+      }
+    } catch (e) {
+      print('Error fetching driver details: $e');
+    }
+    
+    return {
+      'name': 'Unknown Driver',
+    };
   }
 
   Future<Map<String, String>> _getAlertDetails(ExpirationAlert alert) async {
