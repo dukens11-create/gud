@@ -1,8 +1,26 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/expense.dart';
 
+/// Expense tracking service for managing business expenses.
+/// 
+/// **Security**: All methods verify user authentication before executing queries.
+/// Throws [FirebaseAuthException] if user is not authenticated.
 class ExpenseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  /// Verify user is authenticated before executing Firestore operations
+  /// 
+  /// Throws [FirebaseAuthException] with code 'unauthenticated' if user is not signed in
+  void _requireAuth() {
+    if (_auth.currentUser == null) {
+      throw FirebaseAuthException(
+        code: 'unauthenticated',
+        message: 'User must be signed in to access expense data',
+      );
+    }
+  }
 
   // Create expense
   Future<String> createExpense({
@@ -15,6 +33,7 @@ class ExpenseService {
     String? receiptUrl,
     required String createdBy,
   }) async {
+    _requireAuth();
     final docRef = await _db.collection('expenses').add({
       'amount': amount,
       'category': category,
@@ -31,6 +50,7 @@ class ExpenseService {
 
   // Stream all expenses
   Stream<List<Expense>> streamAllExpenses() {
+    _requireAuth();
     return _db
         .collection('expenses')
         .orderBy('date', descending: true)
@@ -41,6 +61,7 @@ class ExpenseService {
 
   // Stream expenses by driver
   Stream<List<Expense>> streamDriverExpenses(String driverId) {
+    _requireAuth();
     return _db
         .collection('expenses')
         .where('driverId', isEqualTo: driverId)
@@ -52,6 +73,7 @@ class ExpenseService {
 
   // Stream expenses by load
   Stream<List<Expense>> streamLoadExpenses(String loadId) {
+    _requireAuth();
     return _db
         .collection('expenses')
         .where('loadId', isEqualTo: loadId)
@@ -63,6 +85,7 @@ class ExpenseService {
 
   // Get total expenses by driver
   Future<double> getDriverTotalExpenses(String driverId) async {
+    _requireAuth();
     final snapshot = await _db
         .collection('expenses')
         .where('driverId', isEqualTo: driverId)
@@ -78,6 +101,7 @@ class ExpenseService {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
+    _requireAuth();
     Query query = _db.collection('expenses');
     
     if (driverId != null) {
@@ -112,6 +136,7 @@ class ExpenseService {
     DateTime? date,
     String? receiptUrl,
   }) async {
+    _requireAuth();
     final Map<String, dynamic> updates = {};
     if (amount != null) updates['amount'] = amount;
     if (category != null) updates['category'] = category;
@@ -126,6 +151,7 @@ class ExpenseService {
 
   // Delete expense
   Future<void> deleteExpense(String expenseId) async {
+    _requireAuth();
     await _db.collection('expenses').doc(expenseId).delete();
   }
 }

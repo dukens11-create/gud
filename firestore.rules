@@ -1,8 +1,130 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // ==========================================
+    // Helper Functions
+    // ==========================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Check if user is a driver
+    function isDriver() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'driver';
+    }
+    
+    // Check if user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // ==========================================
+    // Collection Rules
+    // ==========================================
+    
+    // Users collection - stores user profiles and roles
+    match /users/{userId} {
+      // Users can read their own profile, admins can read all profiles
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Only admins can create or update user profiles
+      allow create, update: if isAdmin();
+      
+      // Nobody can delete user profiles (use admin console if needed)
+      allow delete: if false;
+    }
+    
+    // Drivers collection - stores driver-specific information
+    match /drivers/{driverId} {
+      // All authenticated users can read driver information
+      // (needed for admin to see driver list, and for assignment dropdowns)
+      allow read: if isAuthenticated();
+      
+      // Only admins can create new drivers
+      allow create: if isAdmin();
+      
+      // Admins can update any driver, drivers can update their own status
+      allow update: if isAdmin() || (isDriver() && isOwner(driverId));
+      
+      // Only admins can delete drivers
+      allow delete: if isAdmin();
+    }
+    
+    // Loads collection - stores load/shipment information
+    match /loads/{loadId} {
+      // Drivers can only see their assigned loads, admins can see all
+      allow read: if isAuthenticated() && 
+                     (isAdmin() || resource.data.driverId == request.auth.uid);
+      
+      // Only admins can create new loads
+      allow create: if isAdmin();
+      
+      // Drivers can update status on their assigned loads, admins can update any load
+      allow update: if isAuthenticated() && 
+                       (isAdmin() || 
+                        (resource.data.driverId == request.auth.uid && 
+                         request.auth.uid != null));
+      
+      // Only admins can delete loads
+      allow delete: if isAdmin();
+    }
+    
+    // POD (Proof of Delivery) collection
+    match /pods/{podId} {
+      // PODs can be read by authenticated users (admins see all, drivers see their own)
+      allow read: if isAuthenticated();
+      
+      // PODs can be created by authenticated users
+      allow create: if isAuthenticated();
+      
+      // Only admins can update or delete PODs
+      allow update, delete: if isAdmin();
+    }
+    
+    // Expenses collection - stores expense tracking
+    match /expenses/{expenseId} {
+      // Authenticated users can read expenses
+      allow read: if isAuthenticated();
+      
+      // Authenticated users can create expenses
+      allow create: if isAuthenticated();
+      
+      // Admins can update/delete any expense, users can update their own
+      allow update, delete: if isAdmin() || 
+                               (isAuthenticated() && resource.data.createdBy == request.auth.uid);
+    }
+    
+    // Invoices collection - stores invoice information
+    match /invoices/{invoiceId} {
+      // Authenticated users can read invoices
+      allow read: if isAuthenticated();
+      
+      // Only admins can create, update, or delete invoices
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Statistics collection - stores aggregated statistics
+    match /statistics/{statId} {
+      // Authenticated users can read statistics
+      allow read: if isAuthenticated();
+      
+      // Only system/admins can write statistics
+      allow write: if isAdmin();
+    }
+    
+    // Default deny for all other collections
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }
