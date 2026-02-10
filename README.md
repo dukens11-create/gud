@@ -12,7 +12,7 @@ GUD Express Trucking Management App - Production Ready
 
 **Are you seeing this error in Codemagic?**
 ```
-No keystores with reference 'gud_keystore' were found from code signing identities.
+No keystores with reference 'gud-release-key' were found from code signing identities.
 ```
 
 **Quick Fix:**
@@ -20,7 +20,7 @@ No keystores with reference 'gud_keystore' were found from code signing identiti
 2. 📖 See [CODEMAGIC_KEYSTORE_SETUP.md](CODEMAGIC_KEYSTORE_SETUP.md) for detailed guide with navigation help
 3. 🆘 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) if you're stuck
 
-**TL;DR**: You need to upload a keystore to Codemagic dashboard with reference name **exactly** `gud_keystore`
+**TL;DR**: You need to upload a keystore to Codemagic dashboard with reference name **exactly** `gud-release-key`
 
 **Generate keystore:**
 ```bash

@@ -2,7 +2,7 @@
 
 Use this checklist to quickly fix the build error:
 ```
-No keystores with reference 'gud_keystore' were found
+No keystores with reference 'gud-release-key' were found
 ```
 
 ---
@@ -17,7 +17,7 @@ Run the provided script to generate a keystore:
 
 Or manually:
 ```bash
-keytool -genkey -v -keystore gud_keystore.jks \
+keytool -genkey -v -keystore gud-release-key.jks \
   -keyalg RSA -keysize 2048 -validity 10000 \
   -alias gud_key
 ```
@@ -57,20 +57,20 @@ Click **"Android"** tab
 ### ☐ Step 7: Upload Keystore
 1. Click **"Add keystore"** button
 2. Fill in the form:
-   - **Keystore file**: Select `gud_keystore.jks`
-   - **Reference name**: Type exactly `gud_keystore` ⚠️ CRITICAL
+   - **Keystore file**: Select `gud-release-key.jks`
+   - **Reference name**: Type exactly `gud-release-key` ⚠️ CRITICAL
    - **Keystore password**: Enter password from Step 1
    - **Key alias**: Enter `gud_key`
    - **Key password**: Enter password from Step 1
 3. Click **"Save"**
 
-**Reference name MUST be exactly:** `gud_keystore`
+**Reference name MUST be exactly:** `gud-release-key`
 
 ---
 
 ### ☐ Step 8: Verify Upload
 Confirm keystore appears in list:
-- Reference name: `gud_keystore` ✓
+- Reference name: `gud-release-key` ✓
 - Status: Active/Green checkmark ✓
 
 ---
@@ -96,12 +96,12 @@ Monitor build logs:
 
 **Before fix:**
 ```
-❌ Error: No keystores with reference 'gud_keystore' were found
+❌ Error: No keystores with reference 'gud-release-key' were found
 ```
 
 **After fix:**
 ```
-✅ Using keystore: gud_keystore
+✅ Using keystore: gud-release-key
 ✅ AAB build successful
 ✅ Artifact: app-release.aab
 ```
@@ -129,7 +129,7 @@ Fill in after each step:
 
 ## ⚠️ Common Mistakes to Avoid
 
-1. ❌ Wrong reference name (e.g., `keystore` instead of `gud_keystore`)
+1. ❌ Wrong reference name (e.g., `keystore` instead of `gud-release-key`)
 2. ❌ Uploading to team settings instead of app settings
 3. ❌ Typo in reference name (case-sensitive!)
 4. ❌ Forgetting to save passwords
@@ -148,7 +148,7 @@ Need more help? See:
 ## 🆘 Still Having Issues?
 
 If build still fails after following all steps:
-1. Check reference name is exactly: `gud_keystore`
+1. Check reference name is exactly: `gud-release-key`
 2. Verify all passwords are correct
 3. Check build logs for specific error
 4. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)

@@ -3,7 +3,7 @@
 # GUD Express - Android Keystore Generation Script
 # ==============================================================================
 # This script generates an Android keystore for signing release builds
-# Generated keystore must be uploaded to Codemagic with reference name: gud_keystore
+# Generated keystore must be uploaded to Codemagic with reference name: gud-release-key
 # ==============================================================================
 
 set -e  # Exit on error
@@ -14,7 +14,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Configuration
-KEYSTORE_FILE="gud_keystore.jks"
+KEYSTORE_FILE="gud-release-key.jks"
 KEY_ALIAS="gud_key"
 KEY_SIZE=2048
 VALIDITY=10000  # ~27 years
@@ -110,7 +110,7 @@ echo "3. Go to: Settings → Code signing identities → Android"
 echo "4. Click 'Add keystore'"
 echo "5. Upload with these details:"
 echo "   - Keystore file: $KEYSTORE_FILE"
-echo "   - Reference name: gud_keystore  ⚠️ MUST BE EXACTLY THIS"
+echo "   - Reference name: gud-release-key  ⚠️ MUST BE EXACTLY THIS"
 echo "   - Key alias: $KEY_ALIAS"
 echo "   - Passwords: (the ones you just entered)"
 echo ""
