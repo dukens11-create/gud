@@ -1,6 +1,6 @@
 # iOS Code Signing Quick Setup
 
-Quick guide to set up code signing for GUD Express iOS app in under 10 minutes.
+Quick guide to set up code signing for GUD Express iOS app in 5-10 minutes.
 
 ## What You'll Need
 

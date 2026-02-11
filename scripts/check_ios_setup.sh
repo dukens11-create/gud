@@ -196,18 +196,20 @@ fi
 if command -v flutter &> /dev/null; then
     echo "10. Available Devices:"
     DEVICES=$(flutter devices 2>/dev/null)
-    if [ $? -eq 0 ]; then
-        echo "$DEVICES" | grep -E "iPhone|iPad|iOS Simulator|macOS" | while read line; do
-            echo -e "    ${GREEN}✓${NC} $line"
-        done
-        
-        DEVICE_COUNT=$(echo "$DEVICES" | grep -c -E "iPhone|iPad|iOS Simulator")
-        if [ "$DEVICE_COUNT" -eq 0 ]; then
+    if [ $? -eq 0 ] && [ -n "$DEVICES" ]; then
+        # Check if any iOS devices found
+        IOS_DEVICES=$(echo "$DEVICES" | grep -E "iPhone|iPad|iOS Simulator|macOS")
+        if [ -n "$IOS_DEVICES" ]; then
+            echo "$IOS_DEVICES" | while read line; do
+                echo -e "    ${GREEN}✓${NC} $line"
+            done
+        else
             echo -e "    ${YELLOW}⚠${NC} No iOS devices or simulators available"
             echo "    Open Simulator or connect an iOS device"
         fi
     else
         echo -e "    ${YELLOW}⚠${NC} Unable to detect devices"
+        echo "    Ensure Flutter is properly configured"
     fi
     echo ""
 fi

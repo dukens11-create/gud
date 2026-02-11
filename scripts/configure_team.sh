@@ -66,6 +66,19 @@ echo -e "${GREEN}✅ Project file backed up to ${PROJECT_FILE}.backup${NC}"
 add_development_team() {
     # Using sed to add DEVELOPMENT_TEAM after PRODUCT_BUNDLE_IDENTIFIER if not already present
     if ! grep -q "DEVELOPMENT_TEAM = $TEAM_ID" "$PROJECT_FILE"; then
+        # Check if PRODUCT_BUNDLE_IDENTIFIER exists
+        if ! grep -q "PRODUCT_BUNDLE_IDENTIFIER = com.gudexpress.gud_app" "$PROJECT_FILE"; then
+            echo -e "${YELLOW}⚠️  Warning: Expected bundle identifier not found in project${NC}"
+            echo "   Expected: PRODUCT_BUNDLE_IDENTIFIER = com.gudexpress.gud_app"
+            echo "   The project structure might have changed."
+            echo ""
+            read -p "Continue anyway? (y/n): " CONTINUE
+            if [[ ! $CONTINUE =~ ^[Yy]$ ]]; then
+                echo "Aborted."
+                exit 1
+            fi
+        fi
+        
         # Add DEVELOPMENT_TEAM in Debug configuration
         sed -i.tmp "/PRODUCT_BUNDLE_IDENTIFIER = com.gudexpress.gud_app;/a\\
 				DEVELOPMENT_TEAM = $TEAM_ID;
@@ -74,7 +87,14 @@ add_development_team() {
         # Remove the temporary file created by sed
         rm -f "${PROJECT_FILE}.tmp"
         
-        echo -e "${GREEN}✅ Added DEVELOPMENT_TEAM = $TEAM_ID to project configuration${NC}"
+        # Verify the insertion was successful
+        if grep -q "DEVELOPMENT_TEAM = $TEAM_ID" "$PROJECT_FILE"; then
+            echo -e "${GREEN}✅ Added DEVELOPMENT_TEAM = $TEAM_ID to project configuration${NC}"
+        else
+            echo -e "${RED}❌ Failed to add DEVELOPMENT_TEAM to project${NC}"
+            echo "   Please configure manually in Xcode"
+            exit 1
+        fi
     else
         echo -e "${YELLOW}ℹ️  DEVELOPMENT_TEAM already configured${NC}"
     fi
