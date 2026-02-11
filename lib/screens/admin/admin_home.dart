@@ -539,7 +539,7 @@ class _AdminHomeState extends State<AdminHome> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const SizedBox(height: 4),
-                                Text('Driver: ${load.driverId}'),
+                                Text('Driver: ${load.driverName ?? load.driverId}'),
                                 Text('${load.pickupAddress} → ${load.deliveryAddress}'),
                               ],
                             ),
