@@ -60,13 +60,26 @@ class FirestoreService {
     required String truckNumber,
   }) async {
     _requireAuth();
-    await _db.collection('drivers').doc(driverId).set({
-      'name': name,
-      'phone': phone,
-      'truckNumber': truckNumber,
-      'status': 'available',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    
+    print('🔧 Creating driver in Firestore: $driverId');
+    
+    try {
+      await _db.collection('drivers').doc(driverId).set({
+        'name': name,
+        'phone': phone,
+        'truckNumber': truckNumber,
+        'status': 'available',
+        'isActive': true,  // Explicitly set isActive field
+        'totalEarnings': 0.0,  // Initialize earnings
+        'completedLoads': 0,  // Initialize load count
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      
+      print('✅ Driver created successfully in Firestore: $driverId');
+    } catch (e) {
+      print('❌ Error creating driver in Firestore: $e');
+      rethrow;
+    }
   }
 
   /// Stream all drivers with real-time updates
@@ -77,9 +90,27 @@ class FirestoreService {
   /// Throws [FirebaseAuthException] if user is not authenticated
   Stream<List<Driver>> streamDrivers() {
     _requireAuth();
+    
+    print('🔍 Starting to stream drivers from Firestore');
+    
     return _db.collection('drivers').snapshots().map(
-      (snapshot) => snapshot.docs.map((doc) => Driver.fromMap(doc.id, doc.data())).toList(),
-    );
+      (snapshot) {
+        print('📊 Received ${snapshot.docs.length} driver documents from Firestore');
+        
+        final drivers = snapshot.docs.map((doc) {
+          final data = doc.data();
+          final isActive = data['isActive'] as bool?;
+          print('   Driver ${doc.id}: isActive=$isActive');
+          return Driver.fromMap(doc.id, data);
+        }).toList();
+        
+        print('✅ Parsed ${drivers.length} drivers successfully');
+        return drivers;
+      },
+    ).handleError((error) {
+      print('❌ Error streaming drivers: $error');
+      throw error;
+    });
   }
 
   /// Update driver information

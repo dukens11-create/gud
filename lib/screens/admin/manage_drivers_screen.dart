@@ -118,6 +118,8 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
 
     if (result != null && mounted) {
       try {
+        print('🚀 Starting driver registration process...');
+        
         // Register the driver with Firebase Auth and create user profile
         final credential = await _authService.register(
           email: result['email']!,
@@ -128,20 +130,27 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
           truckNumber: result['truckNumber']!,
         );
 
+        print('✅ Firebase Auth user created: ${credential?.user?.uid}');
+
         // Create driver document
         if (credential?.user?.uid != null) {
+          print('📝 Creating driver document in Firestore...');
           await _firestoreService.createDriver(
             driverId: credential!.user!.uid,
             name: result['name']!,
             phone: result['phone']!,
             truckNumber: result['truckNumber']!,
           );
+          print('✅ Driver document created successfully');
+        } else {
+          print('❌ No user ID returned from registration');
         }
 
         if (mounted) {
           NavigationService.showSuccess('Driver added successfully. Verification email sent.');
         }
       } on FirebaseAuthException catch (e) {
+        print('❌ FirebaseAuthException: ${e.code}');
         if (mounted) {
           String errorMessage = 'Failed to add driver';
           if (e.code == 'email-already-in-use') {
@@ -154,6 +163,7 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
           NavigationService.showError(errorMessage);
         }
       } catch (e) {
+        print('❌ Unexpected error: $e');
         if (mounted) {
           NavigationService.showError('Error adding driver: $e');
         }
@@ -297,14 +307,28 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
       body: StreamBuilder<List<Driver>>(
         stream: _firestoreService.streamDrivers(),
         builder: (context, snapshot) {
+          // Enhanced error handling
           if (snapshot.hasError) {
+            print('❌ Error in StreamBuilder: ${snapshot.error}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.error_outline, size: 48, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('Error: ${snapshot.error}'),
+                  const Text(
+                    'Error loading drivers',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      '${snapshot.error}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
@@ -318,17 +342,49 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
+            print('⏳ Waiting for driver data...');
             return const Center(child: CircularProgressIndicator());
           }
 
           final drivers = snapshot.data ?? [];
+          print('📋 Total drivers received: ${drivers.length}');
           
           // Filter out inactive drivers
           final activeDrivers = drivers.where((d) => d.isActive).toList();
+          print('✅ Active drivers: ${activeDrivers.length}');
 
           if (activeDrivers.isEmpty) {
-            return const Center(
-              child: Text('No drivers found. Add one to get started!'),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.person_off_outlined, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No Active Drivers Available',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Add a driver to get started',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  if (drivers.isNotEmpty && activeDrivers.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Text(
+                        '${drivers.length} inactive driver(s) hidden',
+                        style: const TextStyle(
+                          color: Colors.orange,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             );
           }
 
