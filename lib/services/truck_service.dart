@@ -103,7 +103,7 @@ class TruckService {
     var query = _db.collection('trucks').orderBy('truckNumber');
 
     if (!includeInactive) {
-      query = query.where('status', whereNotIn: ['inactive']);
+      query = query.where('status', isNotEqualTo: 'inactive');
     }
 
     return query.snapshots().map((snapshot) =>

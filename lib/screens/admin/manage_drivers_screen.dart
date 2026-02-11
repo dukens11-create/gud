@@ -95,14 +95,30 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.orange),
                         ),
-                        child: const Row(
+                        child: const Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.warning, color: Colors.orange),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'No available trucks. Add trucks first.',
-                                style: TextStyle(color: Colors.orange),
+                            Row(
+                              children: [
+                                Icon(Icons.warning, color: Colors.orange),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'No available trucks',
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Drivers must be assigned to a truck. Please add trucks in the "Manage Trucks" menu first.',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 12,
                               ),
                             ),
                           ],

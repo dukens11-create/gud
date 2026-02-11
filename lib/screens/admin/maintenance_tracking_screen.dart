@@ -553,7 +553,7 @@ class _MaintenanceTrackingScreenState extends State<MaintenanceTrackingScreen>
         }
 
         await _service.addMaintenanceRecord(
-          driverId: truck.assignedDriverId ?? '', // Driver ID from truck assignment
+          driverId: truck.assignedDriverId ?? '', // Driver ID from truck assignment, empty if unassigned
           truckNumber: truck.truckNumber,
           maintenanceType: result['type'],
           serviceDate: result['serviceDate'],

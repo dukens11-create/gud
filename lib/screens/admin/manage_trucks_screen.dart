@@ -19,6 +19,9 @@ class ManageTrucksScreen extends StatefulWidget {
   State<ManageTrucksScreen> createState() => _ManageTrucksScreenState();
 }
 
+/// Minimum year for truck manufacturing date
+const int _minTruckYear = 1990;
+
 class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
   final _truckService = TruckService();
   final _searchController = TextEditingController();
@@ -335,7 +338,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
                     border: OutlineInputBorder(),
                   ),
                   items: List.generate(
-                    DateTime.now().year - 1990 + 1,
+                    DateTime.now().year - _minTruckYear + 1,
                     (index) {
                       final year = DateTime.now().year - index;
                       return DropdownMenuItem(
