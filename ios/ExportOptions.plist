@@ -23,6 +23,7 @@
     <!-- 
     TEAM ID: Your Apple Developer Team ID
     Find it in Apple Developer Console under Membership
+    or run: ./scripts/configure_team.sh to set it automatically
     Set via TEAM_ID secret in GitHub Actions
     -->
     <key>teamID</key>
@@ -49,7 +50,8 @@
     
     <!-- 
     PROVISIONING PROFILES: Automatic or manual provisioning
-    Leave empty for automatic provisioning
+    For local builds: Leave empty or set signingStyle to "automatic"
+    For CI/CD: Specify exact profile name
     -->
     <key>provisioningProfiles</key>
     <dict>
@@ -69,6 +71,8 @@
     <!-- 
     SIGNING STYLE: Manual or automatic signing
     Options: manual, automatic
+    For local builds with Xcode: Use "automatic"
+    For CI/CD: Use "manual" with exact profile names
     -->
     <key>signingStyle</key>
     <string>automatic</string>

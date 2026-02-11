@@ -38,9 +38,12 @@ No keystores with reference 'gud-release-key' were found from code signing ident
 - **Web**: Firebase hosting deployment
 
 ## Quick Links
-- [iOS Build & Deploy Guide](IOS_BUILD_AND_DEPLOY_GUIDE.md)
-- [Android AAB Build Guide](AAB_BUILD_GUIDE.md)
-- [Deployment Guide](DEPLOYMENT.md)
+- [iOS Code Signing Quick Setup](IOS_CODE_SIGNING_QUICK_SETUP.md) - 5-minute setup guide
+- [iOS Local Build Guide](IOS_LOCAL_BUILD_GUIDE.md) - Complete local development guide
+- [iOS Build & Deploy Guide](IOS_BUILD_AND_DEPLOY_GUIDE.md) - CI/CD and App Store
+- [iOS Provisioning Guide](IOS_PROVISIONING_GUIDE.md) - Profile management
+- [Android AAB Build Guide](AAB_BUILD_GUIDE.md) - Android builds
+- [Deployment Guide](DEPLOYMENT.md) - General deployment info
 
 ## Getting Started
 
