@@ -564,26 +564,42 @@ class DriverExtendedService {
   /// Get all active expiration alerts
   Stream<List<ExpirationAlert>> streamExpirationAlerts() {
     _requireAuth();
+    // Query with orderBy only (no whereIn) to avoid composite index requirement
+    // Limit retrieves up to 100 earliest-expiring documents for performance
+    // Then filter for pending/sent status in memory (may return fewer than 100)
     return _db
         .collection('expiration_alerts')
-        .where('status', whereIn: ['pending', 'sent'])
         .orderBy('expiryDate')
+        .limit(100)
         .snapshots()
         .map((snapshot) =>
-            snapshot.docs.map((doc) => ExpirationAlert.fromDoc(doc)).toList());
+            snapshot.docs
+                .map((doc) => ExpirationAlert.fromDoc(doc))
+                .where((alert) => 
+                    alert.status == AlertStatus.pending || 
+                    alert.status == AlertStatus.sent)
+                .toList());
   }
 
   /// Get expiration alerts for a specific driver
   Stream<List<ExpirationAlert>> streamDriverExpirationAlerts(String driverId) {
     _requireAuth();
+    // Query with driverId filter and orderBy (no status whereIn) to avoid composite index
+    // Limit retrieves up to 50 earliest-expiring documents for the driver
+    // Then filter for pending/sent status in memory (may return fewer than 50)
     return _db
         .collection('expiration_alerts')
         .where('driverId', isEqualTo: driverId)
-        .where('status', whereIn: ['pending', 'sent'])
         .orderBy('expiryDate')
+        .limit(50)
         .snapshots()
         .map((snapshot) =>
-            snapshot.docs.map((doc) => ExpirationAlert.fromDoc(doc)).toList());
+            snapshot.docs
+                .map((doc) => ExpirationAlert.fromDoc(doc))
+                .where((alert) => 
+                    alert.status == AlertStatus.pending || 
+                    alert.status == AlertStatus.sent)
+                .toList());
   }
 
   /// Acknowledge expiration alert
