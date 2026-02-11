@@ -3,7 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/firestore_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/navigation_service.dart';
+import '../../services/truck_service.dart';
 import '../../models/driver.dart';
+import '../../models/truck.dart';
 
 /// Manage Drivers Screen - Full driver management functionality
 /// 
@@ -18,6 +20,7 @@ class ManageDriversScreen extends StatefulWidget {
 class _ManageDriversScreenState extends State<ManageDriversScreen> {
   final _firestoreService = FirestoreService();
   final _authService = AuthService();
+  final _truckService = TruckService();
 
   @override
   void initState() {
@@ -29,96 +32,184 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final phoneController = TextEditingController();
-    final truckController = TextEditingController();
+    String? selectedTruckId;
 
     final result = await showDialog<Map<String, String>?>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Add New Driver'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Driver Name',
-                  border: OutlineInputBorder(),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Add New Driver'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Driver Name',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: truckController,
-                decoration: const InputDecoration(
-                  labelText: 'Truck Number',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                StreamBuilder<List<Truck>>(
+                  stream: _truckService.streamAvailableTrucks(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircularProgressIndicator();
+                    }
+
+                    final trucks = snapshot.data ?? [];
+                    
+                    if (trucks.isEmpty) {
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange),
+                        ),
+                        child: const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.warning, color: Colors.orange),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'No available trucks',
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Drivers must be assigned to a truck. Please add trucks in the "Manage Trucks" menu first.',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return DropdownButtonFormField<String>(
+                      value: selectedTruckId,
+                      decoration: const InputDecoration(
+                        labelText: 'Select Truck',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.local_shipping),
+                      ),
+                      hint: const Text('Choose a truck'),
+                      items: trucks.map((truck) {
+                        return DropdownMenuItem<String>(
+                          value: truck.id,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                truck.truckNumber,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                truck.displayInfo,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() => selectedTruckId = value);
+                      },
+                    );
+                  },
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, null),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Validate before closing dialog (trim to prevent whitespace-only entries)
+                if (nameController.text.trim().isEmpty || 
+                    emailController.text.trim().isEmpty ||
+                    passwordController.text.trim().isEmpty ||
+                    phoneController.text.trim().isEmpty || 
+                    selectedTruckId == null) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(content: Text('Please fill in all fields')),
+                  );
+                  return;
+                }
+                Navigator.pop(dialogContext, {
+                  'name': nameController.text.trim(),
+                  'email': emailController.text.trim(),
+                  'password': passwordController.text.trim(),
+                  'phone': phoneController.text.trim(),
+                  'truckId': selectedTruckId!,
+                });
+              },
+              child: const Text('Add'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, null),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              // Validate before closing dialog (trim to prevent whitespace-only entries)
-              if (nameController.text.trim().isEmpty || 
-                  emailController.text.trim().isEmpty ||
-                  passwordController.text.trim().isEmpty ||
-                  phoneController.text.trim().isEmpty || 
-                  truckController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('Please fill in all fields')),
-                );
-                return;
-              }
-              Navigator.pop(dialogContext, {
-                'name': nameController.text.trim(),
-                'email': emailController.text.trim(),
-                'password': passwordController.text.trim(),
-                'phone': phoneController.text.trim(),
-                'truckNumber': truckController.text.trim(),
-              });
-            },
-            child: const Text('Add'),
-          ),
-        ],
       ),
     );
 
     if (result != null && mounted) {
       try {
         print('🚀 Starting driver registration process...');
+        
+        // Get the selected truck
+        final truck = await _truckService.getTruck(result['truckId']!);
+        if (truck == null) {
+          if (mounted) {
+            NavigationService.showError('Selected truck not found');
+          }
+          return;
+        }
         
         // Register the driver with Firebase Auth and create user profile
         final credential = await _authService.register(
@@ -127,7 +218,7 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
           name: result['name']!,
           role: 'driver',
           phone: result['phone']!,
-          truckNumber: result['truckNumber']!,
+          truckNumber: truck.truckNumber,
         );
 
         print('✅ Firebase Auth user created: ${credential?.user?.uid}');
@@ -140,9 +231,17 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
             name: result['name']!,
             phone: result['phone']!,
             email: result['email']!,
-            truckNumber: result['truckNumber']!,
+            truckNumber: truck.truckNumber,
           );
           print('✅ Driver document created successfully');
+          
+          // Assign truck to driver
+          await _truckService.assignDriver(
+            truckId: result['truckId']!,
+            driverId: credential.user!.uid,
+            driverName: result['name']!,
+          );
+          print('✅ Truck assigned to driver');
         } else {
           print('❌ No user ID returned from registration');
         }
@@ -175,79 +274,181 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
   Future<void> _showEditDriverDialog(Driver driver) async {
     final nameController = TextEditingController(text: driver.name);
     final phoneController = TextEditingController(text: driver.phone);
-    final truckController = TextEditingController(text: driver.truckNumber);
+    
+    // Find the truck currently assigned to this driver
+    Truck? currentTruck;
+    try {
+      currentTruck = await _truckService.getTruckByDriverId(driver.id);
+    } catch (e) {
+      print('Error fetching current truck: $e');
+    }
+    
+    String? selectedTruckId = currentTruck?.id;
 
     final result = await showDialog<Map<String, String>?>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit Driver'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Driver Name',
-                  border: OutlineInputBorder(),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Edit Driver'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Driver Name',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: truckController,
-                decoration: const InputDecoration(
-                  labelText: 'Truck Number',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                StreamBuilder<List<Truck>>(
+                  stream: _truckService.streamAvailableTrucks(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircularProgressIndicator();
+                    }
+
+                    var trucks = snapshot.data ?? [];
+                    
+                    // Add currently assigned truck to the list if it's not in available trucks
+                    if (currentTruck != null && 
+                        !trucks.any((t) => t.id == currentTruck!.id)) {
+                      trucks = [currentTruck, ...trucks];
+                    }
+                    
+                    if (trucks.isEmpty) {
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.warning, color: Colors.orange),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'No available trucks.',
+                                style: TextStyle(color: Colors.orange),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return DropdownButtonFormField<String>(
+                      value: selectedTruckId,
+                      decoration: const InputDecoration(
+                        labelText: 'Select Truck',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.local_shipping),
+                      ),
+                      hint: const Text('Choose a truck'),
+                      items: trucks.map((truck) {
+                        return DropdownMenuItem<String>(
+                          value: truck.id,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                truck.truckNumber,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                truck.displayInfo,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() => selectedTruckId = value);
+                      },
+                    );
+                  },
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, null),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Validate before closing dialog (trim to prevent whitespace-only entries)
+                if (nameController.text.trim().isEmpty || 
+                    phoneController.text.trim().isEmpty || 
+                    selectedTruckId == null) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(content: Text('Please fill in all fields')),
+                  );
+                  return;
+                }
+                Navigator.pop(dialogContext, {
+                  'name': nameController.text.trim(),
+                  'phone': phoneController.text.trim(),
+                  'truckId': selectedTruckId!,
+                });
+              },
+              child: const Text('Save'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, null),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              // Validate before closing dialog (trim to prevent whitespace-only entries)
-              if (nameController.text.trim().isEmpty || 
-                  phoneController.text.trim().isEmpty || 
-                  truckController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('Please fill in all fields')),
-                );
-                return;
-              }
-              Navigator.pop(dialogContext, {
-                'name': nameController.text.trim(),
-                'phone': phoneController.text.trim(),
-                'truckNumber': truckController.text.trim(),
-              });
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
 
     if (result != null && mounted) {
       try {
+        // Get the selected truck
+        final truck = await _truckService.getTruck(result['truckId']!);
+        if (truck == null) {
+          if (mounted) {
+            NavigationService.showError('Selected truck not found');
+          }
+          return;
+        }
+        
         await _firestoreService.updateDriver(
           driverId: driver.id,
           name: result['name']!,
           phone: result['phone']!,
-          truckNumber: result['truckNumber']!,
+          truckNumber: truck.truckNumber,
         );
+        
+        // Update truck assignment if changed
+        if (currentTruck?.id != result['truckId']) {
+          // Unassign from old truck if any
+          if (currentTruck != null) {
+            await _truckService.unassignDriver(currentTruck.id);
+          }
+          
+          // Assign to new truck
+          await _truckService.assignDriver(
+            truckId: result['truckId']!,
+            driverId: driver.id,
+            driverName: result['name']!,
+          );
+        }
 
         if (mounted) {
           NavigationService.showSuccess('Driver updated successfully');
@@ -265,7 +466,7 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Driver'),
-        content: Text('Are you sure you want to delete ${driver.name}? This will deactivate the driver account.'),
+        content: Text('Are you sure you want to delete ${driver.name}? This will deactivate the driver account and unassign their truck.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -282,6 +483,16 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
 
     if (confirmed == true && mounted) {
       try {
+        // Unassign truck if driver has one
+        try {
+          final truck = await _truckService.getTruckByDriverId(driver.id);
+          if (truck != null) {
+            await _truckService.unassignDriver(truck.id);
+          }
+        } catch (e) {
+          print('Error unassigning truck: $e');
+        }
+        
         // Deactivate driver instead of deleting
         await _firestoreService.updateDriver(
           driverId: driver.id,

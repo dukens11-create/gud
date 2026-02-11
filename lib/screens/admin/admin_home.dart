@@ -687,6 +687,14 @@ class _AdminHomeState extends State<AdminHome> {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.local_shipping),
+            title: const Text('Manage Trucks'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/admin/trucks');
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.add_box),
             title: const Text('Create Load'),
             onTap: () {

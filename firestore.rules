@@ -60,6 +60,19 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
+    // Trucks collection - stores truck/vehicle information
+    match /trucks/{truckId} {
+      // All authenticated users can read truck information
+      // (needed for admin to see truck list, and for assignment dropdowns)
+      allow read: if isAuthenticated();
+      
+      // Only admins can create and update trucks
+      allow create, update: if isAdmin();
+      
+      // Soft delete only - physical delete not allowed
+      allow delete: if false;
+    }
+    
     // Loads collection - stores load/shipment information
     match /loads/{loadId} {
       // Drivers can only see their assigned loads, admins can see all
