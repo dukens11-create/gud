@@ -71,6 +71,12 @@ class FirestoreService {
       throw ArgumentError('All driver fields must be non-empty');
     }
     
+    // Validate email format
+    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(email)) {
+      throw ArgumentError('Invalid email address format');
+    }
+    
     try {
       await _db.collection('drivers').doc(driverId).set({
         'name': name,
@@ -150,6 +156,15 @@ class FirestoreService {
     bool? isActive,
   }) async {
     _requireAuth();
+    
+    // Validate email format if provided
+    if (email != null) {
+      final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+      if (!emailRegex.hasMatch(email)) {
+        throw ArgumentError('Invalid email address format');
+      }
+    }
+    
     final Map<String, dynamic> updates = {};
     if (name != null) updates['name'] = name;
     if (phone != null) updates['phone'] = phone;

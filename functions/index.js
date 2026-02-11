@@ -540,7 +540,7 @@ exports.sendLoadAssignmentEmail = functions.firestore
             <p><strong>Load Number:</strong> ${loadData.loadNumber}</p>
             <p><strong>Driver:</strong> ${loadData.driverName || driverData.name}</p>
             <p><strong>Rate:</strong> $${loadData.rate.toFixed(2)}</p>
-            ${loadData.miles ? `<p><strong>Estimated Miles:</strong> ${loadData.miles}</p>` : ''}
+            ${loadData.miles ? `<p><strong>Estimated Miles:</strong> ${Number(loadData.miles).toFixed(1)}</p>` : ''}
           </div>
           
           <div style="margin: 20px 0;">
@@ -632,7 +632,7 @@ exports.sendLoadReassignmentEmail = functions.firestore
               <p><strong>Load Number:</strong> ${newData.loadNumber}</p>
               <p><strong>Driver:</strong> ${newData.driverName || driverData.name}</p>
               <p><strong>Rate:</strong> $${newData.rate.toFixed(2)}</p>
-              ${newData.miles ? `<p><strong>Estimated Miles:</strong> ${newData.miles}</p>` : ''}
+              ${newData.miles ? `<p><strong>Estimated Miles:</strong> ${Number(newData.miles).toFixed(1)}</p>` : ''}
               <p><strong>Status:</strong> ${newData.status}</p>
             </div>
             
