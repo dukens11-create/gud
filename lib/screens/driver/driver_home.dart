@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
-import '../../services/mock_data_service.dart';
 import '../../services/location_service.dart';
 import '../../services/firestore_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/navigation_service.dart';
 import '../../services/driver_extended_service.dart';
 import '../../models/load.dart';
 import '../../models/driver_extended.dart';
@@ -59,8 +59,7 @@ class _DriverHomeState extends State<DriverHome> {
   }
 
   Stream<List<LoadModel>> _getFilteredLoads() {
-    final mockService = MockDataService();
-    return mockService.streamDriverLoads(widget.driverId).map((loads) {
+    return _firestoreService.streamDriverLoads(widget.driverId).map((loads) {
       return loads.where((load) {
         // Search filter
         final matchesSearch = _searchQuery.isEmpty ||
