@@ -53,6 +53,9 @@ class FirestoreService {
   /// - [name]: Driver's full name
   /// - [phone]: Contact phone number
   /// - [truckNumber]: Assigned truck identifier
+  /// 
+  /// Throws [FirebaseAuthException] if user is not authenticated
+  /// Throws [FirebaseException] if Firestore operation fails
   Future<void> createDriver({
     required String driverId,
     required String name,
@@ -62,6 +65,10 @@ class FirestoreService {
     _requireAuth();
     
     print('🔧 Creating driver in Firestore: $driverId');
+    
+    if (driverId.isEmpty || name.isEmpty || phone.isEmpty || truckNumber.isEmpty) {
+      throw ArgumentError('All driver fields must be non-empty');
+    }
     
     try {
       await _db.collection('drivers').doc(driverId).set({
@@ -76,8 +83,15 @@ class FirestoreService {
       });
       
       print('✅ Driver created successfully in Firestore: $driverId');
+    } on FirebaseException catch (e) {
+      print('❌ Firebase error creating driver: ${e.code} - ${e.message}');
+      throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: e.code,
+        message: 'Failed to create driver: ${e.message}',
+      );
     } catch (e) {
-      print('❌ Error creating driver in Firestore: $e');
+      print('❌ Unexpected error creating driver in Firestore: $e');
       rethrow;
     }
   }
@@ -207,6 +221,10 @@ class FirestoreService {
   /// - [miles]: Optional estimated miles
   /// - [notes]: Optional additional notes
   /// - [createdBy]: Admin user ID who created the load
+  /// 
+  /// Throws [FirebaseAuthException] if user is not authenticated
+  /// Throws [ArgumentError] if required fields are empty
+  /// Throws [FirebaseException] if Firestore operation fails
   Future<String> createLoad({
     required String loadNumber,
     required String driverId,
@@ -219,20 +237,47 @@ class FirestoreService {
     required String createdBy,
   }) async {
     _requireAuth();
-    final docRef = await _db.collection('loads').add({
-      'loadNumber': loadNumber,
-      'driverId': driverId,
-      'driverName': driverName,
-      'pickupAddress': pickupAddress,
-      'deliveryAddress': deliveryAddress,
-      'rate': rate,
-      if (miles != null) 'miles': miles,
-      'status': 'assigned',
-      if (notes != null) 'notes': notes,
-      'createdBy': createdBy,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-    return docRef.id;
+    
+    print('🔧 Creating load in Firestore: $loadNumber for driver $driverId');
+    
+    // Validate required fields
+    if (loadNumber.isEmpty || driverId.isEmpty || driverName.isEmpty || 
+        pickupAddress.isEmpty || deliveryAddress.isEmpty || createdBy.isEmpty) {
+      throw ArgumentError('All required load fields must be non-empty');
+    }
+    
+    if (rate < 0) {
+      throw ArgumentError('Rate must be non-negative');
+    }
+    
+    try {
+      final docRef = await _db.collection('loads').add({
+        'loadNumber': loadNumber,
+        'driverId': driverId,
+        'driverName': driverName,
+        'pickupAddress': pickupAddress,
+        'deliveryAddress': deliveryAddress,
+        'rate': rate,
+        if (miles != null) 'miles': miles,
+        'status': 'assigned',
+        if (notes != null) 'notes': notes,
+        'createdBy': createdBy,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      
+      print('✅ Load created successfully: ${docRef.id}');
+      return docRef.id;
+    } on FirebaseException catch (e) {
+      print('❌ Firebase error creating load: ${e.code} - ${e.message}');
+      throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: e.code,
+        message: 'Failed to create load: ${e.message}',
+      );
+    } catch (e) {
+      print('❌ Unexpected error creating load: $e');
+      rethrow;
+    }
   }
 
   /// Stream all loads with real-time updates
@@ -251,14 +296,144 @@ class FirestoreService {
   /// 
   /// Returns only loads assigned to the specified driver,
   /// ordered by creation time (newest first)
+  /// 
+  /// Note: This query requires a composite index on:
+  /// - driverId (ascending)
+  /// - createdAt (descending)
   Stream<List<LoadModel>> streamDriverLoads(String driverId) {
     _requireAuth();
-    return _db
-        .collection('loads')
-        .where('driverId', isEqualTo: driverId)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => LoadModel.fromDoc(doc)).toList());
+    
+    print('🔍 Starting to stream loads for driver: $driverId');
+    
+    try {
+      return _db
+          .collection('loads')
+          .where('driverId', isEqualTo: driverId)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) {
+            print('📊 Received ${snapshot.docs.length} load documents for driver $driverId');
+            return snapshot.docs.map((doc) {
+              try {
+                return LoadModel.fromDoc(doc);
+              } catch (e) {
+                print('❌ Error parsing load document ${doc.id}: $e');
+                rethrow;
+              }
+            }).toList();
+          })
+          .handleError((error) {
+            print('❌ Error streaming driver loads: $error');
+            // If this is an index error, provide helpful information
+            if (error.toString().contains('index')) {
+              print('⚠️  Firestore index required for query: driverId + createdAt');
+              print('📝 Create index at: https://console.firebase.google.com/project/_/firestore/indexes');
+            }
+            throw error;
+          });
+    } catch (e) {
+      print('❌ Error setting up driver loads stream: $e');
+      rethrow;
+    }
+  }
+
+  /// Stream loads for a specific driver filtered by status
+  /// 
+  /// Returns loads assigned to the specified driver with a specific status,
+  /// ordered by creation time (newest first)
+  /// 
+  /// Parameters:
+  /// - [driverId]: Driver's unique identifier
+  /// - [status]: Load status to filter by ('assigned', 'in_transit', 'delivered')
+  /// 
+  /// **IMPORTANT: This query requires a Firestore composite index**
+  /// 
+  /// If you encounter an index error at runtime, create the index immediately:
+  /// 1. Copy the index creation link from the error message
+  /// 2. Open it in your browser and click "Create Index"
+  /// 3. Wait for index to be built (usually takes a few minutes)
+  /// 
+  /// Required index fields:
+  /// - Collection: loads
+  /// - Fields:
+  ///   * driverId (Ascending)
+  ///   * status (Ascending)  
+  ///   * createdAt (Descending)
+  /// 
+  /// Index creation URL (replace PROJECT_ID):
+  /// https://console.firebase.google.com/project/PROJECT_ID/firestore/indexes
+  Stream<List<LoadModel>> streamDriverLoadsByStatus({
+    required String driverId,
+    required String status,
+  }) {
+    _requireAuth();
+    
+    print('🔍 Starting to stream loads for driver: $driverId with status: $status');
+    
+    try {
+      return _db
+          .collection('loads')
+          .where('driverId', isEqualTo: driverId)
+          .where('status', isEqualTo: status)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) {
+            print('📊 Received ${snapshot.docs.length} load documents for driver $driverId with status $status');
+            
+            if (snapshot.docs.isEmpty) {
+              print('ℹ️  No loads found for driver $driverId with status $status');
+            }
+            
+            return snapshot.docs.map((doc) {
+              try {
+                final load = LoadModel.fromDoc(doc);
+                print('   ✓ Load ${load.loadNumber}: status=${load.status}, createdAt=${load.createdAt}');
+                return load;
+              } catch (e) {
+                print('❌ Error parsing load document ${doc.id}: $e');
+                rethrow;
+              }
+            }).toList();
+          })
+          .handleError((error) {
+            print('❌ Error streaming driver loads by status: $error');
+            
+            // Provide helpful error message if index is missing
+            if (error.toString().contains('index') || 
+                error.toString().contains('requires an index')) {
+              final errorMessage = '''
+⚠️  FIRESTORE INDEX REQUIRED ⚠️
+
+This query requires a composite index to work efficiently.
+
+Query details:
+- Collection: loads
+- Filters: driverId = $driverId, status = $status
+- OrderBy: createdAt (descending)
+
+IMMEDIATE ACTION REQUIRED:
+1. Check the error message above for the index creation link
+2. Click the link or manually create the index at:
+   https://console.firebase.google.com/project/_/firestore/indexes
+3. Add a composite index with these fields (in order):
+   - driverId (Ascending)
+   - status (Ascending)
+   - createdAt (Descending)
+4. Wait for the index to build (usually 2-5 minutes)
+5. Retry the operation
+
+Alternatively, the index may already be defined in firestore.indexes.json
+and just needs to be deployed using: firebase deploy --only firestore:indexes
+''';
+              print(errorMessage);
+            }
+            
+            throw error;
+          });
+    } catch (e) {
+      print('❌ Error setting up driver loads by status stream: $e');
+      rethrow;
+    }
   }
 
   /// Get a single load's information
