@@ -119,8 +119,6 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
     if (result != null && mounted) {
       try {
         print('🚀 Starting driver registration process...');
-        print('   Email: ${result['email']}');
-        print('   Name: ${result['name']}');
         
         // Register the driver with Firebase Auth and create user profile
         final credential = await _authService.register(
@@ -152,7 +150,7 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
           NavigationService.showSuccess('Driver added successfully. Verification email sent.');
         }
       } on FirebaseAuthException catch (e) {
-        print('❌ FirebaseAuthException: ${e.code} - ${e.message}');
+        print('❌ FirebaseAuthException: ${e.code}');
         if (mounted) {
           String errorMessage = 'Failed to add driver';
           if (e.code == 'email-already-in-use') {
@@ -381,7 +379,7 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
                         '${drivers.length} inactive driver(s) hidden',
                         style: const TextStyle(
                           color: Colors.orange,
-                          fontSize: 12,
+                          fontSize: 14,
                         ),
                       ),
                     ),

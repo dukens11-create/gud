@@ -62,7 +62,6 @@ class FirestoreService {
     _requireAuth();
     
     print('🔧 Creating driver in Firestore: $driverId');
-    print('   Name: $name, Phone: $phone, Truck: $truckNumber');
     
     try {
       await _db.collection('drivers').doc(driverId).set({
@@ -100,7 +99,8 @@ class FirestoreService {
         
         final drivers = snapshot.docs.map((doc) {
           final data = doc.data();
-          print('   Driver ${doc.id}: name=${data['name']}, isActive=${data['isActive'] ?? true}');
+          final isActive = data['isActive'] as bool?;
+          print('   Driver ${doc.id}: isActive=$isActive');
           return Driver.fromMap(doc.id, data);
         }).toList();
         
