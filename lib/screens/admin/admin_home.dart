@@ -62,6 +62,7 @@ class _AdminHomeState extends State<AdminHome> {
         // Search filter - searches across load number, driver, and locations
         final matchesSearch = _searchQuery.isEmpty ||
             load.loadNumber.toLowerCase().contains(_searchQuery) ||
+            (load.driverName?.toLowerCase().contains(_searchQuery) ?? false) ||
             load.driverId.toLowerCase().contains(_searchQuery) ||
             load.pickupAddress.toLowerCase().contains(_searchQuery) ||
             load.deliveryAddress.toLowerCase().contains(_searchQuery);
@@ -526,7 +527,7 @@ class _AdminHomeState extends State<AdminHome> {
                     itemBuilder: (context, index) {
                       final load = loads[index];
                       return Semantics(
-                        label: 'Load ${load.loadNumber}, driver ${load.driverId}, status ${load.status}, rate ${load.rate} dollars',
+                        label: 'Load ${load.loadNumber}, driver ${load.driverName ?? load.driverId}, status ${load.status}, rate ${load.rate} dollars',
                         button: true,
                         child: Card(
                           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
