@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/datetime_utils.dart';
 
 class Expense {
   final String id;
@@ -42,19 +43,17 @@ class Expense {
   }
 
   static Expense fromMap(String id, Map<String, dynamic> d) {
-    DateTime? _parseDateTime(dynamic v) => v == null ? null : DateTime.parse(v as String);
-
     return Expense(
       id: id,
       amount: (d['amount'] ?? 0).toDouble(),
       category: (d['category'] ?? 'other') as String,
       description: (d['description'] ?? '') as String,
-      date: _parseDateTime(d['date']) ?? DateTime.now(),
+      date: DateTimeUtils.parseDateTime(d['date']) ?? DateTime.now(),
       driverId: d['driverId'] as String?,
       loadId: d['loadId'] as String?,
       receiptUrl: d['receiptUrl'] as String?,
       createdBy: (d['createdBy'] ?? '') as String,
-      createdAt: _parseDateTime(d['createdAt']),
+      createdAt: DateTimeUtils.parseDateTime(d['createdAt']),
     );
   }
 }

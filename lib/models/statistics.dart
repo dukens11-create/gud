@@ -1,3 +1,5 @@
+import '../utils/datetime_utils.dart';
+
 class Statistics {
   final double totalRevenue;
   final double totalExpenses;
@@ -40,8 +42,6 @@ class Statistics {
   };
 
   static Statistics fromMap(Map<String, dynamic> d) {
-    DateTime? _parseDateTime(dynamic v) => v == null ? null : DateTime.parse(v as String);
-
     return Statistics(
       totalRevenue: (d['totalRevenue'] ?? 0).toDouble(),
       totalExpenses: (d['totalExpenses'] ?? 0).toDouble(),
@@ -51,8 +51,8 @@ class Statistics {
       totalMiles: (d['totalMiles'] ?? 0).toDouble(),
       averageRate: (d['averageRate'] ?? 0).toDouble(),
       ratePerMile: (d['ratePerMile'] ?? 0).toDouble(),
-      periodStart: _parseDateTime(d['periodStart']) ?? DateTime.now(),
-      periodEnd: _parseDateTime(d['periodEnd']) ?? DateTime.now(),
+      periodStart: DateTimeUtils.parseDateTime(d['periodStart']) ?? DateTime.now(),
+      periodEnd: DateTimeUtils.parseDateTime(d['periodEnd']) ?? DateTime.now(),
       driverStats: (d['driverStats'] ?? {}) as Map<String, dynamic>,
     );
   }

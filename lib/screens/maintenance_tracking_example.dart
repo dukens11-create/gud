@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'maintenance_tracking.dart';
+import '../utils/datetime_utils.dart';
 
 /// Example implementation showing how to use MaintenanceQueryService.
 /// 
@@ -277,7 +278,7 @@ class _MaintenanceTrackingExampleState
   /// Helper method to build a maintenance record list tile
   Widget _buildMaintenanceListTile(Map<String, dynamic> record) {
     final serviceDate =
-        (record['serviceDate'] as dynamic).toDate() as DateTime;
+        DateTimeUtils.parseDateTime(record['serviceDate']) ?? DateTime.now();
     final cost = (record['cost'] as num).toDouble();
     final type = record['maintenanceType'] as String;
     final truckNumber = record['truckNumber'] as String;

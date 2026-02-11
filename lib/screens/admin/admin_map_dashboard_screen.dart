@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import '../../utils/datetime_utils.dart';
 
 /// Live Map Dashboard for Admin
 /// 
@@ -158,7 +159,7 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
     DateTime? lastUpdate;
     if (lastLocation?['timestamp'] != null) {
       try {
-        lastUpdate = DateTime.parse(lastLocation['timestamp']);
+        lastUpdate = DateTimeUtils.parseDateTime(lastLocation['timestamp']);
       } catch (e) {
         // Handle parse error
       }

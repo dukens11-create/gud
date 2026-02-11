@@ -1,3 +1,5 @@
+import '../utils/datetime_utils.dart';
+
 class AppUser {
   final String uid;
   final String role; // 'admin' or 'driver'
@@ -38,9 +40,7 @@ class AppUser {
       phone: (data['phone'] ?? '') as String,
       truckNumber: (data['truckNumber'] ?? '') as String,
       isActive: (data['isActive'] ?? true) as bool,
-      createdAt: data['createdAt'] != null 
-          ? DateTime.parse(data['createdAt'] as String)
-          : null,
+      createdAt: DateTimeUtils.parseDateTime(data['createdAt']),
     );
   }
 }

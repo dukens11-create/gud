@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/datetime_utils.dart';
 
 /// MaintenanceQueryService provides best-practice Firestore queries for maintenance tracking.
 /// 
@@ -408,7 +409,7 @@ class MaintenanceQueryService {
         totalCost += cost;
 
         // Check if upcoming
-        final serviceDate = (record['serviceDate'] as Timestamp).toDate();
+        final serviceDate = DateTimeUtils.parseDateTime(record['serviceDate']) ?? DateTime.now();
         if (serviceDate.isAfter(now) || serviceDate.isAtSameMomentAs(now)) {
           upcomingCount++;
         }
@@ -496,16 +497,12 @@ class MaintenanceRecord {
       driverId: data['driverId'] as String? ?? '',
       truckNumber: data['truckNumber'] as String? ?? '',
       maintenanceType: data['maintenanceType'] as String? ?? '',
-      serviceDate: (data['serviceDate'] as Timestamp).toDate(),
+      serviceDate: DateTimeUtils.parseDateTime(data['serviceDate']) ?? DateTime.now(),
       cost: (data['cost'] as num?)?.toDouble() ?? 0.0,
-      nextServiceDue: data['nextServiceDue'] != null
-          ? (data['nextServiceDue'] as Timestamp).toDate()
-          : null,
+      nextServiceDue: DateTimeUtils.parseDateTime(data['nextServiceDue']),
       serviceProvider: data['serviceProvider'] as String?,
       notes: data['notes'] as String?,
-      createdAt: data['createdAt'] != null
-          ? (data['createdAt'] as Timestamp).toDate()
-          : null,
+      createdAt: DateTimeUtils.parseDateTime(data['createdAt']),
     );
   }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'offline_support_service.dart';
 import 'firestore_service.dart';
+import '../utils/datetime_utils.dart';
 
 /// Sync Service
 /// 
@@ -131,7 +132,7 @@ class SyncService {
           driverId: data['driverId'] as String,
           latitude: data['latitude'] as double,
           longitude: data['longitude'] as double,
-          timestamp: DateTime.parse(data['timestamp'] as String),
+          timestamp: DateTimeUtils.parseDateTime(data['timestamp']) ?? DateTime.now(),
           accuracy: data['accuracy'] as double,
         );
         break;
