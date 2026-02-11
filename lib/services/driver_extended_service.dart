@@ -564,9 +564,9 @@ class DriverExtendedService {
   /// Get all active expiration alerts
   Stream<List<ExpirationAlert>> streamExpirationAlerts() {
     _requireAuth();
-    // Query with orderBy only to avoid composite index requirement
-    // Filter for pending/sent status in memory
-    // Limit to 100 most recent expiring items to optimize performance
+    // Query with orderBy only (no whereIn) to avoid composite index requirement
+    // Limit retrieves up to 100 earliest-expiring documents for performance
+    // Then filter for pending/sent status in memory (may return fewer than 100)
     return _db
         .collection('expiration_alerts')
         .orderBy('expiryDate')
@@ -584,9 +584,9 @@ class DriverExtendedService {
   /// Get expiration alerts for a specific driver
   Stream<List<ExpirationAlert>> streamDriverExpirationAlerts(String driverId) {
     _requireAuth();
-    // Query with where and orderBy to avoid composite index requirement
-    // Filter for pending/sent status in memory
-    // Limit to 50 most recent expiring items to optimize performance
+    // Query with driverId filter and orderBy (no status whereIn) to avoid composite index
+    // Limit retrieves up to 50 earliest-expiring documents for the driver
+    // Then filter for pending/sent status in memory (may return fewer than 50)
     return _db
         .collection('expiration_alerts')
         .where('driverId', isEqualTo: driverId)
