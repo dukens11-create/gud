@@ -221,7 +221,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
       case 'delivered':
       case 'completed':
         return Colors.green;
-      case 'in-transit':
+      case 'in_transit':
         return Colors.orange;
       case 'assigned':
         return Colors.blue;
