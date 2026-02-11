@@ -366,7 +366,7 @@ firebase.auth().currentUser.uid  // Get driver's UID
    - Check IAM roles in Firebase Console
 
 3. **"Module not found"**
-   - Run: `npm install firebase-admin readline-sync`
+   - Run: `npm install firebase-admin`
 
 ### Issue: Empty dashboard for driver with loads
 
