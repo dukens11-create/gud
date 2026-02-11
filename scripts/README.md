@@ -178,6 +178,59 @@ For detailed troubleshooting, see [IOS_LOCAL_BUILD_GUIDE.md](../IOS_LOCAL_BUILD_
 
 ## Quick Commands
 
+### Build Android AAB
+```bash
+./scripts/build_aab.sh
+```
+
+### Build iOS Simulator
+```bash
+./scripts/build_ios_simulator.sh
+```
+
+### Build iOS Device
+```bash
+./scripts/build_ios_device.sh --release
+```
+
+## Migration Scripts
+
+### migrate_legacy_loads.js
+
+**Purpose**: Identifies and fixes loads in Firestore that are missing the `driverId` field. Legacy loads without a `driverId` won't appear on driver dashboards.
+
+**Prerequisites**:
+```bash
+npm install firebase-admin readline-sync
+```
+
+**Usage**:
+```bash
+# Check for legacy loads (dry run - no changes)
+node scripts/migrate_legacy_loads.js
+
+# Interactive fix mode (manually assign each load)
+node scripts/migrate_legacy_loads.js --fix
+
+# Auto-assign all legacy loads to a specific driver
+node scripts/migrate_legacy_loads.js --fix --default-driver=<driver-uid>
+```
+
+**Setup**:
+1. Download Firebase service account key:
+   - Go to: Firebase Console > Project Settings > Service Accounts
+   - Click "Generate New Private Key"
+   - Save as `serviceAccountKey.json` in project root
+
+2. Alternative: Set environment variable:
+   ```bash
+   export GOOGLE_APPLICATION_CREDENTIALS="/path/to/serviceAccountKey.json"
+   ```
+
+**Security Note**: Never commit `serviceAccountKey.json` to version control (it's already in `.gitignore`).
+
+For detailed documentation, see [DRIVER_LOAD_ASSIGNMENT_FIX.md](../DRIVER_LOAD_ASSIGNMENT_FIX.md).
+
 ### Android
 ```bash
 # Build AAB (Linux/macOS)
