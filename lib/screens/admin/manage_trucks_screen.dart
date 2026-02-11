@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../models/truck.dart';
 import '../../services/truck_service.dart';
 import '../../services/navigation_service.dart';
@@ -444,7 +443,8 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
             ),
           ],
         ),
-      );
+      ),
+    );
 
     if (result == true && mounted) {
       try {
@@ -502,8 +502,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Delete Truck'),
         content: Text(
-          'Are you sure you want to delete ${truck.truckNumber}?
-\n'
+          'Are you sure you want to delete ${truck.truckNumber}?\n'
           'This will set the truck status to inactive. The truck will no longer appear in lists.',
         ),
         actions: [
@@ -533,6 +532,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
       }
     }
   }
+}
 
 /// Widget for displaying a truck card
 class _TruckCard extends StatelessWidget {
@@ -731,7 +731,8 @@ class _TruckCard extends StatelessWidget {
             ),
           ),
         ),
-      );
+      ),
+    );
     }
 }
 

@@ -48,6 +48,10 @@ app.*.map.json
 *.apk
 !gradle-wrapper.jar
 
+# Android local configuration
+android/local.properties
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+
 # Firebase
 google-services.json
 GoogleService-Info.plist
