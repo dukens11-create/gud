@@ -1,8 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'config/environment_config.dart';
 import 'services/crash_reporting_service.dart';
 import 'services/analytics_service.dart';
@@ -19,13 +21,14 @@ import 'app.dart';
 /// 
 /// Services are initialized in dependency order:
 /// 1. Crash reporting (must be first to catch all errors)
-/// 2. Analytics (for tracking initialization)
-/// 3. Remote Config (for feature flags and configuration)
-/// 4. Notifications (needed by other services)
-/// 5. Offline support (needed by sync service)
-/// 6. Background location (GPS tracking)
-/// 7. Geofencing (location-based updates)
-/// 8. Sync service (background synchronization)
+/// 2. App Check (security - protect against abuse)
+/// 3. Analytics (for tracking initialization)
+/// 4. Remote Config (for feature flags and configuration)
+/// 5. Notifications (needed by other services)
+/// 6. Offline support (needed by sync service)
+/// 7. Background location (GPS tracking)
+/// 8. Geofencing (location-based updates)
+/// 9. Sync service (background synchronization)
 Future<void> initializeServices() async {
   try {
     print('🚀 Initializing services...');
@@ -33,6 +36,24 @@ Future<void> initializeServices() async {
     // Initialize crash reporting first to catch any errors during initialization
     await CrashReportingService().initialize();
     print('✅ Crash Reporting Service initialized');
+
+    // Initialize Firebase App Check for security
+    try {
+      await FirebaseAppCheck.instance.activate(
+        // Use debug provider for development
+        androidProvider: kDebugMode 
+            ? AndroidProvider.debug 
+            : AndroidProvider.playIntegrity,
+        // Use debug provider for iOS in development
+        appleProvider: kDebugMode 
+            ? AppleProvider.debug 
+            : AppleProvider.deviceCheck,
+      );
+      print('✅ Firebase App Check initialized');
+    } catch (e) {
+      print('⚠️ App Check initialization failed (non-critical): $e');
+      // Don't throw - App Check failure shouldn't prevent app from running
+    }
 
     // Initialize analytics
     await AnalyticsService.instance.initialize();
