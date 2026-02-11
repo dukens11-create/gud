@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/analytics_service.dart';
-import '../services/mock_data_service.dart';
+import '../services/firestore_service.dart';
 import '../models/load.dart';
 import 'package:intl/intl.dart';
 
@@ -13,7 +13,7 @@ class LoadHistoryScreen extends StatefulWidget {
 }
 
 class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
-  final MockDataService _mockService = MockDataService();
+  final FirestoreService _firestoreService = FirestoreService();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _statusFilter = 'all';
@@ -31,7 +31,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
   }
 
   Stream<List<LoadModel>> _getFilteredLoads() {
-    return _mockService.streamAllLoads().map((loads) {
+    return _firestoreService.streamAllLoads().map((loads) {
       // Filter to show only completed/delivered loads
       var filteredLoads = loads.where((load) {
         final isCompleted = load.status == 'delivered' || load.status == 'completed';
