@@ -59,21 +59,76 @@ class _DriverHomeState extends State<DriverHome> {
     });
   }
 
+  /// Get filtered loads using Firestore queries instead of in-memory filtering
+  /// 
+  /// This method uses server-side filtering for better performance and scalability.
+  /// 
+  /// **IMPORTANT**: Queries with status filter require a Firestore composite index.
+  /// If you encounter an index error, follow these steps:
+  /// 1. Check the console output for the index creation link
+  /// 2. Click the link or go to Firebase Console > Firestore > Indexes
+  /// 3. Create a composite index with: driverId + status + createdAt
+  /// 4. Wait for index to build (2-5 minutes)
+  /// 
+  /// The required index is defined in firestore.indexes.json and can be deployed using:
+  /// `firebase deploy --only firestore:indexes`
   Stream<List<LoadModel>> _getFilteredLoads() {
-    return _firestoreService.streamDriverLoads(widget.driverId).map((loads) {
-      return loads.where((load) {
-        // Search filter
-        final matchesSearch = _searchQuery.isEmpty ||
-            load.loadNumber.toLowerCase().contains(_searchQuery) ||
-            load.pickupAddress.toLowerCase().contains(_searchQuery) ||
-            load.deliveryAddress.toLowerCase().contains(_searchQuery);
+    print('🔍 Getting filtered loads - Status filter: $_statusFilter');
+    
+    try {
+      // Use Firestore query for status filtering (more efficient than in-memory)
+      if (_statusFilter != 'all') {
+        print('📊 Using Firestore query with status filter: $_statusFilter');
+        return _firestoreService
+            .streamDriverLoadsByStatus(
+              driverId: widget.driverId,
+              status: _statusFilter,
+            )
+            .map((loads) {
+              print('✅ Received ${loads.length} loads from Firestore with status $_statusFilter');
+              return _applySearchFilter(loads);
+            })
+            .handleError((error) {
+              print('❌ Error in filtered loads stream: $error');
+              throw error;
+            });
+      } else {
+        // For 'all' status, get all driver loads
+        print('📊 Using Firestore query for all loads');
+        return _firestoreService
+            .streamDriverLoads(widget.driverId)
+            .map((loads) {
+              print('✅ Received ${loads.length} total loads from Firestore');
+              return _applySearchFilter(loads);
+            })
+            .handleError((error) {
+              print('❌ Error in all loads stream: $error');
+              throw error;
+            });
+      }
+    } catch (e) {
+      print('❌ Error setting up filtered loads stream: $e');
+      rethrow;
+    }
+  }
 
-        // Status filter
-        final matchesStatus = _statusFilter == 'all' || load.status == _statusFilter;
+  /// Apply search filter to loads (in-memory for text search)
+  /// 
+  /// Search is kept in-memory because full-text search in Firestore
+  /// requires additional setup and is better handled client-side for small result sets
+  List<LoadModel> _applySearchFilter(List<LoadModel> loads) {
+    if (_searchQuery.isEmpty) {
+      return loads;
+    }
 
-        return matchesSearch && matchesStatus;
-      }).toList();
-    });
+    final filtered = loads.where((load) {
+      return load.loadNumber.toLowerCase().contains(_searchQuery) ||
+          load.pickupAddress.toLowerCase().contains(_searchQuery) ||
+          load.deliveryAddress.toLowerCase().contains(_searchQuery);
+    }).toList();
+    
+    print('🔎 Search filter applied: ${filtered.length} loads match "$_searchQuery"');
+    return filtered;
   }
 
   void _onFilterChanged(String filter) {
@@ -488,9 +543,9 @@ class _DriverHomeState extends State<DriverHome> {
                 const SizedBox(width: 8),
                 FilterChip(
                   label: const Text('In Transit'),
-                  selected: _statusFilter == 'in-transit',
-                  onSelected: (_) => _onFilterChanged('in-transit'),
-                  avatar: _statusFilter == 'in-transit' ? const Icon(Icons.check, size: 18) : null,
+                  selected: _statusFilter == 'in_transit',
+                  onSelected: (_) => _onFilterChanged('in_transit'),
+                  avatar: _statusFilter == 'in_transit' ? const Icon(Icons.check, size: 18) : null,
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
@@ -510,6 +565,110 @@ class _DriverHomeState extends State<DriverHome> {
             child: StreamBuilder<List<LoadModel>>(
               stream: _getFilteredLoads(),
               builder: (context, snapshot) {
+                // Enhanced error handling with specific messages for index errors
+                if (snapshot.hasError) {
+                  print('❌ Error in StreamBuilder: ${snapshot.error}');
+                  
+                  final errorMessage = snapshot.error.toString();
+                  final isIndexError = errorMessage.contains('index') || 
+                                     errorMessage.contains('requires an index');
+                  
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isIndexError ? Icons.error_outline : Icons.error,
+                            size: 64,
+                            color: isIndexError ? Colors.orange : Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            isIndexError 
+                                ? 'Firestore Index Required' 
+                                : 'Error Loading Loads',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            isIndexError
+                                ? 'A database index needs to be created for this query to work.\n\nStatus filter: $_statusFilter'
+                                : 'An error occurred while loading your loads.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          if (isIndexError) ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.orange.shade300),
+                              ),
+                              child: const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'What\'s happening?',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'The database needs to be configured to support this filter. '
+                                    'Please contact your system administrator or wait a few minutes and try again.',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                            onPressed: () {
+                              setState(() {}); // Force rebuild
+                            },
+                          ),
+                          if (!isIndexError) ...[
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: () {
+                                // Show full error in dialog
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Error Details'),
+                                    content: SingleChildScrollView(
+                                      child: Text(errorMessage),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Close'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              child: const Text('View Details'),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -657,6 +816,7 @@ class _DriverHomeState extends State<DriverHome> {
     switch (status.toLowerCase()) {
       case 'assigned':
         return Colors.blue;
+      case 'in_transit':
       case 'in-transit':
         return Colors.orange;
       case 'delivered':
