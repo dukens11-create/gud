@@ -66,6 +66,8 @@ class LoadDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _buildDetailRow('Load Number', load.loadNumber),
+                    if (load.driverName != null)
+                      _buildDetailRow('Driver', load.driverName!),
                     _buildDetailRow('Rate', '\$${load.rate.toStringAsFixed(2)}'),
                     if (load.miles > 0)
                       _buildDetailRow('Miles', '${load.miles.toStringAsFixed(1)} mi'),
