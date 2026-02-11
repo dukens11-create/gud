@@ -624,14 +624,11 @@ class DriverExtendedService {
     _requireAuth();
     final alertsSnapshot = await _db
         .collection('expiration_alerts')
+        .where('status', whereIn: ['pending', 'sent'])
         .get();
 
-    // Filter for pending/sent status in memory
     final alerts = alertsSnapshot.docs
         .map((doc) => ExpirationAlert.fromDoc(doc))
-        .where((alert) => 
-            alert.status == AlertStatus.pending || 
-            alert.status == AlertStatus.sent)
         .toList();
 
     int criticalCount = 0;
@@ -658,18 +655,16 @@ class DriverExtendedService {
     _requireAuth();
     final alertsSnapshot = await _db
         .collection('expiration_alerts')
+        .where('status', whereIn: ['pending', 'sent'])
         .get();
 
     final batch = _db.batch();
     
-    // Filter for pending/sent status in memory
     for (var doc in alertsSnapshot.docs) {
       final alert = ExpirationAlert.fromDoc(doc);
-      if (alert.status == AlertStatus.pending || 
-          alert.status == AlertStatus.sent) {
-        final daysRemaining = alert.expiryDate.difference(DateTime.now()).inDays;
-        batch.update(doc.reference, {'daysRemaining': daysRemaining});
-      }
+      final daysRemaining = alert.expiryDate.difference(DateTime.now()).inDays;
+      
+      batch.update(doc.reference, {'daysRemaining': daysRemaining});
     }
 
     await batch.commit();
