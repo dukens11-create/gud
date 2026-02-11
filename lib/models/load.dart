@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/datetime_utils.dart';
 
 class LoadModel {
   final String id;
@@ -60,8 +61,6 @@ class LoadModel {
   }
 
   static LoadModel fromMap(String id, Map<String, dynamic> d) {
-    DateTime? _parseDateTime(dynamic v) => v == null ? null : DateTime.parse(v as String);
-
     return LoadModel(
       id: id,
       loadNumber: (d['loadNumber'] ?? '') as String,
@@ -71,12 +70,12 @@ class LoadModel {
       deliveryAddress: (d['deliveryAddress'] ?? '') as String,
       rate: (d['rate'] ?? 0).toDouble(),
       status: (d['status'] ?? 'assigned') as String,
-      createdAt: _parseDateTime(d['createdAt']),
-      pickedUpAt: _parseDateTime(d['pickedUpAt']),
-      tripStartAt: _parseDateTime(d['tripStartAt']),
-      tripEndAt: _parseDateTime(d['tripEndAt']),
+      createdAt: DateTimeUtils.parseDateTime(d['createdAt']),
+      pickedUpAt: DateTimeUtils.parseDateTime(d['pickedUpAt']),
+      tripStartAt: DateTimeUtils.parseDateTime(d['tripStartAt']),
+      tripEndAt: DateTimeUtils.parseDateTime(d['tripEndAt']),
       miles: (d['miles'] ?? 0).toDouble(),
-      deliveredAt: _parseDateTime(d['deliveredAt']),
+      deliveredAt: DateTimeUtils.parseDateTime(d['deliveredAt']),
       notes: d['notes'] as String?,
       createdBy: (d['createdBy'] ?? '') as String,
     );

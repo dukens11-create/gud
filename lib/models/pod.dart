@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/datetime_utils.dart';
 
 class POD {
   final String id;
@@ -34,7 +35,7 @@ class POD {
       id: id,
       loadId: (d['loadId'] ?? '') as String,
       imageUrl: (d['imageUrl'] ?? '') as String,
-      uploadedAt: DateTime.parse(d['uploadedAt'] as String),
+      uploadedAt: DateTimeUtils.parseDateTime(d['uploadedAt']) ?? DateTime.now(),
       notes: (d['notes'] ?? '') as String,
       uploadedBy: (d['uploadedBy'] ?? '') as String,
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/driver_extended_service.dart';
+import '../../utils/datetime_utils.dart';
 
 /// Helper function to format dates consistently
 String _formatDate(DateTime date) {
@@ -439,7 +440,7 @@ class _MaintenanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final serviceDate = (record['serviceDate'] as dynamic).toDate() as DateTime;
+    final serviceDate = DateTimeUtils.parseDateTime(record['serviceDate']) ?? DateTime.now();
     final cost = (record['cost'] as num).toDouble();
     final type = record['maintenanceType'] as String;
     final provider = record['serviceProvider'] as String?;
@@ -511,7 +512,7 @@ class _UpcomingMaintenanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nextServiceDue =
-        (record['nextServiceDue'] as dynamic).toDate() as DateTime;
+        DateTimeUtils.parseDateTime(record['nextServiceDue']) ?? DateTime.now();
     final truckNumber = record['truckNumber'] as String;
     final maintenanceType = record['maintenanceType'] as String;
     final daysUntil = nextServiceDue.difference(DateTime.now()).inDays;

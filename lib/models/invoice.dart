@@ -1,3 +1,5 @@
+import '../utils/datetime_utils.dart';
+
 /// Invoice Model
 /// 
 /// Represents an invoice with line items, client info, and payment details
@@ -61,8 +63,8 @@ class Invoice {
       id: map['id'] as String,
       loadId: map['loadId'] as String,
       invoiceNumber: map['invoiceNumber'] as String,
-      issueDate: DateTime.parse(map['issueDate'] as String),
-      dueDate: DateTime.parse(map['dueDate'] as String),
+      issueDate: DateTimeUtils.parseDateTime(map['issueDate']) ?? DateTime.now(),
+      dueDate: DateTimeUtils.parseDateTime(map['dueDate']) ?? DateTime.now(),
       companyInfo: CompanyInfo.fromMap(map['companyInfo'] as Map<String, dynamic>),
       clientInfo: ClientInfo.fromMap(map['clientInfo'] as Map<String, dynamic>),
       lineItems: (map['lineItems'] as List)
@@ -73,8 +75,8 @@ class Invoice {
       total: (map['total'] as num).toDouble(),
       notes: map['notes'] as String,
       status: map['status'] as String,
-      createdAt: DateTime.parse(map['createdAt'] as String),
-      updatedAt: DateTime.parse(map['updatedAt'] as String),
+      createdAt: DateTimeUtils.parseDateTime(map['createdAt']) ?? DateTime.now(),
+      updatedAt: DateTimeUtils.parseDateTime(map['updatedAt']) ?? DateTime.now(),
     );
   }
 
