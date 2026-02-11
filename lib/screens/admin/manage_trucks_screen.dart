@@ -533,6 +533,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
       }
     }
   }
+}
 
 /// Widget for displaying a truck card
 class _TruckCard extends StatelessWidget {
