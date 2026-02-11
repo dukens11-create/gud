@@ -401,7 +401,20 @@ class FirestoreService {
             // Provide helpful error message if index is missing
             if (error.toString().contains('index') || 
                 error.toString().contains('requires an index')) {
-              final errorMessage = '''
+              print(_getMissingIndexErrorMessage(driverId, status));
+            }
+            
+            throw error;
+          });
+    } catch (e) {
+      print('❌ Error setting up driver loads by status stream: $e');
+      rethrow;
+    }
+  }
+
+  /// Generate helpful error message for missing Firestore index
+  String _getMissingIndexErrorMessage(String driverId, String status) {
+    return '''
 ⚠️  FIRESTORE INDEX REQUIRED ⚠️
 
 This query requires a composite index to work efficiently.
@@ -425,15 +438,6 @@ IMMEDIATE ACTION REQUIRED:
 Alternatively, the index may already be defined in firestore.indexes.json
 and just needs to be deployed using: firebase deploy --only firestore:indexes
 ''';
-              print(errorMessage);
-            }
-            
-            throw error;
-          });
-    } catch (e) {
-      print('❌ Error setting up driver loads by status stream: $e');
-      rethrow;
-    }
   }
 
   /// Get a single load's information

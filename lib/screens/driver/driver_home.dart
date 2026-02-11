@@ -615,7 +615,7 @@ class _DriverHomeState extends State<DriverHome> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Steps to fix:',
+                                    'What\'s happening?',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
@@ -623,11 +623,8 @@ class _DriverHomeState extends State<DriverHome> {
                                   ),
                                   SizedBox(height: 8),
                                   Text(
-                                    '1. Check the app logs for the index link\n'
-                                    '2. Click the link or go to Firebase Console\n'
-                                    '3. Create the composite index\n'
-                                    '4. Wait 2-5 minutes for index to build\n'
-                                    '5. Retry this operation',
+                                    'The database needs to be configured to support this filter. '
+                                    'Please contact your system administrator or wait a few minutes and try again.',
                                     style: TextStyle(fontSize: 12),
                                   ),
                                 ],

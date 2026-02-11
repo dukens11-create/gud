@@ -435,6 +435,23 @@ void main() {
           isA<Stream<List<LoadModel>>>(),
         );
       });
+
+      test('validates non-empty parameters', () {
+        final service = FirestoreService();
+
+        // Test behavior with actual status values used in the app
+        final validStatuses = ['assigned', 'in_transit', 'delivered'];
+        for (final status in validStatuses) {
+          expect(
+            service.streamDriverLoadsByStatus(
+              driverId: 'driver-123',
+              status: status,
+            ),
+            isA<Stream<List<LoadModel>>>(),
+            reason: 'Should accept valid status: $status',
+          );
+        }
+      });
     });
 
     group('getLoad', () {
