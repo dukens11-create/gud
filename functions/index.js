@@ -514,7 +514,7 @@ function generateLoadEmailHtml(loadData, driverData, isReassignment = false) {
         <p><strong>Load Number:</strong> ${loadData.loadNumber}</p>
         <p><strong>Driver:</strong> ${loadData.driverName || driverData.name}</p>
         <p><strong>Rate:</strong> $${loadData.rate.toFixed(2)}</p>
-        ${loadData.miles ? `<p><strong>Estimated Miles:</strong> ${Number(loadData.miles).toFixed(1)}</p>` : ''}
+        ${loadData.miles != null ? `<p><strong>Estimated Miles:</strong> ${Number(loadData.miles).toFixed(1)}</p>` : ''}
         ${isReassignment ? `<p><strong>Status:</strong> ${loadData.status}</p>` : ''}
       </div>
       
