@@ -38,9 +38,12 @@ No keystores with reference 'gud-release-key' were found from code signing ident
 - **Web**: Firebase hosting deployment
 
 ## Quick Links
-- [iOS Build & Deploy Guide](IOS_BUILD_AND_DEPLOY_GUIDE.md)
-- [Android AAB Build Guide](AAB_BUILD_GUIDE.md)
-- [Deployment Guide](DEPLOYMENT.md)
+- [iOS Code Signing Quick Setup](IOS_CODE_SIGNING_QUICK_SETUP.md) - 5-minute setup guide
+- [iOS Local Build Guide](IOS_LOCAL_BUILD_GUIDE.md) - Complete local development guide
+- [iOS Build & Deploy Guide](IOS_BUILD_AND_DEPLOY_GUIDE.md) - CI/CD and App Store
+- [iOS Provisioning Guide](IOS_PROVISIONING_GUIDE.md) - Profile management
+- [Android AAB Build Guide](AAB_BUILD_GUIDE.md) - Android builds
+- [Deployment Guide](DEPLOYMENT.md) - General deployment info
 
 ## Getting Started
 
@@ -64,7 +67,22 @@ flutter run
 ## Deployment
 
 ### iOS
-See [IOS_BUILD_AND_DEPLOY_GUIDE.md](IOS_BUILD_AND_DEPLOY_GUIDE.md) for complete instructions on:
+
+#### Local Development
+For building and testing on your Mac:
+- **Simulator builds**: See [IOS_LOCAL_BUILD_GUIDE.md](IOS_LOCAL_BUILD_GUIDE.md#building-for-simulator)
+  - No code signing required
+  - Quick start: `./scripts/build_ios_simulator.sh`
+- **Device builds**: See [IOS_LOCAL_BUILD_GUIDE.md](IOS_LOCAL_BUILD_GUIDE.md#building-for-physical-device)
+  - Requires Apple Developer account and code signing setup
+  - Quick start: `./scripts/build_ios_device.sh`
+
+#### CI/CD & App Store
+For automated builds and App Store distribution:
+- [IOS_BUILD_AND_DEPLOY_GUIDE.md](IOS_BUILD_AND_DEPLOY_GUIDE.md) - Complete CI/CD setup
+- [IOS_BUILD_QUICK_START.md](IOS_BUILD_QUICK_START.md) - CI/CD quick reference
+
+Key documentation:
 - Setting up Apple Developer account
 - Configuring certificates and provisioning profiles
 - Building IPA and deploying to App Store Connect
