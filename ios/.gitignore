@@ -34,6 +34,21 @@ fastlane/screenshots
 fastlane/test_output
 fastlane/README.md
 
+# Swift Package Manager
+# Xcode automatically generates these files and they should not be committed
+.swiftpm/
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+*.xcodeproj/xcshareddata/swiftpm/
+
+# Build artifacts
+*.ipa
+*.app
+*.dSYM
+*.dSYM.zip
+
+# Backup files from configuration scripts
+*.backup
+
 # Exceptions to above rules.
 !default.mode1v3
 !default.mode2v3
