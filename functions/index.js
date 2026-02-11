@@ -496,6 +496,55 @@ async function sendEmail(to, subject, htmlContent) {
   }
 }
 
+// Helper function to generate load assignment email HTML
+function generateLoadEmailHtml(loadData, driverData, isReassignment = false) {
+  const title = isReassignment ? 'Load Assignment Update' : 'New Load Assignment';
+  const greeting = `Hi ${driverData.name || 'Driver'},`;
+  const intro = isReassignment 
+    ? 'You have been assigned to an existing load. Here are the details:' 
+    : 'You have been assigned a new load. Here are the details:';
+  
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #2563eb;">${title}</h2>
+      <p>${greeting}</p>
+      <p>${intro}</p>
+      
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <p><strong>Load Number:</strong> ${loadData.loadNumber}</p>
+        <p><strong>Driver:</strong> ${loadData.driverName || driverData.name}</p>
+        <p><strong>Rate:</strong> $${loadData.rate.toFixed(2)}</p>
+        ${loadData.miles ? `<p><strong>Estimated Miles:</strong> ${Number(loadData.miles).toFixed(1)}</p>` : ''}
+        ${isReassignment ? `<p><strong>Status:</strong> ${loadData.status}</p>` : ''}
+      </div>
+      
+      <div style="margin: 20px 0;">
+        <h3 style="color: #059669;">📍 Pickup</h3>
+        <p>${loadData.pickupAddress}</p>
+      </div>
+      
+      <div style="margin: 20px 0;">
+        <h3 style="color: #dc2626;">📍 Delivery</h3>
+        <p>${loadData.deliveryAddress}</p>
+      </div>
+      
+      ${loadData.notes ? `
+      <div style="background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+        <p><strong>Notes:</strong></p>
+        <p>${loadData.notes}</p>
+      </div>
+      ` : ''}
+      
+      <p style="margin-top: 30px;">Please check the GUD Express app for more details and to update your status.</p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        This is an automated notification from GUD Express. Please do not reply to this email.
+      </p>
+    </div>
+  `;
+}
+
 // 9. Send email notification when load is created with driver assignment
 exports.sendLoadAssignmentEmail = functions.firestore
   .document('loads/{loadId}')
@@ -528,46 +577,9 @@ exports.sendLoadAssignmentEmail = functions.firestore
         return null;
       }
       
-      // Format load details
+      // Generate email content
       const subject = `🚚 New Load Assignment: ${loadData.loadNumber}`;
-      const htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">New Load Assignment</h2>
-          <p>Hi ${driverData.name || 'Driver'},</p>
-          <p>You have been assigned a new load. Here are the details:</p>
-          
-          <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>Load Number:</strong> ${loadData.loadNumber}</p>
-            <p><strong>Driver:</strong> ${loadData.driverName || driverData.name}</p>
-            <p><strong>Rate:</strong> $${loadData.rate.toFixed(2)}</p>
-            ${loadData.miles ? `<p><strong>Estimated Miles:</strong> ${Number(loadData.miles).toFixed(1)}</p>` : ''}
-          </div>
-          
-          <div style="margin: 20px 0;">
-            <h3 style="color: #059669;">📍 Pickup</h3>
-            <p>${loadData.pickupAddress}</p>
-          </div>
-          
-          <div style="margin: 20px 0;">
-            <h3 style="color: #dc2626;">📍 Delivery</h3>
-            <p>${loadData.deliveryAddress}</p>
-          </div>
-          
-          ${loadData.notes ? `
-          <div style="background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0;">
-            <p><strong>Notes:</strong></p>
-            <p>${loadData.notes}</p>
-          </div>
-          ` : ''}
-          
-          <p style="margin-top: 30px;">Please check the GUD Express app for more details and to update your status.</p>
-          
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-          <p style="color: #6b7280; font-size: 12px;">
-            This is an automated notification from GUD Express. Please do not reply to this email.
-          </p>
-        </div>
-      `;
+      const htmlContent = generateLoadEmailHtml(loadData, driverData, false);
       
       const result = await sendEmail(driverEmail, subject, htmlContent);
       
@@ -620,47 +632,9 @@ exports.sendLoadReassignmentEmail = functions.firestore
           return null;
         }
         
-        // Format load details
+        // Generate email content
         const subject = `🚚 Load Assignment Update: ${newData.loadNumber}`;
-        const htmlContent = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #2563eb;">Load Assignment Update</h2>
-            <p>Hi ${driverData.name || 'Driver'},</p>
-            <p>You have been assigned to an existing load. Here are the details:</p>
-            
-            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Load Number:</strong> ${newData.loadNumber}</p>
-              <p><strong>Driver:</strong> ${newData.driverName || driverData.name}</p>
-              <p><strong>Rate:</strong> $${newData.rate.toFixed(2)}</p>
-              ${newData.miles ? `<p><strong>Estimated Miles:</strong> ${Number(newData.miles).toFixed(1)}</p>` : ''}
-              <p><strong>Status:</strong> ${newData.status}</p>
-            </div>
-            
-            <div style="margin: 20px 0;">
-              <h3 style="color: #059669;">📍 Pickup</h3>
-              <p>${newData.pickupAddress}</p>
-            </div>
-            
-            <div style="margin: 20px 0;">
-              <h3 style="color: #dc2626;">📍 Delivery</h3>
-              <p>${newData.deliveryAddress}</p>
-            </div>
-            
-            ${newData.notes ? `
-            <div style="background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0;">
-              <p><strong>Notes:</strong></p>
-              <p>${newData.notes}</p>
-            </div>
-            ` : ''}
-            
-            <p style="margin-top: 30px;">Please check the GUD Express app for more details and to update your status.</p>
-            
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-            <p style="color: #6b7280; font-size: 12px;">
-              This is an automated notification from GUD Express. Please do not reply to this email.
-            </p>
-          </div>
-        `;
+        const htmlContent = generateLoadEmailHtml(newData, driverData, true);
         
         const result = await sendEmail(driverEmail, subject, htmlContent);
         

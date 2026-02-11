@@ -21,6 +21,9 @@ class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   
+  /// Email validation regex pattern
+  static final RegExp _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+  
   /// Verify user is authenticated before executing Firestore operations
   /// 
   /// Throws [FirebaseAuthException] with code 'unauthenticated' if user is not signed in
@@ -72,8 +75,7 @@ class FirestoreService {
     }
     
     // Validate email format
-    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-    if (!emailRegex.hasMatch(email)) {
+    if (!_emailRegex.hasMatch(email)) {
       throw ArgumentError('Invalid email address format');
     }
     
@@ -158,11 +160,8 @@ class FirestoreService {
     _requireAuth();
     
     // Validate email format if provided
-    if (email != null) {
-      final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-      if (!emailRegex.hasMatch(email)) {
-        throw ArgumentError('Invalid email address format');
-      }
+    if (email != null && !_emailRegex.hasMatch(email)) {
+      throw ArgumentError('Invalid email address format');
     }
     
     final Map<String, dynamic> updates = {};
