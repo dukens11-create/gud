@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/driver_extended_service.dart';
+import '../../services/truck_service.dart';
+import '../../models/truck.dart';
 import '../../utils/datetime_utils.dart';
 
 /// Helper function to format dates consistently
@@ -28,6 +30,7 @@ class MaintenanceTrackingScreen extends StatefulWidget {
 class _MaintenanceTrackingScreenState extends State<MaintenanceTrackingScreen>
     with SingleTickerProviderStateMixin {
   final _service = DriverExtendedService();
+  final _truckService = TruckService();
   late TabController _tabController;
   String? _selectedTruck;
 
@@ -252,31 +255,81 @@ class _MaintenanceTrackingScreenState extends State<MaintenanceTrackingScreen>
   }
 
   Future<void> _showTruckSelector() async {
-    final controller = TextEditingController(text: _selectedTruck);
+    String? selectedTruckNumber;
 
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Enter Truck Number'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Truck Number',
-            hintText: 'e.g., TRK-001',
-            border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Select Truck'),
+          content: StreamBuilder<List<Truck>>(
+            stream: _truckService.streamTrucks(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox(
+                  height: 100,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              final trucks = snapshot.data ?? [];
+              
+              if (trucks.isEmpty) {
+                return const SizedBox(
+                  height: 100,
+                  child: Center(
+                    child: Text('No trucks available'),
+                  ),
+                );
+              }
+
+              return DropdownButtonFormField<String>(
+                value: selectedTruckNumber,
+                decoration: const InputDecoration(
+                  labelText: 'Select Truck',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.local_shipping),
+                ),
+                hint: const Text('Choose a truck'),
+                items: trucks.map((truck) {
+                  return DropdownMenuItem<String>(
+                    value: truck.truckNumber,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          truck.truckNumber,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          truck.displayInfo,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() => selectedTruckNumber = value);
+                },
+              );
+            },
           ),
-          autofocus: true,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('CANCEL'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, selectedTruckNumber),
+              child: const Text('SELECT'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('SELECT'),
-          ),
-        ],
       ),
     );
 
@@ -286,7 +339,7 @@ class _MaintenanceTrackingScreenState extends State<MaintenanceTrackingScreen>
   }
 
   Future<void> _showAddMaintenanceDialog() async {
-    final truckController = TextEditingController(text: _selectedTruck);
+    String? selectedTruckId;
     final typeController = TextEditingController();
     final costController = TextEditingController();
     final providerController = TextEditingController();
@@ -294,7 +347,7 @@ class _MaintenanceTrackingScreenState extends State<MaintenanceTrackingScreen>
     DateTime serviceDate = DateTime.now();
     DateTime? nextServiceDue;
 
-    final result = await showDialog<bool>(
+    final result = await showDialog<Map<String, dynamic>?>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
@@ -303,12 +356,73 @@ class _MaintenanceTrackingScreenState extends State<MaintenanceTrackingScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
-                  controller: truckController,
-                  decoration: const InputDecoration(
-                    labelText: 'Truck Number *',
-                    border: OutlineInputBorder(),
-                  ),
+                StreamBuilder<List<Truck>>(
+                  stream: _truckService.streamTrucks(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircularProgressIndicator();
+                    }
+
+                    final trucks = snapshot.data ?? [];
+                    
+                    if (trucks.isEmpty) {
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.warning, color: Colors.orange),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'No trucks available. Add trucks first.',
+                                style: TextStyle(color: Colors.orange),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return DropdownButtonFormField<String>(
+                      value: selectedTruckId,
+                      decoration: const InputDecoration(
+                        labelText: 'Select Truck *',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.local_shipping),
+                      ),
+                      hint: const Text('Choose a truck'),
+                      items: trucks.map((truck) {
+                        return DropdownMenuItem<String>(
+                          value: truck.id,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                truck.truckNumber,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                truck.displayInfo,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() => selectedTruckId = value);
+                      },
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -388,11 +502,33 @@ class _MaintenanceTrackingScreenState extends State<MaintenanceTrackingScreen>
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(context, null),
               child: const Text('CANCEL'),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () {
+                // Validate
+                if (selectedTruckId == null ||
+                    typeController.text.trim().isEmpty ||
+                    costController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please fill in all required fields'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(context, {
+                  'truckId': selectedTruckId,
+                  'type': typeController.text.trim(),
+                  'cost': costController.text.trim(),
+                  'serviceDate': serviceDate,
+                  'nextServiceDue': nextServiceDue,
+                  'provider': providerController.text.trim(),
+                  'notes': notesController.text.trim(),
+                });
+              },
               child: const Text('ADD'),
             ),
           ],
@@ -400,18 +536,31 @@ class _MaintenanceTrackingScreenState extends State<MaintenanceTrackingScreen>
       ),
     );
 
-    if (result == true) {
+    if (result != null && mounted) {
       try {
+        // Get truck details
+        final truck = await _truckService.getTruck(result['truckId']);
+        if (truck == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Truck not found'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+
         await _service.addMaintenanceRecord(
-          driverId: '', // Will be populated from truck assignment
-          truckNumber: truckController.text,
-          maintenanceType: typeController.text,
-          serviceDate: serviceDate,
-          cost: double.parse(costController.text),
-          nextServiceDue: nextServiceDue,
-          serviceProvider:
-              providerController.text.isEmpty ? null : providerController.text,
-          notes: notesController.text.isEmpty ? null : notesController.text,
+          driverId: truck.assignedDriverId ?? '', // Driver ID from truck assignment
+          truckNumber: truck.truckNumber,
+          maintenanceType: result['type'],
+          serviceDate: result['serviceDate'],
+          cost: double.parse(result['cost']),
+          nextServiceDue: result['nextServiceDue'],
+          serviceProvider: result['provider'].isEmpty ? null : result['provider'],
+          notes: result['notes'].isEmpty ? null : result['notes'],
         );
 
         if (mounted) {
@@ -421,6 +570,9 @@ class _MaintenanceTrackingScreenState extends State<MaintenanceTrackingScreen>
               backgroundColor: Colors.green,
             ),
           );
+          
+          // Set selected truck for viewing history
+          setState(() => _selectedTruck = truck.truckNumber);
         }
       } catch (e) {
         if (mounted) {
