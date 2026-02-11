@@ -337,9 +337,9 @@ class _AdminHomeState extends State<AdminHome> {
                 const SizedBox(width: 8),
                 FilterChip(
                   label: const Text('In Transit'),
-                  selected: _statusFilter == 'in-transit',
-                  onSelected: (_) => _onFilterChanged('in-transit'),
-                  avatar: _statusFilter == 'in-transit' ? const Icon(Icons.check, size: 18) : null,
+                  selected: _statusFilter == 'in_transit',
+                  onSelected: (_) => _onFilterChanged('in_transit'),
+                  avatar: _statusFilter == 'in_transit' ? const Icon(Icons.check, size: 18) : null,
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
@@ -627,7 +627,7 @@ class _AdminHomeState extends State<AdminHome> {
     switch (status.toLowerCase()) {
       case 'assigned':
         return Colors.blue;
-      case 'in-transit':
+      case 'in_transit':
         return Colors.orange;
       case 'delivered':
         return Colors.green;
