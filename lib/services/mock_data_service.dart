@@ -69,6 +69,7 @@ class MockDataService {
       id: 'driver-uid-001',
       name: 'John Driver',
       phone: '555-0123',
+      email: 'john.driver@example.com',
       truckNumber: 'TRK-001',
       status: 'available',
       totalEarnings: 8500.00,
@@ -125,6 +126,7 @@ class MockDataService {
   Future<void> addDriver({
     required String name,
     required String phone,
+    required String email,
     required String truckNumber,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
@@ -132,6 +134,7 @@ class MockDataService {
       id: 'driver-uid-${DateTime.now().millisecondsSinceEpoch}',
       name: name,
       phone: phone,
+      email: email,
       truckNumber: truckNumber,
       status: 'available',
       totalEarnings: 0.0,
@@ -146,6 +149,7 @@ class MockDataService {
     required String driverId,
     String? name,
     String? phone,
+    String? email,
     String? truckNumber,
     String? status,
     bool? isActive,
@@ -158,6 +162,7 @@ class MockDataService {
         id: driver.id,
         name: name ?? driver.name,
         phone: phone ?? driver.phone,
+        email: email ?? driver.email,
         truckNumber: truckNumber ?? driver.truckNumber,
         status: status ?? driver.status,
         totalEarnings: driver.totalEarnings,
