@@ -566,9 +566,11 @@ class DriverExtendedService {
     _requireAuth();
     // Query with orderBy only to avoid composite index requirement
     // Filter for pending/sent status in memory
+    // Limit to 100 most recent expiring items to optimize performance
     return _db
         .collection('expiration_alerts')
         .orderBy('expiryDate')
+        .limit(100)
         .snapshots()
         .map((snapshot) =>
             snapshot.docs
@@ -584,10 +586,12 @@ class DriverExtendedService {
     _requireAuth();
     // Query with where and orderBy to avoid composite index requirement
     // Filter for pending/sent status in memory
+    // Limit to 50 most recent expiring items to optimize performance
     return _db
         .collection('expiration_alerts')
         .where('driverId', isEqualTo: driverId)
         .orderBy('expiryDate')
+        .limit(50)
         .snapshots()
         .map((snapshot) =>
             snapshot.docs
