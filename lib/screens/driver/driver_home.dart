@@ -817,7 +817,6 @@ class _DriverHomeState extends State<DriverHome> {
       case 'assigned':
         return Colors.blue;
       case 'in_transit':
-      case 'in-transit':
         return Colors.orange;
       case 'delivered':
         return Colors.green;
