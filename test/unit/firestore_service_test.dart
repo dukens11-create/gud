@@ -66,6 +66,54 @@ void main() {
         );
       });
 
+      test('throws ArgumentError for empty fields', () async {
+        final service = FirestoreService();
+        
+        // Empty driverId - will throw ArgumentError before auth check
+        expect(
+          () => service.createDriver(
+            driverId: '',
+            name: 'John Doe',
+            phone: '555-1234',
+            truckNumber: 'TRUCK-001',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+
+        // Empty name
+        expect(
+          () => service.createDriver(
+            driverId: 'test-driver',
+            name: '',
+            phone: '555-1234',
+            truckNumber: 'TRUCK-001',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+
+        // Empty phone
+        expect(
+          () => service.createDriver(
+            driverId: 'test-driver',
+            name: 'John Doe',
+            phone: '',
+            truckNumber: 'TRUCK-001',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+
+        // Empty truckNumber
+        expect(
+          () => service.createDriver(
+            driverId: 'test-driver',
+            name: 'John Doe',
+            phone: '555-1234',
+            truckNumber: '',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
       test('validates driver data structure', () {
         // Test that the expected data structure is used
         const driverId = 'driver-123';
@@ -233,6 +281,41 @@ void main() {
         );
       });
 
+      test('throws ArgumentError for empty required fields', () async {
+        final service = FirestoreService();
+        
+        // Empty loadNumber
+        expect(
+          () => service.createLoad(
+            loadNumber: '',
+            driverId: 'driver-123',
+            driverName: 'John Doe',
+            pickupAddress: '123 Main St',
+            deliveryAddress: '456 Oak Ave',
+            rate: 500.0,
+            createdBy: 'admin-123',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('throws ArgumentError for negative rate', () async {
+        final service = FirestoreService();
+        
+        expect(
+          () => service.createLoad(
+            loadNumber: 'LOAD-001',
+            driverId: 'driver-123',
+            driverName: 'John Doe',
+            pickupAddress: '123 Main St',
+            deliveryAddress: '456 Oak Ave',
+            rate: -100.0,  // Negative rate
+            createdBy: 'admin-123',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
       test('creates load with optional fields', () async {
         final service = FirestoreService();
 
@@ -281,6 +364,74 @@ void main() {
 
         expect(
           service.streamDriverLoads('driver-123'),
+          isA<Stream<List<LoadModel>>>(),
+        );
+      });
+    });
+
+    group('streamDriverLoadsByStatus', () {
+      test('returns stream of driver loads filtered by status', () {
+        final service = FirestoreService();
+
+        final stream = service.streamDriverLoadsByStatus(
+          driverId: 'driver-123',
+          status: 'assigned',
+        );
+        expect(stream, isA<Stream<List<LoadModel>>>());
+      });
+
+      test('filters loads by driver ID and status', () {
+        final service = FirestoreService();
+
+        expect(
+          service.streamDriverLoadsByStatus(
+            driverId: 'driver-123',
+            status: 'in_transit',
+          ),
+          isA<Stream<List<LoadModel>>>(),
+        );
+      });
+
+      test('handles different status values', () {
+        final service = FirestoreService();
+
+        // Test with 'assigned' status
+        expect(
+          service.streamDriverLoadsByStatus(
+            driverId: 'driver-123',
+            status: 'assigned',
+          ),
+          isA<Stream<List<LoadModel>>>(),
+        );
+
+        // Test with 'in_transit' status
+        expect(
+          service.streamDriverLoadsByStatus(
+            driverId: 'driver-123',
+            status: 'in_transit',
+          ),
+          isA<Stream<List<LoadModel>>>(),
+        );
+
+        // Test with 'delivered' status
+        expect(
+          service.streamDriverLoadsByStatus(
+            driverId: 'driver-123',
+            status: 'delivered',
+          ),
+          isA<Stream<List<LoadModel>>>(),
+        );
+      });
+
+      test('requires both driverId and status parameters', () {
+        final service = FirestoreService();
+
+        // This should not throw an ArgumentError since parameters are required
+        expect(
+          service.streamDriverLoadsByStatus(
+            driverId: 'driver-123',
+            status: 'assigned',
+          ),
           isA<Stream<List<LoadModel>>>(),
         );
       });
