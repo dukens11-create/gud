@@ -201,7 +201,7 @@ For detailed troubleshooting, see [IOS_LOCAL_BUILD_GUIDE.md](../IOS_LOCAL_BUILD_
 
 **Prerequisites**:
 ```bash
-npm install firebase-admin readline-sync
+npm install firebase-admin
 ```
 
 **Usage**:

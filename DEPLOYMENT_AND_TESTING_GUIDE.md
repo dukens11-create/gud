@@ -64,7 +64,7 @@ If your database has existing loads, check for legacy data:
 
 ```bash
 # Install dependencies (first time only)
-npm install firebase-admin readline-sync
+npm install firebase-admin
 
 # Check for legacy loads (dry run - no changes)
 node scripts/migrate_legacy_loads.js

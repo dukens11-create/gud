@@ -103,7 +103,7 @@ node scripts/migrate_legacy_loads.js --fix
 **Prerequisites for migration script**:
 1. Install Node.js dependencies:
    ```bash
-   npm install firebase-admin readline-sync
+   npm install firebase-admin
    ```
 
 2. Download Firebase service account key:

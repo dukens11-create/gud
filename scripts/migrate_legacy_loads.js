@@ -17,7 +17,7 @@
  *   - Service account key file (usually in project root or set via GOOGLE_APPLICATION_CREDENTIALS)
  * 
  * Setup:
- *   npm install firebase-admin readline-sync
+ *   npm install firebase-admin
  */
 
 const admin = require('firebase-admin');
