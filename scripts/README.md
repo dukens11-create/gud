@@ -1,33 +1,34 @@
-# Database Migration Scripts
+# Firestore Migration Scripts
 
-## Fix Status Values Script
+This directory contains scripts to migrate and fix data in Firestore.
 
-### Problem
-The app's "In Transit" filter uses `'in_transit'` (underscore), but some loads in Firestore might have `'in-transit'` (hyphen). This causes the filter to fail with an index error.
+## 🔧 fix_status_values.dart
 
-### Solution
-Run the migration script to update all status values from `'in-transit'` to `'in_transit'`.
+Fixes status values in the `loads` collection by updating `'in-transit'` (hyphen) to `'in_transit'` (underscore).
+
+### Why This Is Needed
+
+The app's filter UI uses `'in_transit'` (underscore) but some loads in the database might have `'in-transit'` (hyphen). This mismatch causes:
+- ❌ Firestore index errors
+- ❌ Filter not working correctly
+- ❌ No loads showing when "In Transit" filter is selected
 
 ### How to Run
 
-1. **Make sure you have Firebase configured:**
-   ```bash
-   # If you haven't already, run:
-   flutter pub get
-   ```
+1. **Make sure Firebase is configured** - The script needs your Firebase credentials
 
-2. **Run the migration script:**
+2. **Run the script:**
    ```bash
    dart run scripts/fix_status_values.dart
    ```
 
-3. **What the script does:**
-   - Finds all loads with status `'in-transit'`
-   - Updates them to `'in_transit'`
-   - Shows progress for each updated load
-   - Reports total success/failure count
+3. **What happens:**
+   - 📊 Queries all loads with status `'in-transit'`
+   - 🔄 Updates each one to `'in_transit'`
+   - ✅ Shows progress for each load
+   - 📈 Reports total success/error count
 
-### Example Output
+### Expected Output
 
 ```
 🔧 Starting status value migration...
@@ -49,21 +50,50 @@ Run the migration script to update all status values from `'in-transit'` to `'in
    New value: "in_transit" (underscore)
 ```
 
-### After Running
+### If No Changes Needed
 
-1. The "In Transit" filter should work immediately
-2. No app code changes needed
-3. Run the app and test the filter
+```
+🔧 Starting status value migration...
+
+📊 Querying loads with status "in-transit"...
+✅ No loads found with "in-transit" status.
+   All status values are already correct!
+```
 
 ### Safety
 
-- The script only updates the `status` field
-- It doesn't affect any other data
-- You can run it multiple times safely (it won't find any documents after the first run)
+- ✅ **Safe to run multiple times** - Only updates loads that need fixing
+- ✅ **No data loss** - Only changes the `status` field
+- ✅ **Shows all changes** - You can see exactly what was updated
+- ✅ **Error handling** - Continues even if individual updates fail
 
-## Need Help?
+### After Running
 
-If the script fails, check:
-- Firebase connection is working
-- You have write permissions to Firestore
-- The Firebase project is correctly configured
+1. ✅ Restart your app (if running)
+2. ✅ Try the "In Transit" filter in the driver dashboard
+3. ✅ Should now work without errors!
+
+### Troubleshooting
+
+**Error: Firebase not initialized**
+```
+Make sure you have:
+- Firebase configured in your project
+- firebase_options.dart file generated
+- Run: flutterfire configure
+```
+
+**Error: Permission denied**
+```
+Check your Firestore security rules:
+- Make sure your service account has write access
+- Or run this from an authenticated admin context
+```
+
+**No loads found but filter still doesn't work**
+```
+The issue might be:
+1. Firestore index still building (wait 5-10 minutes)
+2. App cache (run: flutter clean && flutter run)
+3. Different issue (check console logs)
+```
