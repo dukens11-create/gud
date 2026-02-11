@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/driver_extended.dart';
+import '../utils/datetime_utils.dart';
 import 'driver_extended_service.dart';
 import 'notification_service.dart';
 
@@ -85,7 +86,7 @@ class DocumentExpirationService {
       final driverData = driverDoc.data();
 
       // Check driver license expiration
-      final licenseExpiry = (driverData['licenseExpiry'] as Timestamp?)?.toDate();
+      final licenseExpiry = DateTimeUtils.parseDateTime(driverData['licenseExpiry']);
       if (licenseExpiry != null && 
           licenseExpiry.isAfter(now) && 
           licenseExpiry.isBefore(thirtyDaysFromNow)) {

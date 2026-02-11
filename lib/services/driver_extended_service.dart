@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/driver_extended.dart';
+import '../utils/datetime_utils.dart';
 
 /// Service for managing extended driver features including:
 /// - Driver ratings
@@ -430,8 +431,8 @@ class DriverExtendedService {
     int onTimeDeliveries = 0;
     for (var load in loadsSnapshot.docs) {
       final data = load.data();
-      final deliveredAt = (data['deliveredAt'] as Timestamp?)?.toDate();
-      final expectedDate = (data['expectedDate'] as Timestamp?)?.toDate();
+      final deliveredAt = DateTimeUtils.parseDateTime(data['deliveredAt']);
+      final expectedDate = DateTimeUtils.parseDateTime(data['expectedDate']);
       
       if (deliveredAt != null && expectedDate != null) {
         if (deliveredAt.isBefore(expectedDate) ||
