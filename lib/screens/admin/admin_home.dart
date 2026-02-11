@@ -19,7 +19,7 @@ class AdminHome extends StatefulWidget {
 class _AdminHomeState extends State<AdminHome> {
   final _firestoreService = FirestoreService();
   final _driverService = DriverExtendedService();
-  final mockService = MockDataService();
+  final _mockService = MockDataService();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _statusFilter = 'all';
@@ -179,7 +179,7 @@ class _AdminHomeState extends State<AdminHome> {
             icon: const Icon(Icons.exit_to_app),
             tooltip: 'Sign out',
             onPressed: () async {
-              await mockService.signOut();
+              await _mockService.signOut();
               if (context.mounted) {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -800,7 +800,7 @@ class _AdminHomeState extends State<AdminHome> {
             leading: const Icon(Icons.exit_to_app, color: Colors.red),
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
             onTap: () async {
-              await mockService.signOut();
+              await _mockService.signOut();
               if (context.mounted) {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
