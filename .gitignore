@@ -59,3 +59,6 @@ key.properties
 *.jks
 *.keystore
 upload-keystore.jks
+
+# Node modules (Cloud Functions)
+functions/node_modules/
