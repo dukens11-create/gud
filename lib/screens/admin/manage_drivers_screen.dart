@@ -372,7 +372,7 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
                         onSelected: (value) {
                           if (value == 'edit') {
                             _showEditDriverDialog(driver);
-                          } else if (value == 'delete') {
+                          } else if (value == 'deactivate') {
                             _showDeleteDriverDialog(driver);
                           }
                         },
@@ -388,7 +388,7 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
                             ),
                           ),
                           const PopupMenuItem(
-                            value: 'delete',
+                            value: 'deactivate',
                             child: Row(
                               children: [
                                 Icon(Icons.delete, size: 20, color: Colors.red),
