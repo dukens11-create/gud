@@ -21,7 +21,14 @@ Future<void> main() async {
 
   try {
     // Initialize Firebase
-    // Note: In production, you would configure this with service account credentials
+    // Note: In production, configure with service account credentials:
+    // await Firebase.initializeApp(
+    //   options: FirebaseOptions(
+    //     apiKey: 'your-api-key',
+    //     projectId: 'your-project-id',
+    //     // ... other options
+    //   ),
+    // );
     await Firebase.initializeApp();
     final firestore = FirebaseFirestore.instance;
 
@@ -33,7 +40,11 @@ Future<void> main() async {
     // Step 2: Filter loads without driverName
     final loadsToUpdate = loadsSnapshot.docs.where((doc) {
       final data = doc.data();
-      return data['driverName'] == null || (data['driverName'] as String).isEmpty;
+      final driverName = data['driverName'];
+      // Include loads where driverName is missing, null, not a string, or empty
+      return driverName == null || 
+             driverName is! String || 
+             (driverName as String).isEmpty;
     }).toList();
 
     print('📋 Found ${loadsToUpdate.length} loads without driver names\n');
