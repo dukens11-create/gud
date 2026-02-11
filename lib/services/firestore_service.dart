@@ -60,13 +60,14 @@ class FirestoreService {
     required String driverId,
     required String name,
     required String phone,
+    required String email,
     required String truckNumber,
   }) async {
     _requireAuth();
     
     print('🔧 Creating driver in Firestore: $driverId');
     
-    if (driverId.isEmpty || name.isEmpty || phone.isEmpty || truckNumber.isEmpty) {
+    if (driverId.isEmpty || name.isEmpty || phone.isEmpty || email.isEmpty || truckNumber.isEmpty) {
       throw ArgumentError('All driver fields must be non-empty');
     }
     
@@ -74,6 +75,7 @@ class FirestoreService {
       await _db.collection('drivers').doc(driverId).set({
         'name': name,
         'phone': phone,
+        'email': email,
         'truckNumber': truckNumber,
         'status': 'available',
         'isActive': true,  // Explicitly set isActive field
@@ -134,6 +136,7 @@ class FirestoreService {
   /// - [driverId]: Driver's unique identifier
   /// - [name]: Optional new name
   /// - [phone]: Optional new phone
+  /// - [email]: Optional new email
   /// - [truckNumber]: Optional new truck number
   /// - [status]: Optional status ('available', 'on_trip', 'offline')
   /// - [isActive]: Optional active status flag
@@ -141,6 +144,7 @@ class FirestoreService {
     required String driverId,
     String? name,
     String? phone,
+    String? email,
     String? truckNumber,
     String? status,
     bool? isActive,
@@ -149,6 +153,7 @@ class FirestoreService {
     final Map<String, dynamic> updates = {};
     if (name != null) updates['name'] = name;
     if (phone != null) updates['phone'] = phone;
+    if (email != null) updates['email'] = email;
     if (truckNumber != null) updates['truckNumber'] = truckNumber;
     if (status != null) updates['status'] = status;
     if (isActive != null) updates['isActive'] = isActive;
