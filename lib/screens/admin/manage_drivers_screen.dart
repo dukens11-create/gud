@@ -139,6 +139,7 @@ class _ManageDriversScreenState extends State<ManageDriversScreen> {
             driverId: credential!.user!.uid,
             name: result['name']!,
             phone: result['phone']!,
+            email: result['email']!,
             truckNumber: result['truckNumber']!,
           );
           print('✅ Driver document created successfully');

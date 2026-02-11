@@ -2,6 +2,7 @@ class Driver {
   final String id;
   final String name;
   final String phone;
+  final String email; // Email address for notifications
   final String truckNumber;
   final String status; // 'available', 'on_trip', 'inactive'
   final double totalEarnings;
@@ -13,6 +14,7 @@ class Driver {
     required this.id,
     required this.name,
     required this.phone,
+    required this.email,
     required this.truckNumber,
     required this.status,
     this.totalEarnings = 0.0,
@@ -24,6 +26,7 @@ class Driver {
   Map<String, dynamic> toMap() => {
     'name': name,
     'phone': phone,
+    'email': email,
     'truckNumber': truckNumber,
     'status': status,
     'totalEarnings': totalEarnings,
@@ -36,6 +39,7 @@ class Driver {
     id: id,
     name: (data['name'] ?? '') as String,
     phone: (data['phone'] ?? '') as String,
+    email: (data['email'] ?? '') as String,
     truckNumber: (data['truckNumber'] ?? '') as String,
     status: (data['status'] ?? 'available') as String,
     totalEarnings: ((data['totalEarnings'] ?? 0.0) as num).toDouble(),

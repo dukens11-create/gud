@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
 
 admin.initializeApp();
 
@@ -424,5 +425,234 @@ exports.updateAlertDaysRemaining = functions.pubsub
     await batch.commit();
     console.log(`✅ Updated ${updated} alerts`);
     return { updated };
+  });
+
+// ========== EMAIL NOTIFICATION FUNCTIONS ==========
+
+// Configure email transporter using environment variables
+// Set these in Firebase Functions config:
+// firebase functions:config:set email.user="your-email@gmail.com" email.pass="your-app-password"
+// OR use SMTP service like SendGrid, Mailgun, etc.
+function getEmailTransporter() {
+  const config = functions.config();
+  
+  // If using Gmail (for development/testing)
+  // For production, use a professional email service like SendGrid or Mailgun
+  if (config.email && config.email.user && config.email.pass) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: config.email.user,
+        pass: config.email.pass, // Use app password, not regular password
+      },
+    });
+  }
+  
+  // Alternative: Use SendGrid SMTP
+  // if (config.sendgrid && config.sendgrid.apikey) {
+  //   return nodemailer.createTransport({
+  //     host: 'smtp.sendgrid.net',
+  //     port: 587,
+  //     auth: {
+  //       user: 'apikey',
+  //       pass: config.sendgrid.apikey,
+  //     },
+  //   });
+  // }
+  
+  // Fallback: Log-only transporter for testing
+  console.warn('⚠️ Email transporter not configured. Email will be logged but not sent.');
+  console.warn('Configure email with: firebase functions:config:set email.user="your-email" email.pass="your-password"');
+  return null;
+}
+
+// Helper function to send email
+async function sendEmail(to, subject, htmlContent) {
+  const transporter = getEmailTransporter();
+  
+  if (!transporter) {
+    console.log('📧 [TEST MODE] Email would be sent to:', to);
+    console.log('📧 [TEST MODE] Subject:', subject);
+    console.log('📧 [TEST MODE] Content:', htmlContent);
+    return { success: false, mode: 'test' };
+  }
+  
+  try {
+    const config = functions.config();
+    const fromEmail = config.email?.from || config.email?.user || 'noreply@gudexpress.com';
+    
+    const info = await transporter.sendMail({
+      from: `"GUD Express" <${fromEmail}>`,
+      to: to,
+      subject: subject,
+      html: htmlContent,
+    });
+    
+    console.log('✅ Email sent successfully:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('❌ Error sending email:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Helper function to generate load assignment email HTML
+function generateLoadEmailHtml(loadData, driverData, isReassignment = false) {
+  const title = isReassignment ? 'Load Assignment Update' : 'New Load Assignment';
+  const greeting = `Hi ${driverData.name || 'Driver'},`;
+  const intro = isReassignment 
+    ? 'You have been assigned to an existing load. Here are the details:' 
+    : 'You have been assigned a new load. Here are the details:';
+  
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #2563eb;">${title}</h2>
+      <p>${greeting}</p>
+      <p>${intro}</p>
+      
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <p><strong>Load Number:</strong> ${loadData.loadNumber}</p>
+        <p><strong>Driver:</strong> ${loadData.driverName || driverData.name}</p>
+        <p><strong>Rate:</strong> $${loadData.rate.toFixed(2)}</p>
+        ${loadData.miles != null ? `<p><strong>Estimated Miles:</strong> ${Number(loadData.miles).toFixed(1)}</p>` : ''}
+        ${isReassignment ? `<p><strong>Status:</strong> ${loadData.status}</p>` : ''}
+      </div>
+      
+      <div style="margin: 20px 0;">
+        <h3 style="color: #059669;">📍 Pickup</h3>
+        <p>${loadData.pickupAddress}</p>
+      </div>
+      
+      <div style="margin: 20px 0;">
+        <h3 style="color: #dc2626;">📍 Delivery</h3>
+        <p>${loadData.deliveryAddress}</p>
+      </div>
+      
+      ${loadData.notes ? `
+      <div style="background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+        <p><strong>Notes:</strong></p>
+        <p>${loadData.notes}</p>
+      </div>
+      ` : ''}
+      
+      <p style="margin-top: 30px;">Please check the GUD Express app for more details and to update your status.</p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        This is an automated notification from GUD Express. Please do not reply to this email.
+      </p>
+    </div>
+  `;
+}
+
+// 9. Send email notification when load is created with driver assignment
+exports.sendLoadAssignmentEmail = functions.firestore
+  .document('loads/{loadId}')
+  .onCreate(async (snap, context) => {
+    const loadData = snap.data();
+    const loadId = context.params.loadId;
+    
+    console.log(`📧 Load created: ${loadId}, checking for driver assignment...`);
+    
+    // Only send email if a driver is assigned
+    if (!loadData.driverId) {
+      console.log('ℹ️ No driver assigned, skipping email notification');
+      return null;
+    }
+    
+    try {
+      // Get driver information
+      const driverDoc = await admin.firestore().collection('drivers').doc(loadData.driverId).get();
+      
+      if (!driverDoc.exists) {
+        console.warn(`⚠️ Driver ${loadData.driverId} not found`);
+        return null;
+      }
+      
+      const driverData = driverDoc.data();
+      const driverEmail = driverData.email;
+      
+      if (!driverEmail) {
+        console.warn(`⚠️ Driver ${loadData.driverId} has no email address`);
+        return null;
+      }
+      
+      // Generate email content
+      const subject = `🚚 New Load Assignment: ${loadData.loadNumber}`;
+      const htmlContent = generateLoadEmailHtml(loadData, driverData, false);
+      
+      const result = await sendEmail(driverEmail, subject, htmlContent);
+      
+      if (result.success) {
+        console.log(`✅ Load assignment email sent to ${driverEmail} for load ${loadData.loadNumber}`);
+      } else if (result.mode === 'test') {
+        console.log(`📧 Test mode: Email notification logged for ${driverEmail}`);
+      } else {
+        console.error(`❌ Failed to send email: ${result.error}`);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('❌ Error in sendLoadAssignmentEmail:', error);
+      return null;
+    }
+  });
+
+// 10. Send email notification when driver is reassigned on load update
+exports.sendLoadReassignmentEmail = functions.firestore
+  .document('loads/{loadId}')
+  .onUpdate(async (change, context) => {
+    const newData = change.after.data();
+    const oldData = change.before.data();
+    const loadId = context.params.loadId;
+    
+    // Check if driverId changed
+    if (newData.driverId === oldData.driverId) {
+      return null;
+    }
+    
+    console.log(`📧 Driver reassignment detected for load ${loadId}`);
+    
+    // If there's a new driver assigned, send them an email
+    if (newData.driverId) {
+      try {
+        // Get driver information
+        const driverDoc = await admin.firestore().collection('drivers').doc(newData.driverId).get();
+        
+        if (!driverDoc.exists) {
+          console.warn(`⚠️ Driver ${newData.driverId} not found`);
+          return null;
+        }
+        
+        const driverData = driverDoc.data();
+        const driverEmail = driverData.email;
+        
+        if (!driverEmail) {
+          console.warn(`⚠️ Driver ${newData.driverId} has no email address`);
+          return null;
+        }
+        
+        // Generate email content
+        const subject = `🚚 Load Assignment Update: ${newData.loadNumber}`;
+        const htmlContent = generateLoadEmailHtml(newData, driverData, true);
+        
+        const result = await sendEmail(driverEmail, subject, htmlContent);
+        
+        if (result.success) {
+          console.log(`✅ Load reassignment email sent to ${driverEmail} for load ${newData.loadNumber}`);
+        } else if (result.mode === 'test') {
+          console.log(`📧 Test mode: Email notification logged for ${driverEmail}`);
+        } else {
+          console.error(`❌ Failed to send email: ${result.error}`);
+        }
+        
+        return result;
+      } catch (error) {
+        console.error('❌ Error in sendLoadReassignmentEmail:', error);
+        return null;
+      }
+    }
+    
+    return null;
   });
 
