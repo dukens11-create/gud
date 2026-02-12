@@ -172,6 +172,23 @@ FirebaseFirestore.instance
 
 **Required Index**: `driverId` (Asc) + `status` (Asc) + `createdAt` (Desc)
 
+### Get Active Trucks (Excluding Inactive)
+
+```dart
+FirebaseFirestore.instance
+  .collection('trucks')
+  .where('status', whereIn: ['available', 'in_use', 'maintenance'])
+  .orderBy('truckNumber')
+  .snapshots();
+```
+
+**Required Index**: `status` (Asc) + `truckNumber` (Asc)
+
+**Note**: This query uses `whereIn` instead of `isNotEqualTo: 'inactive'` because:
+- Inequality operators (`!=`, `<`, `>`) require the inequality field to be first in the index
+- This would conflict with sorting by `truckNumber`
+- Using `whereIn` with explicit status values works with standard composite indexes
+
 ## Additional Resources
 
 - [Firestore Index Documentation](https://firebase.google.com/docs/firestore/query-data/indexing)
