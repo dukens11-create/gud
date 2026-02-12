@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/load.dart';
 import '../../services/mock_data_service.dart';
+import '../../services/firestore_service.dart';
+import '../../services/navigation_service.dart';
 import 'upload_pod_screen.dart';
 
 class LoadDetailScreen extends StatelessWidget {
@@ -12,6 +14,7 @@ class LoadDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mockService = MockDataService();
+    final firestoreService = FirestoreService();
     final currentUserId = mockService.currentUserId ?? '';
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
 
@@ -185,6 +188,36 @@ class LoadDetailScreen extends StatelessWidget {
             if (load.driverId == currentUserId && load.status != 'delivered')
               Column(
                 children: [
+                  // Simple one-tap "Delivered" button for quick delivery marking
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await firestoreService.markLoadAsDelivered(load.id);
+                          if (context.mounted) {
+                            NavigationService.showSuccess('Load marked as delivered');
+                            Navigator.pop(context);
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            NavigationService.showError('Error marking load as delivered: $e');
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.check_circle),
+                      label: const Text('Mark as Delivered'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                  // Existing detailed workflow buttons
                   if (load.status == 'assigned')
                     SizedBox(
                       width: double.infinity,

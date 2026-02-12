@@ -969,69 +969,101 @@ class _DriverHomeState extends State<DriverHome> {
                         button: true,
                         child: Card(
                           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: ListTile(
-                            onTap: () {
-                              AnalyticsService.instance.logSelectContent(
-                                contentType: 'load',
-                                itemId: load.loadNumber,
-                              );
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => LoadDetailScreen(load: load),
-                                ),
-                              );
-                            },
-                            leading: ExcludeSemantics(
-                              child: CircleAvatar(
-                                backgroundColor: _getStatusColor(load.status),
-                                child: Text(
-                                  load.status.isNotEmpty ? load.status[0].toUpperCase() : 'L',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              load.loadNumber,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 4),
-                                Text('From: ${load.pickupAddress}'),
-                                Text('To: ${load.deliveryAddress}'),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Rate: \$${load.rate.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green,
+                          child: Column(
+                            children: [
+                              ListTile(
+                                onTap: () {
+                                  AnalyticsService.instance.logSelectContent(
+                                    contentType: 'load',
+                                    itemId: load.loadNumber,
+                                  );
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => LoadDetailScreen(load: load),
+                                    ),
+                                  );
+                                },
+                                leading: ExcludeSemantics(
+                                  child: CircleAvatar(
+                                    backgroundColor: _getStatusColor(load.status),
+                                    child: Text(
+                                      load.status.isNotEmpty ? load.status[0].toUpperCase() : 'L',
+                                      style: const TextStyle(color: Colors.white),
+                                    ),
                                   ),
                                 ),
-                              ],
-                            ),
-                            trailing: ExcludeSemantics(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                title: Text(
+                                  load.loadNumber,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                                decoration: BoxDecoration(
-                                  color: _getStatusColor(load.status),
-                                  borderRadius: BorderRadius.circular(12),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 4),
+                                    Text('From: ${load.pickupAddress}'),
+                                    Text('To: ${load.deliveryAddress}'),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Rate: \$${load.rate.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                child: Text(
-                                  load.status,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                                trailing: ExcludeSemantics(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _getStatusColor(load.status),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      load.status,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
                                 ),
+                                isThreeLine: true,
                               ),
-                            ),
-                            isThreeLine: true,
+                              // Add Delivered button if load is not already delivered
+                              if (load.status != 'delivered')
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () async {
+                                        try {
+                                          await _firestoreService.markLoadAsDelivered(load.id);
+                                          if (mounted) {
+                                            NavigationService.showSuccess('Load marked as delivered');
+                                          }
+                                        } catch (e) {
+                                          if (mounted) {
+                                            NavigationService.showError('Error marking load as delivered: $e');
+                                          }
+                                        }
+                                      },
+                                      icon: const Icon(Icons.check_circle),
+                                      label: const Text('Mark as Delivered'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       );
