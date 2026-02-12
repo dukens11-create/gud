@@ -7,8 +7,10 @@ import '../../services/analytics_service.dart';
 import '../../services/navigation_service.dart';
 import '../../services/driver_extended_service.dart';
 import '../../services/mock_data_service.dart';
+import '../../services/truck_service.dart';
 import '../../models/load.dart';
 import '../../models/driver_extended.dart';
+import '../../models/truck.dart';
 import 'load_detail_screen.dart';
 import '../login_screen.dart';
 
@@ -25,6 +27,7 @@ class _DriverHomeState extends State<DriverHome> {
   final LocationService _locationService = LocationService();
   final FirestoreService _firestoreService = FirestoreService();
   final DriverExtendedService _driverService = DriverExtendedService();
+  final TruckService _truckService = TruckService();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _statusFilter = 'all';
@@ -523,6 +526,138 @@ class _DriverHomeState extends State<DriverHome> {
                 ),
               ),
             ),
+          ),
+
+          // Truck Information Card
+          StreamBuilder<Truck?>(
+            stream: _truckService.getTruckByDriverIdStream(widget.driverId),
+            builder: (context, snapshot) {
+              if (snapshot.hasData && snapshot.data != null) {
+                final truck = snapshot.data!;
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.local_shipping,
+                              size: 32,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  truck.truckNumber,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  truck.displayInfo,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _buildTruckStatusBadge(truck.status),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              } else if (snapshot.connectionState == ConnectionState.waiting) {
+                // Show placeholder card during loading to prevent layout shift
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Text(
+                            'Loading truck info...',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              } else {
+                // No truck assigned - show info message
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.orange.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.orange.shade700,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'No truck assigned yet. Contact admin.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.orange.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
           ),
 
           // Search Bar
@@ -1048,5 +1183,55 @@ class _DriverHomeState extends State<DriverHome> {
 
   String _formatDate(DateTime date) {
     return DateFormat('MMM dd, yyyy').format(date);
+  }
+
+  /// Build status badge for truck status
+  Widget _buildTruckStatusBadge(String status) {
+    Color backgroundColor;
+    Color textColor;
+    String displayText;
+
+    switch (status) {
+      case 'available':
+        backgroundColor = Colors.green.shade100;
+        textColor = Colors.green.shade800;
+        displayText = 'Available';
+        break;
+      case 'in_use':
+        backgroundColor = Colors.blue.shade100;
+        textColor = Colors.blue.shade800;
+        displayText = 'In Use';
+        break;
+      case 'maintenance':
+        backgroundColor = Colors.orange.shade100;
+        textColor = Colors.orange.shade800;
+        displayText = 'Maintenance';
+        break;
+      case 'inactive':
+        backgroundColor = Colors.grey.shade300;
+        textColor = Colors.grey.shade800;
+        displayText = 'Inactive';
+        break;
+      default:
+        backgroundColor = Colors.grey.shade200;
+        textColor = Colors.grey.shade700;
+        displayText = status;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        displayText,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
   }
 }
