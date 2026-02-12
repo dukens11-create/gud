@@ -220,6 +220,32 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
                                 color: Colors.grey[600],
                               ),
                         ),
+                        if (_searchQuery.isEmpty && !_showInactive) ...[
+                          const SizedBox(height: 24),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.symmetric(horizontal: 32),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.orange.shade200),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.info_outline, color: Colors.orange.shade700),
+                                const SizedBox(width: 12),
+                                Flexible(
+                                  child: Text(
+                                    'Not seeing your trucks? Try enabling "Show Inactive" toggle above.',
+                                    style: TextStyle(color: Colors.orange.shade900),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   );
