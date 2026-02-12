@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/expense_service.dart';
 import '../../models/expense.dart';
-import '../../services/mock_data_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Driver expenses screen - View driver's expense history
 class DriverExpensesScreen extends StatelessWidget {
@@ -10,8 +10,8 @@ class DriverExpensesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mockService = MockDataService();
-    final currentUserId = mockService.currentUserId;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUserId = currentUser?.uid;
     
     // If no user is authenticated, show error state
     if (currentUserId == null) {
