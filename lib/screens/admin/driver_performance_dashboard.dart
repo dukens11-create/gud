@@ -57,8 +57,13 @@ class _DriverPerformanceDashboardState
       
       if (isIndexError) {
         // Extract index creation URL from error message if available
-        final urlMatch = RegExp(r'https://console\.firebase\.google\.com[^\s]+')
-            .firstMatch(errorMsg);
+        // Firebase error messages often contain URLs wrapped in quotes or parentheses
+        // The regex captures the URL but stops at common terminators
+        final urlPattern = RegExp(
+          r'https://console\.firebase\.google\.com/[^\s\)\]\"\'\,]+',
+          caseSensitive: true,
+        );
+        final urlMatch = urlPattern.firstMatch(errorMsg);
         
         setState(() {
           _errorMessage = 'A Firestore composite index is required to display driver performance data.';
@@ -278,8 +283,9 @@ class _DriverPerformanceDashboardState
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          // Note: We can't directly launch URLs in this context
-                          // but we can show a dialog with the URL
+                          // Display the URL in a dialog for the admin to copy and open
+                          // We avoid using url_launcher to keep dependencies minimal
+                          // and let admins use their preferred browser/context
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
