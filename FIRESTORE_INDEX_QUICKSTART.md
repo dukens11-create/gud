@@ -68,8 +68,8 @@ Check index status in Firebase Console:
 2. Select your project
 3. Navigate to **Firestore Database** → **Indexes** tab
 
-Or use this direct link (replace `YOUR_PROJECT_ID` with your actual Firebase project ID):
-👉 https://console.firebase.google.com/project/YOUR_PROJECT_ID/firestore/indexes
+Or use this direct link (replace `<YOUR_PROJECT_ID>` with your actual Firebase project ID):
+👉 `https://console.firebase.google.com/project/<YOUR_PROJECT_ID>/firestore/indexes`
 
 ---
 
