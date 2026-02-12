@@ -112,19 +112,21 @@ Run the validation script to ensure your configuration is correct:
 
 Expected output for a valid configuration:
 ```
-✅ iOS Firebase Configuration Validation
+🔍 iOS Firebase Configuration Validation
 
-✅ GoogleService-Info.plist exists
-✅ No placeholder values found
-✅ Required keys present:
-   - CLIENT_ID
-   - REVERSED_CLIENT_ID
-   - GOOGLE_APP_ID
-   - API_KEY
-   - PROJECT_ID
-   - BUNDLE_ID
+Checking if GoogleService-Info.plist exists... ✅ OK
+Checking for placeholder values... ✅ OK
+Checking for required keys... ✅ OK
+Checking PROJECT_ID value... ✅ OK
+Checking BUNDLE_ID value... ✅ OK
+Validating XML structure... ✅ OK
+Checking file permissions... ✅ OK
 
-✅ All checks passed! iOS Firebase configuration is valid.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ All checks passed!
+
+Your iOS Firebase configuration is valid and ready to use.
 ```
 
 If validation fails, the script will provide specific error messages to help you fix the issues.

@@ -15,7 +15,8 @@
 #   1 - Validation failed
 ##############################################################################
 
-set -e
+# Note: Not using 'set -e' to allow all validation checks to run
+# and accumulate errors before exiting
 
 # Colors for output
 RED='\033[0;31m'
