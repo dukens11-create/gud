@@ -477,6 +477,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
                   }
                 } catch (e) {
                   // Show error INSIDE dialog, keep it open
+                  // Note: Using dialogContext to maintain consistency with validation errors above
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
                       SnackBar(
