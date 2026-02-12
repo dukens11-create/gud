@@ -36,6 +36,7 @@ class FirestoreService {
     'delivered',   // Load has been delivered
     'completed',   // Load fully completed
     'picked_up',   // Legacy status - still valid for queries to support historical loads
+    'cancelled',   // Load cancelled/deleted (soft delete)
   ];
   
   /// Email validation regex pattern
@@ -794,18 +795,20 @@ TROUBLESHOOTING:
     });
   }
 
-  /// Delete a load and all associated PODs
+  /// Soft delete a load by setting its status to 'cancelled'
   /// 
-  /// Cascades delete to all POD documents linked to this load
+  /// This marks the load as deleted without removing it from the database,
+  /// preserving historical records and maintaining data integrity.
   Future<void> deleteLoad(String loadId) async {
     _requireAuth();
-    // Delete all PODs for this load from top-level collection
-    final pods = await _db.collection('pods').where('loadId', isEqualTo: loadId).get();
-    for (var doc in pods.docs) {
-      await doc.reference.delete();
+    try {
+      await _db.collection('loads').doc(loadId).update({
+        'status': 'cancelled',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to delete load: $e');
     }
-    // Delete the load
-    await _db.collection('loads').doc(loadId).delete();
   }
 
   // POD (Proof of Delivery) Management
