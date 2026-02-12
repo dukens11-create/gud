@@ -476,8 +476,8 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
                   }
                 } catch (e) {
                   // Show error INSIDE dialog, keep it open
-                  if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Error: $e'),
                         backgroundColor: Colors.red,
@@ -485,9 +485,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
                     );
                   }
                   // Reset loading state on error
-                  if (mounted) {
-                    setState(() => isLoading = false);
-                  }
+                  setState(() => isLoading = false);
                   return;
                 }
               },
