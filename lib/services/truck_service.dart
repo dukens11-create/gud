@@ -97,13 +97,24 @@ class TruckService {
   }
 
   /// Stream all trucks (excluding inactive)
+  /// 
+  /// Uses `whereIn` instead of `isNotEqualTo` to avoid requiring additional
+  /// composite indexes. This works with the existing status + truckNumber index.
   Stream<List<Truck>> streamTrucks({bool includeInactive = false}) {
     _requireAuth();
 
-    var query = _db.collection('trucks').orderBy('truckNumber');
+    Query<Map<String, dynamic>> query;
 
-    if (!includeInactive) {
-      query = query.where('status', isNotEqualTo: 'inactive');
+    if (includeInactive) {
+      // Get all trucks, sorted by truckNumber
+      query = _db.collection('trucks').orderBy('truckNumber');
+    } else {
+      // Get only active trucks (available, in_use, maintenance)
+      // Using whereIn instead of isNotEqualTo to work with existing indexes
+      query = _db
+          .collection('trucks')
+          .where('status', whereIn: ['available', 'in_use', 'maintenance'])
+          .orderBy('truckNumber');
     }
 
     return query.snapshots().map((snapshot) =>
