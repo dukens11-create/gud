@@ -59,6 +59,11 @@ class _AdminHomeState extends State<AdminHome> {
   Stream<List<LoadModel>> _getFilteredLoads() {
     return _firestoreService.streamAllLoads().map((loads) {
       var filteredLoads = loads.where((load) {
+        // Filter out cancelled loads by default
+        if (load.status == 'cancelled') {
+          return false;
+        }
+
         // Search filter - searches across load number, driver, and locations
         final matchesSearch = _searchQuery.isEmpty ||
             load.loadNumber.toLowerCase().contains(_searchQuery) ||
@@ -526,57 +531,84 @@ class _AdminHomeState extends State<AdminHome> {
                     itemCount: loads.length,
                     itemBuilder: (context, index) {
                       final load = loads[index];
-                      return Semantics(
-                        label: 'Load ${load.loadNumber}, driver ${load.driverName ?? load.driverId}, status ${load.status}, rate ${load.rate} dollars',
-                        button: true,
-                        child: Card(
+                      return Dismissible(
+                        key: Key(load.id),
+                        direction: DismissDirection.endToStart,
+                        confirmDismiss: (direction) async {
+                          return await _confirmDeleteLoad(context, load);
+                        },
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
                           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: ListTile(
-                            title: Text(
-                              load.loadNumber,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 4),
-                                Text('Driver: ${load.driverName ?? load.driverId}'),
-                                Text('${load.pickupAddress} → ${load.deliveryAddress}'),
-                              ],
-                            ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '\$${load.rate.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _getStatusColor(load.status),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    load.status,
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.delete, color: Colors.white, size: 32),
+                              SizedBox(height: 4),
+                              Text(
+                                'Delete',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                        child: Semantics(
+                          label: 'Load ${load.loadNumber}, driver ${load.driverName ?? load.driverId}, status ${load.status}, rate ${load.rate} dollars',
+                          button: true,
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: ListTile(
+                              title: Text(
+                                load.loadNumber,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text('Driver: ${load.driverName ?? load.driverId}'),
+                                  Text('${load.pickupAddress} → ${load.deliveryAddress}'),
+                                ],
+                              ),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '\$${load.rate.toStringAsFixed(2)}',
                                     style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
                                       fontWeight: FontWeight.bold,
+                                      fontSize: 16,
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _getStatusColor(load.status),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      load.status,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              isThreeLine: true,
                             ),
-                            isThreeLine: true,
                           ),
                         ),
                       );
@@ -631,9 +663,96 @@ class _AdminHomeState extends State<AdminHome> {
         return Colors.orange;
       case 'delivered':
         return Colors.green;
+      case 'cancelled':
+        return Colors.red;
       default:
         return Colors.grey;
     }
+  }
+
+  Future<bool> _confirmDeleteLoad(BuildContext context, LoadModel load) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Load'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete load ${load.loadNumber}?',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text('Pickup: ${load.pickupAddress}'),
+            Text('Delivery: ${load.deliveryAddress}'),
+            Text('Driver: ${load.driverName ?? "Unassigned"}'),
+            Text('Rate: \$${load.rate.toStringAsFixed(2)}'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.orange, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This will mark the load as cancelled. This action cannot be undone.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _firestoreService.deleteLoad(load.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Load ${load.loadNumber} deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+        return true;
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting load: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return false;
+      }
+    }
+    
+    return false;
   }
 
   Widget _buildDrawer(BuildContext context) {
