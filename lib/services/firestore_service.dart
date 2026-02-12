@@ -757,9 +757,6 @@ TROUBLESHOOTING:
       rethrow;
     }
   }
-      rethrow;
-    }
-  }
 
   /// Get count of completed loads for a driver
   /// 
