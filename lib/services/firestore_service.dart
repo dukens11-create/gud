@@ -21,6 +21,18 @@ class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   
+  /// Valid load status values
+  /// 
+  /// **CRITICAL**: These values MUST use underscores, NOT hyphens
+  /// (e.g., 'in_transit', not 'in-transit')
+  static const List<String> validLoadStatuses = [
+    'assigned',    // Load assigned to driver but not started
+    'in_transit',  // Load currently being transported (underscore!)
+    'delivered',   // Load has been delivered
+    'completed',   // Load fully completed
+    'picked_up',   // Load picked up (legacy status)
+  ];
+  
   /// Email validation regex pattern
   static final RegExp _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
   
@@ -445,13 +457,13 @@ class FirestoreService {
     print('   ⚠️  Status value check: "${status}" (must use underscores, e.g., "in_transit")');
     
     // Validate status value format - check against known valid values
-    const validStatuses = ['assigned', 'in_transit', 'delivered', 'completed', 'picked_up'];
-    if (!validStatuses.contains(status)) {
+    if (!FirestoreService.validLoadStatuses.contains(status)) {
       print('⚠️  WARNING: Unexpected status value: "$status"');
-      print('   Valid values: ${validStatuses.join(", ")}');
+      print('   Valid values: ${FirestoreService.validLoadStatuses.join(", ")}');
       if (status.contains('-')) {
         print('   NOTE: Status contains hyphen - should use underscore (e.g., "in_transit" not "in-transit")');
       }
+      print('   Query will continue but may return no results if status value is incorrect.');
     }
     
     try {
