@@ -460,6 +460,19 @@ class DriverExtendedService {
   }
 
   /// Get all drivers performance summary
+  /// 
+  /// **IMPORTANT: This query requires a Firestore composite index**
+  /// 
+  /// Required composite index for loads collection:
+  /// - Fields: driverId (Ascending), status (Ascending)
+  /// 
+  /// The index is defined in firestore.indexes.json and should be deployed using:
+  /// ```
+  /// firebase deploy --only firestore:indexes
+  /// ```
+  /// 
+  /// If the index is missing, this method will throw a FirebaseException
+  /// with error code 'failed-precondition' and a message containing 'index'.
   Future<List<Map<String, dynamic>>> getAllDriversPerformance() async {
     _requireAuth();
     final driversSnapshot = await _db.collection('drivers').get();

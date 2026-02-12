@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/driver_extended_service.dart';
 
 /// Driver Performance Dashboard Screen
@@ -22,6 +23,8 @@ class _DriverPerformanceDashboardState
   List<Map<String, dynamic>> _drivers = [];
   bool _loading = true;
   String _sortBy = 'name'; // name, rating, loads, earnings, onTime
+  String? _errorMessage;
+  String? _indexCreationUrl;
 
   @override
   void initState() {
@@ -30,7 +33,11 @@ class _DriverPerformanceDashboardState
   }
 
   Future<void> _loadPerformanceData() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+      _indexCreationUrl = null;
+    });
 
     try {
       final drivers = await _service.getAllDriversPerformance();
@@ -39,13 +46,35 @@ class _DriverPerformanceDashboardState
         _sortDrivers();
         _loading = false;
       });
-    } catch (e) {
+    } on FirebaseException catch (e) {
+      // Handle Firestore-specific errors, especially missing indexes
       setState(() => _loading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading data: $e')),
-        );
+      
+      final errorMsg = e.message ?? e.toString();
+      final isIndexError = e.code == 'failed-precondition' || 
+                          errorMsg.contains('index') ||
+                          errorMsg.contains('requires an index');
+      
+      if (isIndexError) {
+        // Extract index creation URL from error message if available
+        final urlMatch = RegExp(r'https://console\.firebase\.google\.com[^\s]+')
+            .firstMatch(errorMsg);
+        
+        setState(() {
+          _errorMessage = 'A Firestore composite index is required to display driver performance data.';
+          _indexCreationUrl = urlMatch?.group(0);
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Error loading driver data: ${e.message ?? e.code}';
+        });
       }
+    } catch (e) {
+      // Handle other errors
+      setState(() {
+        _loading = false;
+        _errorMessage = 'Error loading data: $e';
+      });
     }
   }
 
@@ -106,19 +135,21 @@ class _DriverPerformanceDashboardState
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _drivers.isEmpty
-              ? _buildEmptyState()
-              : RefreshIndicator(
-                  onRefresh: _loadPerformanceData,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _drivers.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return _buildSummaryCards();
-                      }
-                      return _buildDriverCard(_drivers[index - 1]);
-                    },
+          : _errorMessage != null
+              ? _buildErrorState()
+              : _drivers.isEmpty
+                  ? _buildEmptyState()
+                  : RefreshIndicator(
+                      onRefresh: _loadPerformanceData,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _drivers.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            return _buildSummaryCards();
+                          }
+                          return _buildDriverCard(_drivers[index - 1]);
+                        },
                   ),
                 ),
     );
@@ -143,6 +174,167 @@ class _DriverPerformanceDashboardState
                 ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    final isIndexError = _indexCreationUrl != null || 
+                        (_errorMessage?.contains('index') ?? false);
+    
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isIndexError ? Icons.error_outline : Icons.error,
+              size: 80,
+              color: isIndexError ? Colors.orange : Colors.red,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              isIndexError 
+                  ? 'Firestore Index Required'
+                  : 'Error Loading Data',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage ?? 'An unexpected error occurred',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            if (isIndexError) ...[
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade300, width: 2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, 
+                            color: Colors.orange.shade700, size: 24),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'What\'s needed?',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange.shade900,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'The driver dashboard query requires a composite index on the following fields:',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Collection: loads',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  fontFamily: 'monospace',
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '• driverId (Ascending)',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  fontFamily: 'monospace',
+                                ),
+                          ),
+                          Text(
+                            '• status (Ascending)',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  fontFamily: 'monospace',
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_indexCreationUrl != null) ...[
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          // Note: We can't directly launch URLs in this context
+                          // but we can show a dialog with the URL
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Create Index'),
+                              content: SelectableText(
+                                'Click the link below to create the required index:\n\n$_indexCreationUrl',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('CLOSE'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.open_in_new),
+                        label: const Text('View Index Creation Link'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'To create this index:',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '1. Go to Firebase Console\n'
+                        '2. Navigate to Firestore → Indexes\n'
+                        '3. Create a composite index with the fields above\n'
+                        '4. Or deploy via CLI: firebase deploy --only firestore:indexes',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              onPressed: _loadPerformanceData,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
