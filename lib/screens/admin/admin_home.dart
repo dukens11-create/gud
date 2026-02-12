@@ -702,7 +702,7 @@ class _AdminHomeState extends State<AdminHome> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'This will mark the load as cancelled. This action cannot be undone.',
+                      'This will mark the load as cancelled and hide it from the main view.',
                       style: TextStyle(fontSize: 12),
                     ),
                   ),
@@ -733,7 +733,7 @@ class _AdminHomeState extends State<AdminHome> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Load ${load.loadNumber} deleted successfully'),
+              content: Text('Load ${load.loadNumber} cancelled successfully'),
               backgroundColor: Colors.green,
             ),
           );
@@ -743,7 +743,7 @@ class _AdminHomeState extends State<AdminHome> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error deleting load: $e'),
+              content: Text('Error cancelling load: $e'),
               backgroundColor: Colors.red,
             ),
           );
