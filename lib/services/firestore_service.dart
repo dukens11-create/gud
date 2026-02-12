@@ -989,7 +989,7 @@ TROUBLESHOOTING:
 
   /// Get count of active (non-completed) loads for a driver
   /// 
-  /// Returns count of loads with status: assigned, picked_up, in_transit, or delivered
+  /// Returns count of loads with status: assigned, picked_up, or in_transit
   /// Used to check driver availability before assignment
   /// 
   /// **Usage**: Check driver workload before assigning new loads
@@ -1006,7 +1006,7 @@ TROUBLESHOOTING:
       final snapshot = await _db
           .collection('loads')
           .where('driverId', isEqualTo: driverId)
-          .where('status', whereIn: ['assigned', 'picked_up', 'in_transit', 'delivered'])
+          .where('status', whereIn: ['assigned', 'picked_up', 'in_transit'])
           .get();
       
       final count = snapshot.docs.length;

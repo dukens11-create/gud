@@ -873,11 +873,12 @@ void main() {
       });
 
       test('validates active load statuses', () {
-        // Test that active statuses are defined correctly
-        const activeStatuses = ['assigned', 'picked_up', 'in_transit', 'delivered'];
+        // Test that active statuses are defined correctly (excludes 'delivered')
+        const activeStatuses = ['assigned', 'picked_up', 'in_transit'];
         expect(activeStatuses, isNotEmpty);
         expect(activeStatuses.contains('assigned'), isTrue);
         expect(activeStatuses.contains('in_transit'), isTrue);
+        expect(activeStatuses.contains('picked_up'), isTrue);
       });
     });
 
