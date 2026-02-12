@@ -1,5 +1,23 @@
 # Firestore Index Setup Guide
 
+## 🚀 Quick Deploy (Start Here!)
+
+**New to this project? Deploy all indexes in one command:**
+
+```bash
+bash scripts/deploy-indexes.sh
+```
+
+This automated script will:
+- ✅ Check if Firebase CLI is installed
+- ✅ Verify you're logged in to Firebase
+- ✅ Deploy all indexes from `firestore.indexes.json`
+- ✅ Show deployment status
+
+**First time using Firebase CLI?** See the [Quick Start Guide](FIRESTORE_INDEX_QUICKSTART.md) for a 2-minute setup tutorial.
+
+---
+
 ## Overview
 
 This application uses Firestore composite indexes to efficiently query loads by multiple fields. This guide explains how to create and maintain these indexes.
@@ -84,9 +102,15 @@ https://console.firebase.google.com/project/YOUR_PROJECT/firestore/indexes?creat
 6. Click **Create** button
 7. Wait for index to build (status will change from "Building" to "Enabled")
 
-### Method 3: Deploy from Configuration File
+### Method 3: Deploy from Configuration File (Recommended)
 
-This project includes index definitions in `firestore.indexes.json`. Deploy them using:
+This project includes index definitions in `firestore.indexes.json`. Deploy them using our automated script:
+
+```bash
+bash scripts/deploy-indexes.sh
+```
+
+Or deploy manually:
 
 ```bash
 # Install Firebase CLI if not already installed
@@ -99,7 +123,13 @@ firebase login
 firebase deploy --only firestore:indexes
 ```
 
-**Note**: This method requires Firebase CLI and proper project configuration.
+**Benefits of this method:**
+- ✅ Deploys all indexes at once
+- ✅ Version controlled in `firestore.indexes.json`
+- ✅ Consistent across team members
+- ✅ Easy to update and maintain
+
+**Need help?** See [FIRESTORE_INDEX_QUICKSTART.md](FIRESTORE_INDEX_QUICKSTART.md) for detailed setup instructions.
 
 ## Troubleshooting
 

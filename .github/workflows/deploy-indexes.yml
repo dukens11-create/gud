@@ -1,0 +1,51 @@
+name: Deploy Firestore Indexes
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+
+jobs:
+  deploy-indexes:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: 📦 Install Firebase CLI
+        run: npm install -g firebase-tools
+        
+      - name: 🔍 Verify firestore.indexes.json exists
+        run: |
+          if [ ! -f firestore.indexes.json ]; then
+            echo "❌ firestore.indexes.json not found!"
+            exit 1
+          fi
+          echo "✅ firestore.indexes.json found"
+          
+      - name: 🚀 Deploy Firestore Indexes
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          echo "🔥 Deploying Firestore indexes to ${{ inputs.environment }}..."
+          firebase deploy --only firestore:indexes --token "$FIREBASE_TOKEN"
+          
+      - name: ✅ Deployment Complete
+        run: |
+          echo "✅ Firestore indexes deployed successfully!"
+          echo "⏱️  Indexes will be built in 2-5 minutes"
+          echo "🔍 Check status: https://console.firebase.google.com/project/_/firestore/indexes"

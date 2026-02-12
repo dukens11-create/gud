@@ -29,61 +29,73 @@ No keystores with reference 'gud-release-key' were found from code signing ident
 
 ---
 
-## 🔥 Fix Firestore Index Errors
+## 🔥 Firestore Index Setup
 
-**Are you seeing this error in CodeMagic, GitHub Actions, or locally?**
+### Quick Deploy (One Command)
+
+Deploy all required Firestore indexes with a single command:
+
+```bash
+bash scripts/deploy-indexes.sh
 ```
-[cloud_firestore/failed-precondition] The query requires an index. 
-You can create it here: https://console.firebase.google.com/...
+
+**What this does:**
+- ✅ Checks if Firebase CLI is installed
+- ✅ Verifies Firebase authentication
+- ✅ Deploys all indexes from `firestore.indexes.json`
+- ✅ Provides clear success/error messages
+
+**Alternative (manual deployment):**
+```bash
+firebase deploy --only firestore:indexes
 ```
 
-### Quick Fix Steps:
+⏱️ **Note**: After deployment, indexes take 2-5 minutes to build (up to 30 minutes for large databases). Check status in [Firebase Console](https://console.firebase.google.com/project/_/firestore/indexes).
 
-1. **📋 Copy the Index Creation Link**
-   - Find the error in your logs (CodeMagic, GitHub Actions, or local console)
-   - Copy the full URL that starts with `https://console.firebase.google.com/...`
+### First-Time Setup
 
-2. **🌐 Open Link in Browser**
-   - Paste the URL into your browser
-   - You'll be taken to Firebase Console with the index pre-configured
+If you haven't set up Firebase CLI yet:
 
-3. **✅ Create the Index**
-   - Click the **"Create Index"** button in Firebase Console
-   - Wait 2-5 minutes for the index to build (can take longer for large databases)
-   - Index status will change from "Building" to "Enabled"
+```bash
+# Install Firebase CLI globally
+npm install -g firebase-tools
 
-4. **🔄 Retry Your Build/Query**
-   - Once the index is enabled, retry your failed build or operation
-   - The error should be resolved
+# Login to Firebase
+firebase login
 
-### Finding Firestore Indexes Manually
+# Deploy indexes
+bash scripts/deploy-indexes.sh
+```
 
-If you need to check or manage indexes manually:
+### Fixing "Index Required" Errors
 
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project
-3. Navigate to **Firestore Database** → **Indexes** tab
-4. You'll see all composite indexes and their status
+**See the error below?**
+```
+[cloud_firestore/failed-precondition] The query requires an index.
+```
 
-### Troubleshooting
+**Quick fix options:**
 
-**Error persists after creating the index?**
-- ⏳ **Wait longer**: Large databases can take 10-30+ minutes to build indexes
-- 🔍 **Check status**: Verify index status is "Enabled" in Firebase Console
-- 🔄 **Clear cache**: Try clearing your app cache or restarting the development server
-- 📝 **Verify fields**: Ensure field names match exactly (case-sensitive)
+1. **Option 1 - Use the deployment script** (Recommended):
+   ```bash
+   bash scripts/deploy-indexes.sh
+   ```
 
-**Index already exists?**
-- The index may still be building - check the status in Firebase Console
-- If status shows "Error", delete the index and recreate it using the error link
+2. **Option 2 - Use the error link**:
+   - Copy the URL from the error message
+   - Open it in your browser
+   - Click "Create Index" in Firebase Console
 
-### Important Notes
+3. **Option 3 - Manual deployment**:
+   ```bash
+   firebase deploy --only firestore:indexes
+   ```
 
-⚠️ **PR Automation Limitation**: Creating Firestore composite indexes **cannot be automated** through pull requests or CI/CD pipelines. This is a Firebase security requirement - indexes must be created manually in the Firebase Console by someone with appropriate access.
+### Documentation
 
-💡 **Best Practice**: When adding new queries that require composite indexes, document them in your PR and notify the team so indexes can be created before merging to production.
-
-📖 **Detailed Documentation**: For comprehensive information about Firestore indexes, query patterns, and maintenance, see [FIRESTORE_INDEX_SETUP.md](FIRESTORE_INDEX_SETUP.md)
+- 📚 **[Quick Start Guide](FIRESTORE_INDEX_QUICKSTART.md)** - 2-minute setup with troubleshooting
+- 📖 **[Detailed Documentation](FIRESTORE_INDEX_SETUP.md)** - Complete index reference and query patterns
+- 🔧 **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions
 
 ---
 
