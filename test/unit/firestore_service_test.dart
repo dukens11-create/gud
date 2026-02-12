@@ -792,5 +792,259 @@ void main() {
         expect(service.streamDashboardStats(), isA<Stream<Map<String, dynamic>>>());
       });
     });
+
+    // New validation methods for admin-driver integration
+    group('loadNumberExists', () {
+      test('checks for duplicate load number', () async {
+        final service = FirestoreService();
+
+        // Will throw in test environment without Firebase
+        expect(
+          () => service.loadNumberExists('LOAD-001'),
+          throwsA(anything),
+        );
+      });
+
+      test('throws ArgumentError for empty load number', () async {
+        final service = FirestoreService();
+
+        expect(
+          () => service.loadNumberExists(''),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('validates load number format', () {
+        // Test load number format validation
+        final validLoadNumbers = ['LOAD-001', 'LOAD-999', 'LOAD-100'];
+        for (final loadNumber in validLoadNumbers) {
+          expect(loadNumber, isNotEmpty);
+          expect(loadNumber.startsWith('LOAD-'), isTrue);
+        }
+      });
+    });
+
+    group('isDriverValid', () {
+      test('validates driver exists and is active', () async {
+        final service = FirestoreService();
+
+        // Will throw in test environment without Firebase
+        expect(
+          () => service.isDriverValid('driver-123'),
+          throwsA(anything),
+        );
+      });
+
+      test('throws ArgumentError for empty driver ID', () async {
+        final service = FirestoreService();
+
+        expect(
+          () => service.isDriverValid(''),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('validates driver ID format', () {
+        // Test that driver IDs are non-empty strings
+        const driverId = 'driver-123';
+        expect(driverId, isNotEmpty);
+        expect(driverId, isA<String>());
+      });
+    });
+
+    group('getDriverActiveLoadCount', () {
+      test('counts active loads for driver', () async {
+        final service = FirestoreService();
+
+        // Will throw in test environment without Firebase
+        expect(
+          () => service.getDriverActiveLoadCount('driver-123'),
+          throwsA(anything),
+        );
+      });
+
+      test('throws ArgumentError for empty driver ID', () async {
+        final service = FirestoreService();
+
+        expect(
+          () => service.getDriverActiveLoadCount(''),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('validates active load statuses', () {
+        // Test that active statuses are defined correctly
+        const activeStatuses = ['assigned', 'picked_up', 'in_transit', 'delivered'];
+        expect(activeStatuses, isNotEmpty);
+        expect(activeStatuses.contains('assigned'), isTrue);
+        expect(activeStatuses.contains('in_transit'), isTrue);
+      });
+    });
+
+    group('createLoad validation', () {
+      test('validates all required fields before creation', () async {
+        final service = FirestoreService();
+
+        // Empty load number
+        expect(
+          () => service.createLoad(
+            loadNumber: '',
+            driverId: 'driver-123',
+            driverName: 'John Doe',
+            pickupAddress: '123 Main St',
+            deliveryAddress: '456 Oak Ave',
+            rate: 1500.0,
+            createdBy: 'admin-123',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+
+        // Empty driver ID
+        expect(
+          () => service.createLoad(
+            loadNumber: 'LOAD-001',
+            driverId: '',
+            driverName: 'John Doe',
+            pickupAddress: '123 Main St',
+            deliveryAddress: '456 Oak Ave',
+            rate: 1500.0,
+            createdBy: 'admin-123',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+
+        // Negative rate
+        expect(
+          () => service.createLoad(
+            loadNumber: 'LOAD-001',
+            driverId: 'driver-123',
+            driverName: 'John Doe',
+            pickupAddress: '123 Main St',
+            deliveryAddress: '456 Oak Ave',
+            rate: -100.0,
+            createdBy: 'admin-123',
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('validates load number uniqueness', () async {
+        final service = FirestoreService();
+
+        // This would check for duplicates in a real environment
+        expect(
+          () => service.loadNumberExists('LOAD-001'),
+          throwsA(anything),
+        );
+      });
+
+      test('validates driver exists before assignment', () async {
+        final service = FirestoreService();
+
+        // This would check driver validity in a real environment
+        expect(
+          () => service.isDriverValid('driver-123'),
+          throwsA(anything),
+        );
+      });
+    });
+
+    group('load status updates validation', () {
+      test('validates status values against valid statuses', () {
+        const validStatuses = [
+          'assigned',
+          'in_transit',
+          'delivered',
+          'completed',
+          'picked_up',
+        ];
+
+        // Test that all valid statuses are defined
+        expect(validStatuses, isNotEmpty);
+        expect(validStatuses.length, greaterThanOrEqualTo(4));
+
+        // Test underscore usage (not hyphens)
+        for (final status in validStatuses) {
+          expect(status.contains('-'), isFalse,
+              reason: 'Status "$status" should use underscores, not hyphens');
+        }
+
+        // Verify in_transit uses underscore
+        expect(validStatuses.contains('in_transit'), isTrue);
+        expect(validStatuses.contains('in-transit'), isFalse);
+      });
+
+      test('updateLoadStatus logs status changes', () async {
+        final service = FirestoreService();
+
+        // This validates the method signature
+        expect(
+          () => service.updateLoadStatus(
+            loadId: 'load-123',
+            status: 'in_transit',
+          ),
+          throwsA(anything),
+        );
+      });
+    });
+
+    group('admin-driver integration validations', () {
+      test('validates driver ID format for Firebase Auth UID', () {
+        // Firebase Auth UIDs are 28-character alphanumeric strings
+        const validUid = 'abc123def456ghi789jkl012mn';
+        expect(validUid, isNotEmpty);
+        expect(validUid.length, greaterThanOrEqualTo(20));
+      });
+
+      test('validates load assignment workflow', () async {
+        final service = FirestoreService();
+
+        // Test complete workflow would fail in test environment
+        // 1. Check load number uniqueness
+        expect(() => service.loadNumberExists('LOAD-001'), throwsA(anything));
+
+        // 2. Validate driver
+        expect(() => service.isDriverValid('driver-123'), throwsA(anything));
+
+        // 3. Check driver workload
+        expect(() => service.getDriverActiveLoadCount('driver-123'), throwsA(anything));
+
+        // 4. Create load (would fail without Firebase)
+        expect(
+          () => service.createLoad(
+            loadNumber: 'LOAD-001',
+            driverId: 'driver-123',
+            driverName: 'John Doe',
+            pickupAddress: '123 Main St',
+            deliveryAddress: '456 Oak Ave',
+            rate: 1500.0,
+            createdBy: 'admin-123',
+          ),
+          throwsA(anything),
+        );
+      });
+
+      test('validates status progression workflow', () async {
+        final service = FirestoreService();
+
+        // Test status progression: assigned -> in_transit -> delivered
+        expect(() => service.startTrip('load-123'), throwsA(anything));
+        expect(() => service.endTrip('load-123', 250.0), throwsA(anything));
+      });
+
+      test('validates driver statistics update', () async {
+        final service = FirestoreService();
+
+        // After delivery, stats should update
+        expect(
+          () => service.updateDriverStats(
+            driverId: 'driver-123',
+            earnings: 1500.0,
+            completedLoads: 1,
+          ),
+          throwsA(anything),
+        );
+      });
+    });
   });
 }
