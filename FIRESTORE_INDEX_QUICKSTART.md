@@ -63,7 +63,12 @@ firebase deploy --only firestore:indexes
 - ⏱️ **Small databases**: 2-5 minutes
 - ⏱️ **Large databases**: 10-30+ minutes
 
-Check index status at:
+Check index status in Firebase Console:
+1. Go to https://console.firebase.google.com
+2. Select your project
+3. Navigate to **Firestore Database** → **Indexes** tab
+
+Or use this direct link (replace `YOUR_PROJECT_ID` with your actual Firebase project ID):
 👉 https://console.firebase.google.com/project/YOUR_PROJECT_ID/firestore/indexes
 
 ---

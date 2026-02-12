@@ -42,6 +42,8 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
           echo "🔥 Deploying Firestore indexes to ${{ inputs.environment }}..."
+          # Note: If you have multiple Firebase projects configured in .firebaserc,
+          # add --project flag: firebase deploy --only firestore:indexes --project ${{ inputs.environment }} --token "$FIREBASE_TOKEN"
           firebase deploy --only firestore:indexes --token "$FIREBASE_TOKEN"
           
       - name: ✅ Deployment Complete
