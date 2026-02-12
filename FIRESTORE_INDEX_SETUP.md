@@ -1,5 +1,41 @@
 # Firestore Index Setup Guide
 
+## ⚠️ CRITICAL: Avoid the `__name__` Field Issue
+
+**Before creating indexes manually in Firebase Console:**
+
+When you create a Firestore composite index through the Firebase Console UI, it **automatically adds a `__name__` field** to your index. This extra field causes queries to fail in the app.
+
+**❌ DO NOT** create indexes with the `__name__` field  
+**✅ USE** the deployment script (recommended) or manually remove `__name__` before creating
+
+👉 **See [FIRESTORE_INDEX_TROUBLESHOOTING.md](FIRESTORE_INDEX_TROUBLESHOOTING.md) for detailed troubleshooting**
+
+---
+
+## Quick Fix: Deploy All Indexes Automatically
+
+**Fastest and safest method to set up all required indexes:**
+
+```bash
+# Run from project root directory
+./scripts/deploy-firestore-indexes.sh
+```
+
+This script will:
+- ✅ Check Firebase CLI installation
+- ✅ Validate configuration files
+- ✅ Deploy all indexes correctly (without `__name__` field)
+- ✅ Provide clear status messages
+
+**Time:** 2-10 minutes depending on database size
+
+**Requirements:**
+- Firebase CLI: `npm install -g firebase-tools`
+- Firebase authentication: `firebase login`
+
+---
+
 ## Overview
 
 This application uses Firestore composite indexes to efficiently query loads by multiple fields. This guide explains how to create and maintain these indexes.
@@ -53,14 +89,60 @@ This application uses Firestore composite indexes to efficiently query loads by 
 
 ## How to Create Indexes
 
-### Method 1: Automatic Creation from Error
+### ⭐ Method 1: Use the Deployment Script (Recommended)
+
+**This is the fastest and most reliable method.**
+
+```bash
+# Run from project root directory
+./scripts/deploy-firestore-indexes.sh
+```
+
+**Advantages:**
+- ✅ Deploys all indexes correctly from `firestore.indexes.json`
+- ✅ No manual configuration needed
+- ✅ Prevents the `__name__` field issue automatically
+- ✅ Version controlled and reproducible
+- ✅ Works for all team members
+
+**Steps:**
+1. Install Firebase CLI (if not already installed):
+   ```bash
+   npm install -g firebase-tools
+   ```
+
+2. Login to Firebase:
+   ```bash
+   firebase login
+   ```
+
+3. Run the deployment script:
+   ```bash
+   ./scripts/deploy-firestore-indexes.sh
+   ```
+
+4. Wait for indexes to build (typically 2-10 minutes)
+
+5. Verify in Firebase Console → Firestore → Indexes tab
+
+**Time:** 2-10 minutes depending on database size
+
+---
+
+### Method 2: Automatic Creation from Error
+
+⚠️ **Warning:** This method may auto-include the `__name__` field. Use Method 1 (deployment script) if possible.
 
 1. Run the app and trigger the query that needs the index
 2. Firestore will throw an error with a direct link to create the index
 3. Click the link in the error message
 4. Firebase Console will open with the index pre-configured
-5. Click "Create Index" button
-6. Wait 2-5 minutes for the index to build
+5. **IMPORTANT:** Check if a `__name__` field was auto-added
+   - If present, either:
+     - Remove it before creating (click the X next to the field)
+     - OR use Method 1 (deployment script) instead
+6. Click "Create Index" button
+7. Wait 2-5 minutes for the index to build
 
 **Example Error Message**:
 ```
@@ -68,7 +150,11 @@ The query requires an index. You can create it here:
 https://console.firebase.google.com/project/YOUR_PROJECT/firestore/indexes?create_composite=...
 ```
 
-### Method 2: Manual Creation in Firebase Console
+---
+
+### Method 3: Manual Creation in Firebase Console
+
+⚠️ **Warning:** Firebase Console auto-adds a `__name__` field. You must manually remove it.
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
 2. Select your project
@@ -80,11 +166,22 @@ https://console.firebase.google.com/project/YOUR_PROJECT/firestore/indexes?creat
      - Add field: `driverId`, Order: `Ascending`
      - Add field: `status`, Order: `Ascending`
      - Add field: `createdAt`, Order: `Descending`
+   - ⚠️ **REMOVE the `__name__` field if it appears** (click the X button)
    - **Query scope**: `Collection`
 6. Click **Create** button
 7. Wait for index to build (status will change from "Building" to "Enabled")
 
-### Method 3: Deploy from Configuration File
+**Important Notes:**
+- Firebase Console automatically adds a `__name__` field to composite indexes
+- This field causes queries to fail in the app
+- Always verify and remove the `__name__` field before creating the index
+- If you forget to remove it, see [FIRESTORE_INDEX_TROUBLESHOOTING.md](FIRESTORE_INDEX_TROUBLESHOOTING.md) for how to fix it
+
+---
+
+### Method 4: Deploy from Configuration File (Advanced)
+
+This method is similar to Method 1 but uses Firebase CLI commands directly.
 
 This project includes index definitions in `firestore.indexes.json`. Deploy them using:
 
@@ -99,20 +196,32 @@ firebase login
 firebase deploy --only firestore:indexes
 ```
 
-**Note**: This method requires Firebase CLI and proper project configuration.
+**Note**: This method requires Firebase CLI and proper project configuration. The deployment script (Method 1) wraps these commands with helpful checks and messages.
 
 ## Troubleshooting
+
+### 📖 Comprehensive Troubleshooting Guide
+
+For detailed troubleshooting, including the `__name__` field issue, see:
+👉 **[FIRESTORE_INDEX_TROUBLESHOOTING.md](FIRESTORE_INDEX_TROUBLESHOOTING.md)**
+
+### Quick Troubleshooting
 
 ### Index Error in App
 
 **Symptom**: App shows "Firestore Index Required" error when filtering loads
 
-**Solution**:
-1. Check the app logs (debug console) for the exact index URL
-2. Click the URL or follow Method 2 above
-3. Create the missing index
+**Quick Solutions**:
+1. **Use the deployment script** (fastest):
+   ```bash
+   ./scripts/deploy-firestore-indexes.sh
+   ```
+2. Check the app logs for the index creation URL
+3. Click the URL, but verify no `__name__` field was added
 4. Wait for index to build
-5. Tap "Retry" in the app
+5. Retry the query
+
+👉 **Detailed steps:** [FIRESTORE_INDEX_TROUBLESHOOTING.md#common-issue-__name__-field-problem](FIRESTORE_INDEX_TROUBLESHOOTING.md#common-issue-__name__-field-problem)
 
 ### Index Build Time
 
@@ -128,6 +237,9 @@ firebase deploy --only firestore:indexes
 - The index is already created and may still be building
 - Check the Indexes tab for status
 - If status is "Error", delete and recreate the index
+- If index has `__name__` field, delete it and use the deployment script
+
+👉 **Detailed steps:** [FIRESTORE_INDEX_TROUBLESHOOTING.md#deleting-incorrect-indexes](FIRESTORE_INDEX_TROUBLESHOOTING.md#deleting-incorrect-indexes)
 
 ### Query Still Failing After Index Creation
 

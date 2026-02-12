@@ -235,16 +235,61 @@ We provide automation scripts in `scripts/` to streamline iOS development:
 - Flutter SDK (>=3.0.0 <4.0.0)
 - Xcode (for iOS development)
 - Android Studio (for Android development)
+- Firebase CLI (`npm install -g firebase-tools`) - Required for Firestore indexes
 
-### Installation
+### Initial Setup
+
+**⚠️ IMPORTANT: Complete these steps BEFORE running the app for the first time**
+
+#### 1. Clone and Install Dependencies
+
 ```bash
 # Clone the repository
 git clone https://github.com/dukens11-create/gud.git
 
-# Install dependencies
-flutter pub get
+# Navigate to project directory
+cd gud
 
+# Install Flutter dependencies
+flutter pub get
+```
+
+#### 2. Deploy Firestore Indexes (Required)
+
+Firestore indexes must be deployed before the app can query data properly. Without these indexes, you'll see "Index Required" errors.
+
+```bash
+# Install Firebase CLI (if not already installed)
+npm install -g firebase-tools
+
+# Login to Firebase
+firebase login
+
+# Deploy all required indexes
+./scripts/deploy-firestore-indexes.sh
+```
+
+**What this does:**
+- Deploys all composite indexes needed by the app
+- Prevents the common `__name__` field issue
+- Takes 2-10 minutes depending on database size
+
+**Troubleshooting:** If you encounter issues, see [FIRESTORE_INDEX_TROUBLESHOOTING.md](FIRESTORE_INDEX_TROUBLESHOOTING.md)
+
+**Learn more:** See [FIRESTORE_INDEX_SETUP.md](FIRESTORE_INDEX_SETUP.md) for detailed documentation
+
+#### 3. Run the App
+
+```bash
 # Run the app
+flutter run
+```
+
+### Quick Start (After Initial Setup)
+
+For subsequent runs, you only need:
+
+```bash
 flutter run
 ```
 
