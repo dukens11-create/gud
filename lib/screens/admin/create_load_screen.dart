@@ -55,23 +55,87 @@ class _CreateLoadScreenState extends State<CreateLoadScreen> {
       final currentUser = FirebaseAuth.instance.currentUser;
       final createdBy = currentUser?.uid ?? kOfflineUserId;
 
+      // Additional validation: Check for duplicate load number
+      final loadNumber = _loadNumberController.text.trim();
+      final isDuplicate = await _firestoreService.loadNumberExists(loadNumber);
+      if (isDuplicate) {
+        if (mounted) {
+          NavigationService.showError(
+            'Load number $loadNumber already exists. Please use a different number.'
+          );
+          setState(() => _isSaving = false);
+        }
+        return;
+      }
+
+      // Additional validation: Verify driver is valid and active
+      final isValidDriver = await _firestoreService.isDriverValid(_selectedDriverId!);
+      if (!isValidDriver) {
+        if (mounted) {
+          NavigationService.showError(
+            'Selected driver is not available. Please choose another driver.'
+          );
+          setState(() => _isSaving = false);
+        }
+        return;
+      }
+
+      // Check driver's current workload
+      final activeLoadCount = await _firestoreService.getDriverActiveLoadCount(_selectedDriverId!);
+      if (activeLoadCount >= 5) {
+        if (mounted) {
+          final proceed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Driver Has Multiple Active Loads'),
+              content: Text(
+                'This driver currently has $activeLoadCount active load(s). '
+                'Are you sure you want to assign another load?'
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Proceed Anyway'),
+                ),
+              ],
+            ),
+          );
+          
+          if (proceed != true) {
+            setState(() => _isSaving = false);
+            return;
+          }
+        }
+      }
+
       await _firestoreService.createLoad(
-        loadNumber: _loadNumberController.text,
+        loadNumber: loadNumber,
         driverId: _selectedDriverId!,
         driverName: _selectedDriverName!,
-        pickupAddress: _pickupAddressController.text,
-        deliveryAddress: _deliveryAddressController.text,
+        pickupAddress: _pickupAddressController.text.trim(),
+        deliveryAddress: _deliveryAddressController.text.trim(),
         rate: double.parse(_rateController.text),
         miles: _milesController.text.isNotEmpty 
             ? double.parse(_milesController.text) 
             : null,
-        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+        notes: _notesController.text.isNotEmpty ? _notesController.text.trim() : null,
         createdBy: createdBy,
       );
 
       if (mounted) {
-        NavigationService.showSuccess('Load created successfully');
+        NavigationService.showSuccess(
+          'Load $loadNumber created and assigned to $_selectedDriverName'
+        );
         Navigator.pop(context);
+      }
+    } on ArgumentError catch (e) {
+      // Handle validation errors from createLoad
+      if (mounted) {
+        NavigationService.showError(e.message);
       }
     } catch (e) {
       if (mounted) {

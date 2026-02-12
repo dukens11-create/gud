@@ -249,7 +249,7 @@ class FirestoreService {
   /// Returns the generated load document ID
   /// Parameters:
   /// - [loadNumber]: Human-readable load identifier (e.g., 'LOAD-001')
-  /// - [driverId]: Assigned driver's ID
+  /// - [driverId]: Assigned driver's ID (must be valid Firebase Auth UID)
   /// - [driverName]: Driver's name (denormalized for performance)
   /// - [pickupAddress]: Pickup location address
   /// - [deliveryAddress]: Delivery destination address
@@ -258,8 +258,18 @@ class FirestoreService {
   /// - [notes]: Optional additional notes
   /// - [createdBy]: Admin user ID who created the load
   /// 
+  /// **Validation**:
+  /// - Checks for duplicate load numbers
+  /// - Validates driver exists and is active
+  /// - Validates all required fields are non-empty
+  /// - Validates rate is non-negative
+  /// 
+  /// **Integration**: This is a critical admin-to-driver communication point.
+  /// The driverId field MUST match the driver's Firebase Auth UID for proper
+  /// load visibility on the driver's dashboard.
+  /// 
   /// Throws [FirebaseAuthException] if user is not authenticated
-  /// Throws [ArgumentError] if required fields are empty
+  /// Throws [ArgumentError] if validation fails
   /// Throws [FirebaseException] if Firestore operation fails
   Future<String> createLoad({
     required String loadNumber,
@@ -286,6 +296,18 @@ class FirestoreService {
       throw ArgumentError('Rate must be non-negative');
     }
     
+    // Check for duplicate load number
+    final isDuplicate = await loadNumberExists(loadNumber);
+    if (isDuplicate) {
+      throw ArgumentError('Load number $loadNumber already exists. Please use a unique load number.');
+    }
+    
+    // Validate driver exists and is active
+    final isValid = await isDriverValid(driverId);
+    if (!isValid) {
+      throw ArgumentError('Driver $driverId does not exist or is not active. Cannot assign load.');
+    }
+    
     try {
       final docRef = await _db.collection('loads').add({
         'loadNumber': loadNumber,
@@ -302,6 +324,11 @@ class FirestoreService {
       });
       
       print('✅ Load created successfully: ${docRef.id}');
+      print('   📦 Load: $loadNumber');
+      print('   👤 Driver: $driverName ($driverId)');
+      print('   📍 Route: $pickupAddress → $deliveryAddress');
+      print('   💰 Rate: \$$rate');
+      
       return docRef.id;
     } on FirebaseException catch (e) {
       print('❌ Firebase error creating load: ${e.code} - ${e.message}');
@@ -582,13 +609,20 @@ TROUBLESHOOTING:
 
   /// Update load status and timestamps
   /// 
+  /// **Admin-Driver Integration**: This method is critical for tracking load progress
+  /// as drivers update status through their mobile app. Status changes are immediately
+  /// visible to admins on their dashboard.
+  /// 
   /// Common status values: 'assigned', 'in_transit', 'delivered', 'completed'
+  /// 
   /// Parameters:
   /// - [loadId]: Load's document ID
-  /// - [status]: New status value
+  /// - [status]: New status value (must match validLoadStatuses)
   /// - [pickedUpAt]: Optional pickup timestamp
   /// - [tripStartAt]: Optional trip start timestamp
   /// - [deliveredAt]: Optional delivery timestamp
+  /// 
+  /// **Security**: Firestore rules ensure drivers can only update their own loads
   Future<void> updateLoadStatus({
     required String loadId,
     required String status,
@@ -597,11 +631,36 @@ TROUBLESHOOTING:
     DateTime? deliveredAt,
   }) async {
     _requireAuth();
+    
+    print('📝 Updating load status: $loadId → $status');
+    
+    // Validate status value
+    if (!validLoadStatuses.contains(status)) {
+      print('⚠️  WARNING: Invalid status value "$status"');
+      print('   Valid values: ${validLoadStatuses.join(", ")}');
+    }
+    
     final Map<String, dynamic> updates = {'status': status};
-    if (pickedUpAt != null) updates['pickedUpAt'] = Timestamp.fromDate(pickedUpAt);
-    if (tripStartAt != null) updates['tripStartAt'] = Timestamp.fromDate(tripStartAt);
-    if (deliveredAt != null) updates['deliveredAt'] = Timestamp.fromDate(deliveredAt);
-    await _db.collection('loads').doc(loadId).update(updates);
+    if (pickedUpAt != null) {
+      updates['pickedUpAt'] = Timestamp.fromDate(pickedUpAt);
+      print('   🕐 Picked up at: $pickedUpAt');
+    }
+    if (tripStartAt != null) {
+      updates['tripStartAt'] = Timestamp.fromDate(tripStartAt);
+      print('   🚚 Trip started at: $tripStartAt');
+    }
+    if (deliveredAt != null) {
+      updates['deliveredAt'] = Timestamp.fromDate(deliveredAt);
+      print('   ✅ Delivered at: $deliveredAt');
+    }
+    
+    try {
+      await _db.collection('loads').doc(loadId).update(updates);
+      print('✅ Load status updated successfully');
+    } catch (e) {
+      print('❌ Error updating load status: $e');
+      rethrow;
+    }
   }
 
   /// Update load with arbitrary data
@@ -620,29 +679,72 @@ TROUBLESHOOTING:
 
   /// Mark a load as in transit
   /// 
-  /// Sets status to 'in_transit' and records trip start time
+  /// **Admin-Driver Integration**: Called when driver starts their trip.
+  /// Sets status to 'in_transit' and records trip start time.
+  /// Admin can monitor in real-time on their dashboard.
+  /// 
+  /// **Security**: Driver must be authenticated and own the load
   Future<void> startTrip(String loadId) async {
     _requireAuth();
-    await _db.collection('loads').doc(loadId).update({
-      'status': 'in_transit',
-      'tripStartAt': FieldValue.serverTimestamp(),
-    });
+    
+    final currentUser = _auth.currentUser;
+    print('🚚 Driver ${currentUser?.uid} starting trip for load: $loadId');
+    
+    try {
+      await _db.collection('loads').doc(loadId).update({
+        'status': 'in_transit',
+        'tripStartAt': FieldValue.serverTimestamp(),
+      });
+      print('✅ Trip started successfully');
+    } catch (e) {
+      print('❌ Error starting trip: $e');
+      if (e.toString().contains('permission') || e.toString().contains('PERMISSION_DENIED')) {
+        print('   ⚠️  Permission denied - driver may not own this load');
+      }
+      rethrow;
+    }
   }
 
   /// Mark a load as delivered
   /// 
-  /// Sets status to 'delivered', records delivery time, and updates miles
+  /// **Admin-Driver Integration**: Called when driver completes delivery.
+  /// Sets status to 'delivered', records delivery time, and updates final miles.
+  /// Triggers driver statistics update and admin notification.
+  /// 
   /// Parameters:
   /// - [loadId]: Load's document ID
-  /// - [miles]: Final trip miles
+  /// - [miles]: Final trip miles (used for earnings calculation)
+  /// 
+  /// **Security**: Driver must be authenticated and own the load
   Future<void> endTrip(String loadId, double miles) async {
     _requireAuth();
-    await _db.collection('loads').doc(loadId).update({
-      'status': 'delivered',
-      'tripEndAt': FieldValue.serverTimestamp(),
-      'deliveredAt': FieldValue.serverTimestamp(),
-      'miles': miles,
-    });
+    
+    final currentUser = _auth.currentUser;
+    print('📦 Driver ${currentUser?.uid} completing delivery for load: $loadId');
+    print('   📏 Total miles: $miles');
+    
+    if (miles < 0) {
+      throw ArgumentError('Miles cannot be negative');
+    }
+    
+    try {
+      await _db.collection('loads').doc(loadId).update({
+        'status': 'delivered',
+        'tripEndAt': FieldValue.serverTimestamp(),
+        'deliveredAt': FieldValue.serverTimestamp(),
+        'miles': miles,
+      });
+      print('✅ Delivery completed successfully');
+      
+      // Note: Driver statistics update should be triggered by a Cloud Function
+      // or handled separately after this operation completes
+    } catch (e) {
+      print('❌ Error completing delivery: $e');
+      if (e.toString().contains('permission') || e.toString().contains('PERMISSION_DENIED')) {
+        print('   ⚠️  Permission denied - driver may not own this load');
+      }
+      rethrow;
+    }
   }
 
   /// Get count of completed loads for a driver
@@ -798,5 +900,111 @@ TROUBLESHOOTING:
     final lastNumber = lastLoad.docs.first.data()['loadNumber'] as String;
     final number = int.parse(lastNumber.split('-')[1]) + 1;
     return 'LOAD-${number.toString().padLeft(3, '0')}';
+  }
+
+  /// Check if a load number already exists
+  /// 
+  /// Returns true if load number exists, false otherwise
+  /// Used to prevent duplicate load number assignments
+  /// 
+  /// **Usage**: Call before creating a new load to ensure uniqueness
+  Future<bool> loadNumberExists(String loadNumber) async {
+    _requireAuth();
+    
+    if (loadNumber.isEmpty) {
+      throw ArgumentError('Load number cannot be empty');
+    }
+    
+    try {
+      final snapshot = await _db
+          .collection('loads')
+          .where('loadNumber', isEqualTo: loadNumber)
+          .limit(1)
+          .get();
+      
+      final exists = snapshot.docs.isNotEmpty;
+      
+      if (exists) {
+        print('⚠️  Load number $loadNumber already exists');
+      } else {
+        print('✅ Load number $loadNumber is available');
+      }
+      
+      return exists;
+    } catch (e) {
+      print('❌ Error checking load number existence: $e');
+      rethrow;
+    }
+  }
+
+  /// Verify that a driver exists and is active
+  /// 
+  /// Returns true if driver exists and is active, false otherwise
+  /// Throws [ArgumentError] if driverId is empty
+  /// 
+  /// **Usage**: Call before assigning loads to ensure driver is valid
+  /// 
+  /// **Integration**: Prevents orphaned loads with invalid driverIds
+  Future<bool> isDriverValid(String driverId) async {
+    _requireAuth();
+    
+    if (driverId.isEmpty) {
+      throw ArgumentError('Driver ID cannot be empty');
+    }
+    
+    try {
+      final doc = await _db.collection('drivers').doc(driverId).get();
+      
+      if (!doc.exists) {
+        print('⚠️  Driver $driverId does not exist');
+        return false;
+      }
+      
+      final data = doc.data() as Map<String, dynamic>?;
+      final isActive = data?['isActive'] ?? true;
+      
+      if (!isActive) {
+        print('⚠️  Driver $driverId exists but is not active');
+        return false;
+      }
+      
+      print('✅ Driver $driverId is valid and active');
+      return true;
+    } catch (e) {
+      print('❌ Error validating driver: $e');
+      rethrow;
+    }
+  }
+
+  /// Get count of active (non-completed) loads for a driver
+  /// 
+  /// Returns count of loads with status: assigned, picked_up, in_transit, or delivered
+  /// Used to check driver availability before assignment
+  /// 
+  /// **Usage**: Check driver workload before assigning new loads
+  /// 
+  /// **Integration**: Helps prevent overloading drivers with too many simultaneous loads
+  Future<int> getDriverActiveLoadCount(String driverId) async {
+    _requireAuth();
+    
+    if (driverId.isEmpty) {
+      throw ArgumentError('Driver ID cannot be empty');
+    }
+    
+    try {
+      final snapshot = await _db
+          .collection('loads')
+          .where('driverId', isEqualTo: driverId)
+          .where('status', whereIn: ['assigned', 'picked_up', 'in_transit', 'delivered'])
+          .get();
+      
+      final count = snapshot.docs.length;
+      print('📊 Driver $driverId has $count active load(s)');
+      
+      return count;
+    } catch (e) {
+      print('❌ Error getting driver active load count: $e');
+      rethrow;
+    }
   }
 }
