@@ -96,6 +96,7 @@ If you need to check or manage indexes manually:
 - **Web**: Firebase hosting deployment
 
 ## Quick Links
+- [iOS Code Signing Setup Guide](docs/ios_codesign_setup.md) - **Complete iOS code signing guide for all contributors**
 - [iOS Code Signing Quick Setup](IOS_CODE_SIGNING_QUICK_SETUP.md) - 5-minute setup guide
 - [iOS Local Build Guide](IOS_LOCAL_BUILD_GUIDE.md) - Complete local development guide
 - [iOS Build & Deploy Guide](IOS_BUILD_AND_DEPLOY_GUIDE.md) - CI/CD and App Store
@@ -125,6 +126,15 @@ flutter run
 ## Deployment
 
 ### iOS
+
+#### Code Signing Setup
+**All contributors must configure iOS code signing to build for devices.**  
+See [iOS Code Signing Setup Guide](docs/ios_codesign_setup.md) for complete instructions on:
+- Opening the project in Xcode
+- Configuring your Development Team
+- Setting up automatic or manual signing
+- Troubleshooting common issues
+- CI/CD automation requirements
 
 #### Local Development
 For building and testing on your Mac:
