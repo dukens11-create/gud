@@ -35,6 +35,22 @@ This application uses Firestore composite indexes to efficiently query loads by 
 - Driver Home Screen - "All" status tab
 - Query: `FirebaseFirestore.instance.collection('loads').where('driverId', isEqualTo: driverId).orderBy('createdAt', descending: true)`
 
+### 3. Document Verification (Collection Group)
+
+**Purpose**: Get all pending documents across all drivers for admin verification
+
+**Index Configuration**:
+- Collection Group: `documents`
+- Query Scope: `COLLECTION_GROUP`
+- Fields (in order):
+  1. `status` (Ascending)
+
+**Used by**: 
+- Admin Document Verification Screen
+- Query: `FirebaseFirestore.instance.collectionGroup('documents').where('status', isEqualTo: 'pending')`
+
+**Note**: This is a **collection group query** that searches across all subcollections named `documents` (e.g., `/drivers/{driverId}/documents/{docId}`). Collection group queries require `queryScope: "COLLECTION_GROUP"` in the index configuration.
+
 ## How to Create Indexes
 
 ### Method 1: Automatic Creation from Error
@@ -188,6 +204,19 @@ FirebaseFirestore.instance
 - Inequality operators (`!=`, `<`, `>`) require the inequality field to be first in the index
 - This would conflict with sorting by `truckNumber`
 - Using `whereIn` with explicit status values works with standard composite indexes
+
+### Get Pending Documents Across All Drivers (Collection Group Query)
+
+```dart
+FirebaseFirestore.instance
+  .collectionGroup('documents')
+  .where('status', isEqualTo: 'pending')
+  .snapshots();
+```
+
+**Required Index**: `status` (Asc) with `queryScope: "COLLECTION_GROUP"`
+
+**Note**: Collection group queries search across all subcollections with the same name (e.g., all `documents` subcollections under different driver documents). These require special indexes with `queryScope: "COLLECTION_GROUP"` instead of `queryScope: "COLLECTION"`.
 
 ## Additional Resources
 
