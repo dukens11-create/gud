@@ -60,7 +60,7 @@ class _DriverPerformanceDashboardState
         // Firebase error messages often contain URLs wrapped in quotes or parentheses
         // The regex captures the URL but stops at common terminators
         final urlPattern = RegExp(
-          r'https://console\.firebase\.google\.com/[^\s\)\]\"\'\,]+',
+          r"https://console\.firebase\.google\.com/[^\s\)\]"'\,]+",
           caseSensitive: true,
         );
         final urlMatch = urlPattern.firstMatch(errorMsg);
