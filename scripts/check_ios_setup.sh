@@ -144,15 +144,20 @@ if [[ "$OSTYPE" == "darwin"* ]] && command -v xcodebuild &> /dev/null; then
     # Check Team ID in project
     if [ -f "ios/Runner.xcodeproj/project.pbxproj" ]; then
         if grep -q "DEVELOPMENT_TEAM" ios/Runner.xcodeproj/project.pbxproj; then
-            TEAM_ID=$(grep "DEVELOPMENT_TEAM" ios/Runner.xcodeproj/project.pbxproj | head -1 | awk '{print $3}' | tr -d ';')
-            if [ "$TEAM_ID" != "" ]; then
+            TEAM_ID=$(grep "DEVELOPMENT_TEAM" ios/Runner.xcodeproj/project.pbxproj | head -1 | awk '{print $3}' | tr -d ';' | tr -d '"')
+            if [ "$TEAM_ID" != "" ] && [ "$TEAM_ID" != '""' ]; then
                 echo -e "   ${GREEN}✓${NC} Development Team configured: $TEAM_ID"
             else
                 echo -e "   ${YELLOW}⚠${NC} Development Team not set"
+                echo "   To configure: ./scripts/configure_team.sh"
+                echo "   Or manually in Xcode: Runner target → Signing & Capabilities → Team"
+                ISSUES_FOUND=$((ISSUES_FOUND + 1))
             fi
         else
             echo -e "   ${YELLOW}⚠${NC} Development Team not configured"
             echo "   Run: ./scripts/configure_team.sh"
+            echo "   Or set manually in Xcode"
+            ISSUES_FOUND=$((ISSUES_FOUND + 1))
         fi
     fi
     echo ""
@@ -221,10 +226,20 @@ if [ $ISSUES_FOUND -eq 0 ]; then
     echo ""
     echo "You can now:"
     echo "  • Build for simulator: ./scripts/build_ios_simulator.sh"
-    echo "  • Build for device: ./scripts/build_ios_device.sh"
+    echo "  • Build for device: ./scripts/build_ios_device.sh (requires code signing)"
     echo "  • Configure team: ./scripts/configure_team.sh"
     echo ""
-    echo "For more info, see: IOS_LOCAL_BUILD_GUIDE.md"
+    echo -e "${BLUE}Next Steps for First-Time iOS Builds:${NC}"
+    echo "  1. Open Xcode: cd ios && open Runner.xcworkspace"
+    echo "  2. Select Runner target → Signing & Capabilities"
+    echo "  3. Enable 'Automatically manage signing'"
+    echo "  4. Select your Development Team from dropdown"
+    echo "  5. Xcode will create provisioning profiles automatically"
+    echo ""
+    echo "📖 Documentation:"
+    echo "  • Quick setup: docs/ios_codesign_setup.md"
+    echo "  • Local builds: IOS_LOCAL_BUILD_GUIDE.md"
+    echo "  • CI/CD setup: IOS_BUILD_AND_DEPLOY_GUIDE.md"
 else
     echo -e "${YELLOW}⚠ Found $ISSUES_FOUND issue(s)${NC}"
     echo ""
@@ -235,7 +250,8 @@ else
     echo "  • Install Flutter: https://docs.flutter.dev/get-started/install"
     echo "  • Install CocoaPods: sudo gem install cocoapods"
     echo "  • Run: flutter pub get && cd ios && pod install"
+    echo "  • Configure team: ./scripts/configure_team.sh"
     echo ""
-    echo "For detailed setup, see: IOS_LOCAL_BUILD_GUIDE.md"
+    echo "📖 For detailed setup, see: docs/ios_codesign_setup.md"
 fi
 echo "=========================================="

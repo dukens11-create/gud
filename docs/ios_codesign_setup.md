@@ -79,25 +79,127 @@ The workspace (`.xcworkspace`) includes CocoaPods dependencies and proper config
 
 ## Setting Up Your Development Team
 
+This section provides detailed visual guidance for configuring code signing in Xcode.
+
 ### Step 1: Select the Runner Target
 
-1. In Xcode's Project Navigator (left sidebar), click on the **Runner** project (blue icon at the top)
-2. In the main editor area, select the **Runner** target under **TARGETS**
-3. Click the **Signing & Capabilities** tab at the top
+**Visual Guide:**
+
+1. **Open Xcode** and ensure you've opened `Runner.xcworkspace` (not `.xcodeproj`)
+   
+2. **Project Navigator (Left Sidebar)**:
+   - Look for the left sidebar with a folder icon at the top
+   - You'll see a blue "Runner" icon at the very top
+   - Click on this blue Runner icon
+   
+3. **Main Editor Area (Center)**:
+   - After clicking Runner in the sidebar, the main area shows project settings
+   - You'll see two sections: PROJECT and TARGETS
+   - Under TARGETS, click on "Runner" (should have an app icon)
+   - You should now see several tabs: General, Signing & Capabilities, Resource Tags, Info, Build Settings, Build Phases, Build Rules
+   
+4. **Signing & Capabilities Tab**:
+   - Click the "Signing & Capabilities" tab (second tab)
+   - This tab has two main sections:
+     - **Signing (Debug)** - for development builds
+     - **Signing (Release)** - for production builds
+
+**What You Should See:**
+- Top of the screen: Tabs starting with "General", "Signing & Capabilities"...
+- Main area: "Signing & Capabilities" header with Debug/Release configuration selector
+- A checkbox labeled "Automatically manage signing"
+- A "Team" dropdown menu
+- Status indicators for Signing Certificate and Provisioning Profile
+
+---
 
 ### Step 2: Enable Automatic Signing
 
-1. Check the box for **✓ Automatically manage signing**
-2. From the **Team** dropdown, select your Development Team
-   - If no team appears, you need to add your Apple ID first (see next section)
+**Visual Guide:**
+
+1. **Locate the Checkbox**:
+   - In the Signing (Debug) section, find the checkbox labeled "Automatically manage signing"
+   - It's near the top of the signing configuration
+
+2. **Enable Automatic Signing**:
+   - Click the checkbox to enable it (check mark should appear: ✓)
+   - Xcode may prompt you to select a team if not already configured
+
+3. **Select Your Team**:
+   - Below the checkbox, find the "Team" dropdown menu
+   - Click the dropdown to see available teams
+   - **What you'll see in the dropdown**:
+     - Your Personal Team (if using free Apple ID): Shows as "Your Name (Personal Team)"
+     - Developer Program Team (if enrolled): Shows as "Organization Name" or your name with Team ID
+     - "Add an Account..." option at the bottom
+   
+4. **If No Team Appears**:
+   - Select "Add an Account..." from the dropdown
+   - This opens Xcode Preferences → Accounts
+   - See [Logging into Xcode with Your Apple ID](#logging-into-xcode-with-your-apple-id) section below
+
+**Important Notes:**
+- The "Team" dropdown only appears when "Automatically manage signing" is enabled
+- Different teams may have different capabilities and restrictions
+- Personal Teams have limitations (3 device limit, 7-day certificate validity)
+
+---
 
 ### Step 3: Verify Signing Status
 
-Once configured, you should see:
-- ✅ **Signing Certificate**: Apple Development
-- ✅ **Provisioning Profile**: Xcode Managed Profile
+**Visual Guide:**
 
-If you see any errors or warnings, refer to the [Troubleshooting](#troubleshooting) section.
+Once you've selected a team, Xcode automatically configures code signing. Look for these indicators:
+
+1. **Success Indicators** (What you want to see):
+   
+   **Signing (Debug) section:**
+   - ✅ Green checkmark or no error icon
+   - **Signing Certificate**: Shows "Apple Development" with your name
+     - Example: "Apple Development: john@example.com (ABC123XYZ)"
+   - **Provisioning Profile**: Shows "iOS Team Provisioning Profile: com.gudexpress.app"
+     - Or: "Xcode Managed Profile"
+   - **Bundle Identifier**: Shows "com.gudexpress.app" (or your custom ID)
+   
+   **Signing (Release) section:**
+   - Should show similar information
+   - May show "Apple Development" or "Apple Distribution" depending on configuration
+
+2. **Warning/Error Indicators** (What requires attention):
+   
+   ⚠️ **Yellow Triangle Warning**:
+   - Usually appears with a message like "Provisioning profile doesn't include signing certificate"
+   - **Fix**: Wait a few seconds for Xcode to download/create profiles automatically
+   - If persists, try unchecking and rechecking "Automatically manage signing"
+   
+   ❌ **Red Error Icon**:
+   - Common messages:
+     - "No signing certificate found"
+     - "Failed to register bundle identifier"
+     - "No profiles for 'bundle.id' were found"
+   - **Fix**: See [Troubleshooting](#troubleshooting) section for specific error solutions
+   
+   📱 **"Signing for 'Runner' requires a development team"**:
+   - Means no team is selected
+   - **Fix**: Select a team from the dropdown
+
+3. **Visual Differences Between Automatic and Manual Signing**:
+   
+   **Automatic Signing** (Checkbox enabled):
+   - Xcode manages everything
+   - "Team" dropdown is active
+   - Provisioning Profile shows "Xcode Managed Profile"
+   - You cannot manually select profiles
+   
+   **Manual Signing** (Checkbox disabled):
+   - You control certificate and profile selection
+   - Additional dropdowns appear:
+     - "Provisioning Profile" dropdown (Debug)
+     - "Provisioning Profile" dropdown (Release)
+   - You must manually download and select profiles
+   - More complex but offers more control
+
+**Recommendation**: Use Automatic Signing for local development. Manual signing is typically only needed for CI/CD systems.
 
 ---
 
@@ -252,7 +354,15 @@ Your device should now show:
 
 ## Troubleshooting
 
+This section provides solutions to common iOS code signing issues. If you don't find your issue here, see [Additional Resources](#additional-resources) for more help.
+
+---
+
 ### Problem: "No Signing Certificate Found"
+
+**Symptoms:**
+- Cannot select a certificate in Signing & Capabilities
+- Error: "No signing certificate found"
 
 **Solution:**
 1. Go to **Xcode → Preferences → Accounts**
@@ -260,6 +370,16 @@ Your device should now show:
 3. Click **Manage Certificates...**
 4. Click the **+** button and select **Apple Development**
 5. Close the dialog and try building again
+
+**Alternative Solution:**
+```bash
+# Regenerate certificates via command line
+cd ios
+rm -rf ~/Library/Developer/Xcode/DerivedData
+xcodebuild -workspace Runner.xcworkspace -scheme Runner clean
+```
+
+---
 
 ### Problem: "No Team Found"
 
@@ -331,12 +451,16 @@ For **Manual Signing:**
 
 ### Problem: Building Works in Xcode but Fails via Flutter Command
 
+**Symptoms:**
+- `flutter build ios` fails but building in Xcode succeeds
+- Command-line build shows signing errors
+
 **Solution:**
 ```bash
 # Clean Flutter build cache
 flutter clean
 
-# Clean iOS build folder
+# Clean iOS build folder and caches
 cd ios
 rm -rf Pods Podfile.lock
 rm -rf ~/Library/Developer/Xcode/DerivedData
@@ -348,8 +472,132 @@ cd ios
 pod install
 
 # Try building again
+cd ..
 flutter build ios
 ```
+
+**Additional Tips:**
+- Ensure you're using the same development team in both Xcode and command-line builds
+- Check that provisioning profiles are properly installed
+- Try building in Xcode first to ensure code signing is working
+
+### Problem: "Team Not Found in Keychain" or "No Profiles Found"
+
+**Symptoms:**
+- Error about missing provisioning profile
+- "No profiles for 'com.gudexpress.app' were found"
+
+**Solution 1 - Automatic Signing (Recommended):**
+1. In Xcode, go to Signing & Capabilities
+2. Check "Automatically manage signing"
+3. Select your team from dropdown
+4. Xcode will download/create profiles automatically
+
+**Solution 2 - Manual Profile Download:**
+1. Go to https://developer.apple.com/account
+2. Navigate to Certificates, Identifiers & Profiles
+3. Download the provisioning profile for your app
+4. Double-click to install it
+5. In Xcode, select it under Signing & Capabilities
+
+### Problem: "Signing for 'Runner' requires a development team"
+
+**Symptoms:**
+- Build fails with message about requiring development team
+- No team is selected in Xcode
+
+**Quick Fix:**
+```bash
+# Run the configure script
+./scripts/configure_team.sh
+```
+
+**Manual Fix:**
+1. Open `ios/Runner.xcworkspace` in Xcode
+2. Select Runner target
+3. Go to Signing & Capabilities
+4. Select a team from the Team dropdown
+5. Enable automatic signing if not already enabled
+
+### Problem: Multiple Matching Certificates/Profiles
+
+**Symptoms:**
+- Multiple certificates with same name
+- "Ambiguous certificate" warning
+- Build chooses wrong certificate
+
+**Solution:**
+1. In Xcode, go to Preferences → Accounts
+2. Select your Apple ID → Manage Certificates
+3. Delete old/expired certificates (keep only one valid Apple Development)
+4. In Finder, go to `~/Library/MobileDevice/Provisioning Profiles/`
+5. Delete all `.mobileprovision` files
+6. In Xcode, Signing & Capabilities, uncheck/recheck automatic signing
+7. Xcode will download fresh profiles
+
+### Problem: "The app ID cannot be registered to your development team"
+
+**Symptoms:**
+- Bundle ID error when enabling automatic signing
+- "App ID is not available" message
+
+**Solution:**
+The Bundle ID is already registered to another team or account.
+
+**Option 1 - Change Bundle ID (Recommended for Testing):**
+1. In Xcode, select Runner target → General tab
+2. Change Bundle Identifier to something unique:
+   - `com.yourname.gudexpress`
+   - `com.yourcompany.gud`
+3. Save and try signing again
+
+**Option 2 - Use Correct Team:**
+1. Ensure you're logged into the Apple ID that owns the Bundle ID
+2. Select the correct team in Signing & Capabilities
+
+### Problem: Build Fails with "Exit Code 65"
+
+**Symptoms:**
+- Build fails with generic "exit code 65"
+- No clear error message
+
+**Solution:**
+```bash
+# Clean everything
+flutter clean
+cd ios
+rm -rf Pods/ Podfile.lock
+rm -rf ~/Library/Developer/Xcode/DerivedData
+pod cache clean --all
+
+# Reinstall
+cd ..
+flutter pub get
+cd ios
+pod install --repo-update
+
+# Build with verbose output
+cd ..
+flutter build ios --verbose
+```
+
+**Check for:**
+- Outdated CocoaPods dependencies
+- Conflicting Xcode versions
+- Insufficient disk space
+
+### Problem: "Trust This Computer" Dialog Loops
+
+**Symptoms:**
+- Device keeps asking to "Trust This Computer"
+- Cannot deploy to device
+
+**Solution:**
+1. Disconnect device
+2. On device: Settings → General → Reset → Reset Location & Privacy
+3. Restart both Mac and iOS device
+4. Reconnect device and trust computer
+
 
 ### Problem: "Untrusted Developer" on Device
 
@@ -448,12 +696,213 @@ To build iOS apps, your CI/CD system needs:
 
 ### Alternative CI/CD Approaches
 
-1. **Fastlane Match**
-   - Stores certificates in encrypted Git repository
-   - Team members share same certificates
-   - Automatic syncing and renewal
+#### 1. Fastlane Match
+- Stores certificates in encrypted Git repository
+- Team members share same certificates
+- Automatic syncing and renewal
 
-2. **Manual Certificate Distribution**
+**Setup:**
+```bash
+# Install fastlane
+sudo gem install fastlane
+
+# Initialize match
+cd ios
+fastlane match init
+
+# Generate certificates (first time)
+fastlane match development
+fastlane match appstore
+
+# In CI, sync certificates
+fastlane match development readonly:true
+```
+
+**Pros:**
+- ✅ Team-wide certificate sharing
+- ✅ Automatic certificate renewal
+- ✅ Version controlled (encrypted)
+- ✅ Works with CI/CD systems
+
+**Cons:**
+- ⚠️ Requires separate Git repository
+- ⚠️ All team members must use same certificates
+
+#### 2. Manual Certificate Distribution
+- Administrator creates certificates
+- Securely distributes to team and CI
+- Requires periodic manual updates
+
+**Best for:**
+- Small teams
+- Infrequent releases
+- Tight security requirements
+
+#### 3. Cloud Build Services
+
+##### Codemagic
+Streamlined Flutter CI/CD with managed iOS signing.
+
+**Setup Steps:**
+1. Connect your repository to Codemagic
+2. In app settings, navigate to **Code signing identities**
+3. Upload your certificate (.p12) and password
+4. Upload provisioning profile (.mobileprovision)
+5. Codemagic automatically handles keychain setup
+
+**Configuration (codemagic.yaml):**
+```yaml
+workflows:
+  ios-workflow:
+    environment:
+      groups:
+        - ios_signing
+      vars:
+        BUNDLE_ID: "com.gudexpress.app"
+    scripts:
+      - name: Install dependencies
+        script: flutter pub get
+      - name: Build iOS
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=ios/ExportOptions.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+```
+
+**Pros:**
+- ✅ Managed code signing
+- ✅ Flutter-optimized
+- ✅ Automatic TestFlight upload
+- ✅ Easy team onboarding
+
+**Docs:** https://docs.codemagic.io/flutter-code-signing/ios-code-signing/
+
+##### GitHub Actions
+Self-hosted CI/CD with full control.
+
+**Our Implementation:**
+- See `.github/workflows/build-ios.yml` in this repository
+- Automated builds on tags and releases
+- Uses repository secrets for signing materials
+- Optional TestFlight deployment
+
+**Key Workflow Steps:**
+```yaml
+- name: Setup code signing
+  run: |
+    # Decode and install certificate
+    echo "${{ secrets.IOS_CERTIFICATE_BASE64 }}" | base64 --decode > cert.p12
+    
+    # Create keychain
+    security create-keychain -p "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
+    security default-keychain -s build.keychain
+    security unlock-keychain -p "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
+    security set-keychain-settings -t 3600 -u build.keychain
+    
+    # Import certificate
+    security import cert.p12 -k build.keychain -P "${{ secrets.IOS_CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
+    security set-key-partition-list -S apple-tool:,apple: -s -k "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
+    
+    # Install provisioning profile
+    mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+    echo "${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}" | base64 --decode > profile.mobileprovision
+    UUID=$(grep -aA1 UUID profile.mobileprovision | grep -o '[0-9a-f-]\{36\}')
+    cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/${UUID}.mobileprovision
+```
+
+**Pros:**
+- ✅ Free for public repos
+- ✅ Full customization
+- ✅ Integrated with GitHub
+- ✅ Supports macOS runners
+
+**Cons:**
+- ⚠️ Requires manual certificate management
+- ⚠️ More complex setup
+
+**Docs:** https://docs.github.com/en/actions
+
+##### Bitrise
+Mobile-focused CI/CD with pre-built steps.
+
+**Setup:**
+1. Add your app to Bitrise
+2. In **Workflow Editor → Code Signing**:
+   - Upload iOS certificate
+   - Upload provisioning profile
+   - Set certificate password
+3. Bitrise handles installation automatically
+
+**Workflow (bitrise.yml):**
+```yaml
+workflows:
+  primary:
+    steps:
+    - certificate-and-profile-installer@1:
+        inputs:
+        - certificate_url: $BITRISE_CERTIFICATE_URL
+        - certificate_passphrase: $BITRISE_CERTIFICATE_PASSPHRASE
+        - provisioning_profile_url: $BITRISE_PROVISION_URL
+    - flutter-build@0:
+        inputs:
+        - platform: ios
+        - ios_output_type: ipa
+```
+
+**Pros:**
+- ✅ Mobile-focused
+- ✅ Pre-built Flutter steps
+- ✅ Visual workflow editor
+- ✅ Automatic signing setup
+
+**Docs:** https://devcenter.bitrise.io/
+
+---
+
+### Platform-Specific CI/CD Tips
+
+#### GitHub Actions
+**Common Issues:**
+- **Keychain timeout**: Set `security set-keychain-settings -t 3600` to extend timeout
+- **Certificate not found**: Ensure `security set-key-partition-list` is run after import
+- **Profile UUID**: Extract UUID from profile and rename file to `${UUID}.mobileprovision`
+
+**Best Practices:**
+```yaml
+- name: Cleanup
+  if: always()
+  run: |
+    security delete-keychain build.keychain
+    rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/*
+```
+
+#### Codemagic
+**Common Issues:**
+- **Reference not found**: Ensure code signing identity reference name matches in both UI and `codemagic.yaml`
+- **Team ID mismatch**: Verify Team ID in ExportOptions.plist matches uploaded certificate
+
+**Best Practices:**
+- Use environment variable groups for team sharing
+- Enable automatic build versioning
+- Set up Slack/email notifications for build status
+
+#### Fastlane
+**Common Issues:**
+- **Match encryption password**: Store in environment variable `MATCH_PASSWORD`
+- **Git SSH keys**: Use HTTPS for match repository in CI environments
+- **Certificate renewal**: Run `fastlane match nuke development` to reset certificates
+
+**Best Practices:**
+```ruby
+# Fastfile
+lane :build do
+  match(type: "appstore", readonly: true)
+  gym(scheme: "Runner", export_method: "app-store")
+end
+```
+
+---2. **Manual Certificate Distribution**
    - Administrator creates certificates
    - Securely distributes to team and CI
    - Requires periodic manual updates
