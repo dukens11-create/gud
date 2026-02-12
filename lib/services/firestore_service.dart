@@ -25,12 +25,16 @@ class FirestoreService {
   /// 
   /// **CRITICAL**: These values MUST use underscores, NOT hyphens
   /// (e.g., 'in_transit', not 'in-transit')
+  /// 
+  /// **Note**: 'picked_up' is a legacy status that may exist in older database records.
+  /// It has been replaced by 'in_transit' in current usage but is kept for backward compatibility.
+  /// Can be removed once all historical loads are migrated to use 'in_transit'.
   static const List<String> validLoadStatuses = [
     'assigned',    // Load assigned to driver but not started
     'in_transit',  // Load currently being transported (underscore!)
     'delivered',   // Load has been delivered
     'completed',   // Load fully completed
-    'picked_up',   // Load picked up (legacy status)
+    'picked_up',   // Legacy status - replaced by 'in_transit' (kept for backward compatibility)
   ];
   
   /// Email validation regex pattern
@@ -410,13 +414,18 @@ class FirestoreService {
   /// **IMPORTANT**: This query filters by `driverId` matching the authenticated driver's UID
   /// AND by status. Ensure loads are assigned with the correct status values.
   /// 
+  /// **NOTE**: This method should NOT be called with 'all' as the status value.
+  /// For retrieving all loads without status filtering, use `streamDriverLoads()` instead.
+  /// 
   /// Parameters:
   /// - [driverId]: Driver's Firebase Auth UID (must match driverId field in loads)
-  /// - [status]: Load status to filter by. Valid values:
+  /// - [status]: Load status to filter by. Must be one of the valid status values from
+  ///   `FirestoreService.validLoadStatuses`:
   ///   * 'assigned' - Load assigned to driver but not started
   ///   * 'in_transit' - Load currently being transported (NOTE: underscore, not hyphen!)
   ///   * 'delivered' - Load has been delivered
   ///   * 'completed' - Load fully completed
+  ///   * 'picked_up' - Legacy status (kept for backward compatibility)
   /// 
   /// **CRITICAL**: Status values MUST use underscores (in_transit), NOT hyphens (in-transit).
   /// Using incorrect status values will result in no loads being returned.
