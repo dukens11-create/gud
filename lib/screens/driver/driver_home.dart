@@ -83,6 +83,10 @@ class _DriverHomeState extends State<DriverHome> {
   Stream<List<LoadModel>> _getFilteredLoads() {
     print('🔍 Getting filtered loads - Status filter: $_statusFilter, Driver ID: ${widget.driverId}');
     
+    // DEBUG: Log current user Firebase Auth UID
+    print('🆔 Current user Firebase Auth UID: ${widget.driverId}');
+    print('🔍 Querying Firestore for loads with driverId == ${widget.driverId}');
+    
     try {
       // Use Firestore query for status filtering (more efficient than in-memory)
       if (_statusFilter != 'all') {

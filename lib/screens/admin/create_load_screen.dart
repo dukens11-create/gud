@@ -203,6 +203,11 @@ class _CreateLoadScreenState extends State<CreateLoadScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
+                // CRITICAL: driver.id MUST be the Firebase Auth UID, not the driver name
+                // This value is stored in the load's driverId field and used for:
+                // 1. Driver dashboard queries (where driverId == currentUser.uid)
+                // 2. Firestore security rules (resource.data.driverId == request.auth.uid)
+                // 3. Email notifications (sent to driver with this UID)
                 DropdownButtonFormField<String>(
                   value: _selectedDriverId,
                   decoration: const InputDecoration(
@@ -211,7 +216,7 @@ class _CreateLoadScreenState extends State<CreateLoadScreen> {
                   ),
                   items: activeDrivers.map((driver) {
                     return DropdownMenuItem(
-                      value: driver.id,
+                      value: driver.id, // ← This MUST be Firebase Auth UID
                       child: Text('${driver.name} - ${driver.truckNumber}'),
                     );
                   }).toList(),
