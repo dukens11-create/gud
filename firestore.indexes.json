@@ -75,6 +75,24 @@
       ]
     },
     {
+      "collectionGroup": "loads",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "driverId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "locationHistory",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
