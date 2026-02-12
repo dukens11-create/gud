@@ -104,6 +104,131 @@ If you need to check or manage indexes manually:
 - [Android AAB Build Guide](AAB_BUILD_GUIDE.md) - Android builds
 - [Deployment Guide](DEPLOYMENT.md) - General deployment info
 
+---
+
+## 🍎 First-Time iOS Development Setup
+
+**New to iOS development on this project?** Follow this checklist to get building on iOS devices quickly.
+
+### Prerequisites Checklist
+- [ ] macOS with Xcode 14.0+ installed ([Download from App Store](https://apps.apple.com/us/app/xcode/id497799835))
+- [ ] Flutter SDK installed and configured ([Installation Guide](https://docs.flutter.dev/get-started/install))
+- [ ] Active Apple ID (free for testing, [$99/year Developer Program](https://developer.apple.com/programs/) for App Store)
+- [ ] Repository cloned locally
+
+### Quick Setup Steps
+
+#### 1️⃣ Validate Your Environment (2 minutes)
+```bash
+# Run our automated setup checker
+./scripts/check_ios_setup.sh
+```
+This script checks:
+- ✅ Xcode installation
+- ✅ Flutter SDK
+- ✅ CocoaPods
+- ✅ Project structure
+- ✅ Code signing status
+
+**Fix any issues** the script identifies before proceeding.
+
+#### 2️⃣ Configure Your Development Team (5 minutes)
+
+**Option A - Using Our Helper Script** (Recommended):
+```bash
+# Assists with team configuration
+./scripts/configure_team.sh
+```
+
+**Option B - Manual Configuration**:
+1. Open the project workspace:
+   ```bash
+   cd ios && open Runner.xcworkspace
+   ```
+
+2. In Xcode:
+   - Select **Runner** target (left sidebar, blue icon)
+   - Click **Signing & Capabilities** tab
+   - Check **✓ Automatically manage signing**
+   - Select your team from **Team** dropdown
+   - Wait for Xcode to create provisioning profiles
+
+3. Verify you see:
+   - ✅ Signing Certificate: Apple Development
+   - ✅ Provisioning Profile: Xcode Managed Profile
+
+**Need Help?** See our [detailed visual guide](docs/ios_codesign_setup.md#setting-up-your-development-team) with step-by-step Xcode instructions.
+
+#### 3️⃣ Build & Test (3 minutes)
+
+**For Simulator** (no code signing needed):
+```bash
+# Build and run on iOS Simulator
+flutter run
+# Or use our helper script
+./scripts/build_ios_simulator.sh
+```
+
+**For Physical Device**:
+```bash
+# Connect your iPhone/iPad via USB
+# Trust the computer on your device
+flutter devices  # Verify device is detected
+flutter run      # Select your device
+
+# Or use our helper script with device connected
+./scripts/build_ios_device.sh
+```
+
+**First install on device?** You may need to:
+1. On device: **Settings → General → VPN & Device Management**
+2. Tap your developer profile
+3. Tap **Trust**
+
+#### 4️⃣ Troubleshooting Quick Fixes
+
+**"No Team Found"**
+```bash
+# Open Xcode Preferences
+# Xcode → Preferences → Accounts → Add Apple ID
+```
+
+**"Bundle ID Already Registered"**
+- Change Bundle ID in Xcode to something unique (e.g., `com.yourname.gudexpress`)
+- See [Bundle ID Guide](docs/ios_codesign_setup.md#understanding-bundle-ids)
+
+**Build Fails After Team Selection**
+```bash
+# Clean and rebuild
+flutter clean
+cd ios && pod install && cd ..
+flutter build ios
+```
+
+**More issues?** Check our comprehensive [Troubleshooting Guide](docs/ios_codesign_setup.md#troubleshooting)
+
+### 📚 Complete Documentation
+
+Once you've completed the quick setup:
+- **[iOS Code Signing Setup Guide](docs/ios_codesign_setup.md)** - Comprehensive guide with visual Xcode instructions, troubleshooting FAQ, and CI/CD tips
+- **[iOS Local Build Guide](IOS_LOCAL_BUILD_GUIDE.md)** - Deep dive into local development workflows
+- **[iOS Build & Deploy Guide](IOS_BUILD_AND_DEPLOY_GUIDE.md)** - CI/CD automation and App Store deployment
+
+### 🚀 Helper Scripts
+
+We provide automation scripts in `scripts/` to streamline iOS development:
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `check_ios_setup.sh` | Validate development environment | `./scripts/check_ios_setup.sh` |
+| `configure_team.sh` | Configure Apple Developer Team | `./scripts/configure_team.sh` |
+| `build_ios_simulator.sh` | Build for iOS Simulator (no signing) | `./scripts/build_ios_simulator.sh` |
+| `build_ios_device.sh` | Build for physical devices | `./scripts/build_ios_device.sh` |
+
+**Need Help?** See our [iOS Code Signing Setup Guide](docs/ios_codesign_setup.md) or open an issue.
+
+---
+
 ## Getting Started
 
 ### Prerequisites
