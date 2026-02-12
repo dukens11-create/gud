@@ -62,6 +62,7 @@ class _DriverHomeState extends State<DriverHome> {
   /// Get filtered loads using Firestore queries instead of in-memory filtering
   /// 
   /// This method uses server-side filtering for better performance and scalability.
+  /// It queries Firestore with the authenticated driver's UID to show only their loads.
   /// 
   /// **IMPORTANT**: Queries with status filter require a Firestore composite index.
   /// If you encounter an index error, follow these steps:
@@ -72,8 +73,15 @@ class _DriverHomeState extends State<DriverHome> {
   /// 
   /// The required index is defined in firestore.indexes.json and can be deployed using:
   /// `firebase deploy --only firestore:indexes`
+  /// 
+  /// **Debug Steps**:
+  /// 1. Check console logs starting with 🔍, 📊, or ❌ for query details
+  /// 2. Verify widget.driverId matches your Firebase Auth UID
+  /// 3. Verify status filter value (in_transit, not in-transit)
+  /// 4. Check Firestore console to see if loads exist with your driverId
+  /// 5. Verify Firestore security rules allow reading loads
   Stream<List<LoadModel>> _getFilteredLoads() {
-    print('🔍 Getting filtered loads - Status filter: $_statusFilter');
+    print('🔍 Getting filtered loads - Status filter: $_statusFilter, Driver ID: ${widget.driverId}');
     
     try {
       // Use Firestore query for status filtering (more efficient than in-memory)
@@ -82,7 +90,7 @@ class _DriverHomeState extends State<DriverHome> {
         return _firestoreService
             .streamDriverLoadsByStatus(
               driverId: widget.driverId,
-              status: _statusFilter,
+              status: $_statusFilter,
             )
             .map((loads) {
               print('✅ Received ${loads.length} loads from Firestore with status $_statusFilter');
@@ -90,11 +98,22 @@ class _DriverHomeState extends State<DriverHome> {
             })
             .handleError((error) {
               print('❌ Error in filtered loads stream: $error');
+              
+              // Check for common error types
+              if (error.toString().contains('permission') || error.toString().contains('PERMISSION_DENIED')) {
+                print('⚠️  Permission error - driver may not have access to these loads');
+                print('   Check: Firestore rules allow driver ${widget.driverId} to read loads');
+              }
+              if (error.toString().contains('index')) {
+                print('⚠️  Index error - composite index may be missing or still building');
+                print('   Run: firebase deploy --only firestore:indexes');
+              }
+              
               throw error;
             });
       } else {
         // For 'all' status, get all driver loads
-        print('📊 Using Firestore query for all loads');
+        print('📊 Using Firestore query for all loads (no status filter)');
         return _firestoreService
             .streamDriverLoads(widget.driverId)
             .map((loads) {
@@ -103,6 +122,16 @@ class _DriverHomeState extends State<DriverHome> {
             })
             .handleError((error) {
               print('❌ Error in all loads stream: $error');
+              
+              // Check for common error types
+              if (error.toString().contains('permission') || error.toString().contains('PERMISSION_DENIED')) {
+                print('⚠️  Permission error - driver may not have access to these loads');
+                print('   Check: Firestore rules allow driver ${widget.driverId} to read loads');
+              }
+              if (error.toString().contains('index')) {
+                print('⚠️  Index error - composite index may be missing or still building');
+              }
+              
               throw error;
             });
       }
@@ -680,10 +709,29 @@ class _DriverHomeState extends State<DriverHome> {
                 final loads = snapshot.data ?? [];
 
                 if (loads.isEmpty) {
-                  // Show different messages based on filters
-                  final message = _searchQuery.isNotEmpty || _statusFilter != 'all'
-                      ? 'No loads found matching your criteria'
-                      : 'No loads assigned yet.';
+                  // Show different messages based on filters with helpful debug info
+                  String message;
+                  String debugInfo = '';
+                  
+                  if (_searchQuery.isNotEmpty && _statusFilter != 'all') {
+                    message = 'No loads found matching your search and status filter';
+                    debugInfo = 'Try clearing the search or changing the status filter.';
+                  } else if (_searchQuery.isNotEmpty) {
+                    message = 'No loads found matching "$_searchQuery"';
+                    debugInfo = 'Try a different search term or clear the search.';
+                  } else if (_statusFilter != 'all') {
+                    message = 'No loads with status "$_statusFilter"';
+                    debugInfo = 'Loads with this status haven\'t been assigned yet.';
+                  } else {
+                    message = 'No loads assigned yet';
+                    debugInfo = 'Your administrator will assign loads to you.';
+                  }
+                  
+                  // Log empty state for debugging
+                  print('ℹ️  Empty state: $message');
+                  print('   Driver ID: ${widget.driverId}');
+                  print('   Status Filter: $_statusFilter');
+                  print('   Search Query: ${_searchQuery.isEmpty ? "(none)" : _searchQuery}');
                   
                   return Center(
                     child: Semantics(
@@ -692,7 +740,7 @@ class _DriverHomeState extends State<DriverHome> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.search_off,
+                            _searchQuery.isNotEmpty ? Icons.search_off : Icons.assignment_outlined,
                             size: 64,
                             color: Colors.grey.shade400,
                           ),
@@ -701,9 +749,25 @@ class _DriverHomeState extends State<DriverHome> {
                             message,
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade700,
                             ),
+                            textAlign: TextAlign.center,
                           ),
+                          if (debugInfo.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                              child: Text(
+                                debugInfo,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade600,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
                           if (_searchQuery.isNotEmpty || _statusFilter != 'all') ...[
                             const SizedBox(height: 16),
                             TextButton.icon(

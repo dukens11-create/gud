@@ -316,13 +316,31 @@ class FirestoreService {
   /// Returns only loads assigned to the specified driver,
   /// ordered by creation time (newest first)
   /// 
-  /// Note: This query requires a composite index on:
-  /// - driverId (ascending)
-  /// - createdAt (descending)
+  /// **IMPORTANT**: This query filters by `driverId` matching the authenticated driver's UID.
+  /// Ensure that when assigning loads, the `driverId` field is set to the driver's Firebase Auth UID.
+  /// 
+  /// **Required Firestore Index**:
+  /// - Collection: loads
+  /// - Fields:
+  ///   * driverId (Ascending)
+  ///   * createdAt (Descending)
+  /// 
+  /// **Common Debug Steps**:
+  /// 1. Verify driver is authenticated: Check that _auth.currentUser is not null
+  /// 2. Check driverId matches: Ensure driverId parameter matches the Firebase Auth UID
+  /// 3. Verify loads exist: Check Firestore console for loads with matching driverId
+  /// 4. Check index status: Visit Firebase Console > Firestore > Indexes
+  /// 5. Review logs: Look for console output starting with 🔍, 📊, or ❌
+  /// 
+  /// Parameters:
+  /// - [driverId]: The Firebase Auth UID of the driver (must match driverId field in loads)
   Stream<List<LoadModel>> streamDriverLoads(String driverId) {
     _requireAuth();
     
+    final currentUser = _auth.currentUser;
     print('🔍 Starting to stream loads for driver: $driverId');
+    print('   👤 Current authenticated user UID: ${currentUser?.uid}');
+    print('   🎯 Querying loads collection with filter: driverId == $driverId');
     
     try {
       return _db
@@ -332,9 +350,20 @@ class FirestoreService {
           .snapshots()
           .map((snapshot) {
             print('📊 Received ${snapshot.docs.length} load documents for driver $driverId');
+            
+            if (snapshot.docs.isEmpty) {
+              print('ℹ️  No loads found for driver $driverId');
+              print('   💡 Debug tips:');
+              print('      1. Verify loads exist in Firestore with driverId = $driverId');
+              print('      2. Check that load assignment sets driverId to Firebase Auth UID');
+              print('      3. Ensure Firestore security rules allow driver to read their loads');
+            }
+            
             return snapshot.docs.map((doc) {
               try {
-                return LoadModel.fromDoc(doc);
+                final load = LoadModel.fromDoc(doc);
+                print('   ✓ Load ${load.loadNumber}: status=${load.status}, driverId=${load.driverId}');
+                return load;
               } catch (e) {
                 print('❌ Error parsing load document ${doc.id}: $e');
                 rethrow;
@@ -348,6 +377,11 @@ class FirestoreService {
               print('⚠️  Firestore index required for query: driverId + createdAt');
               print('📝 Create index at: https://console.firebase.google.com/project/_/firestore/indexes');
             }
+            // If this is a permission error, provide guidance
+            if (error.toString().contains('permission') || error.toString().contains('PERMISSION_DENIED')) {
+              print('⚠️  Permission denied - check Firestore security rules');
+              print('   Ensure rules allow: if resource.data.driverId == request.auth.uid');
+            }
             throw error;
           });
     } catch (e) {
@@ -357,27 +391,44 @@ class FirestoreService {
   }
 
   /// Stream loads for a specific driver filtered by status
-  /// 
+  ///
   /// Returns loads assigned to the specified driver with a specific status,
   /// ordered by creation time (newest first)
   /// 
+  /// **IMPORTANT**: This query filters by `driverId` matching the authenticated driver's UID
+  /// AND by status. Ensure loads are assigned with the correct status values.
+  /// 
   /// Parameters:
-  /// - [driverId]: Driver's unique identifier
-  /// - [status]: Load status to filter by ('assigned', 'in_transit', 'delivered')
+  /// - [driverId]: Driver's Firebase Auth UID (must match driverId field in loads)
+  /// - [status]: Load status to filter by. Valid values:
+  ///   * 'assigned' - Load assigned to driver but not started
+  ///   * 'in_transit' - Load currently being transported (NOTE: underscore, not hyphen!)
+  ///   * 'delivered' - Load has been delivered
+  ///   * 'completed' - Load fully completed
   /// 
-  /// **IMPORTANT: This query requires a Firestore composite index**
+  /// **CRITICAL**: Status values MUST use underscores (in_transit), NOT hyphens (in-transit).
+  /// Using incorrect status values will result in no loads being returned.
   /// 
-  /// If you encounter an index error at runtime, create the index immediately:
-  /// 1. Copy the index creation link from the error message
-  /// 2. Open it in your browser and click "Create Index"
-  /// 3. Wait for index to be built (usually takes a few minutes)
-  /// 
-  /// Required index fields:
+  /// **Required Firestore Index**:
   /// - Collection: loads
-  /// - Fields:
+  /// - Fields (in order):
   ///   * driverId (Ascending)
   ///   * status (Ascending)  
   ///   * createdAt (Descending)
+  /// 
+  /// **Common Debug Steps**:
+  /// 1. Verify status value: Ensure using 'in_transit' not 'in-transit'
+  /// 2. Check driverId matches: Ensure driverId parameter matches Firebase Auth UID
+  /// 3. Verify loads exist: Check Firestore console for loads with matching driverId AND status
+  /// 4. Check index status: Visit Firebase Console > Firestore > Indexes
+  /// 5. Review logs: Look for console output showing query parameters and results
+  /// 6. Test with 'all' filter: If specific status fails, try the all loads query
+  /// 
+  /// **If you encounter an index error**:
+  /// 1. Copy the index creation link from the error message
+  /// 2. Open it in your browser and click "Create Index"
+  /// 3. Wait for index to be built (usually 2-5 minutes)
+  /// 4. Alternatively: Run `firebase deploy --only firestore:indexes`
   /// 
   /// Index creation URL (replace PROJECT_ID):
   /// https://console.firebase.google.com/project/PROJECT_ID/firestore/indexes
@@ -387,7 +438,17 @@ class FirestoreService {
   }) {
     _requireAuth();
     
+    final currentUser = _auth.currentUser;
     print('🔍 Starting to stream loads for driver: $driverId with status: $status');
+    print('   👤 Current authenticated user UID: ${currentUser?.uid}');
+    print('   🎯 Query filters: driverId == $driverId AND status == $status');
+    print('   ⚠️  Status value check: "${status}" (must use underscores, e.g., "in_transit")');
+    
+    // Validate status value format
+    if (status.contains('-') && status != 'all') {
+      print('⚠️  WARNING: Status contains hyphen! This may cause no results.');
+      print('   Expected: "in_transit", Got: "$status"');
+    }
     
     try {
       return _db
@@ -401,15 +462,22 @@ class FirestoreService {
             
             if (snapshot.docs.isEmpty) {
               print('ℹ️  No loads found for driver $driverId with status $status');
+              print('   💡 Debug tips:');
+              print('      1. Verify loads exist in Firestore with driverId = $driverId AND status = $status');
+              print('      2. Check status value uses underscores (in_transit) not hyphens (in-transit)');
+              print('      3. Ensure load assignment sets correct status value');
+              print('      4. Verify Firestore security rules allow driver to read their loads');
+              print('      5. Check Firestore indexes are deployed and enabled');
             }
             
             return snapshot.docs.map((doc) {
               try {
                 final load = LoadModel.fromDoc(doc);
-                print('   ✓ Load ${load.loadNumber}: status=${load.status}, createdAt=${load.createdAt}');
+                print('   ✓ Load ${load.loadNumber}: status=${load.status}, driverId=${load.driverId}, createdAt=${load.createdAt}');
                 return load;
               } catch (e) {
                 print('❌ Error parsing load document ${doc.id}: $e');
+                print('   Document data: ${doc.data()}');
                 rethrow;
               }
             }).toList();
@@ -423,6 +491,14 @@ class FirestoreService {
               print(_getMissingIndexErrorMessage(driverId, status));
             }
             
+            // If this is a permission error, provide guidance
+            if (error.toString().contains('permission') || error.toString().contains('PERMISSION_DENIED')) {
+              print('⚠️  Permission denied - check Firestore security rules');
+              print('   Ensure rules allow: if resource.data.driverId == request.auth.uid');
+              print('   Current user UID: ${currentUser?.uid}');
+              print('   Query driverId: $driverId');
+            }
+            
             throw error;
           });
     } catch (e) {
@@ -432,6 +508,9 @@ class FirestoreService {
   }
 
   /// Generate helpful error message for missing Firestore index
+  /// 
+  /// Provides detailed troubleshooting steps when a composite index is required
+  /// but not available or not yet built in Firestore.
   String _getMissingIndexErrorMessage(String driverId, String status) {
     return '''
 ⚠️  FIRESTORE INDEX REQUIRED ⚠️
@@ -456,6 +535,12 @@ IMMEDIATE ACTION REQUIRED:
 
 Alternatively, the index may already be defined in firestore.indexes.json
 and just needs to be deployed using: firebase deploy --only firestore:indexes
+
+TROUBLESHOOTING:
+- If index exists but still failing: Wait 2-5 minutes for index to finish building
+- Check index status: Firebase Console > Firestore > Indexes
+- Verify index configuration matches exactly (field order matters!)
+- Ensure you're using correct status values (in_transit, not in-transit)
 ''';
   }
 
