@@ -221,6 +221,21 @@ class TruckService {
     return Truck.fromMap(snapshot.docs.first.id, snapshot.docs.first.data());
   }
 
+  /// Stream truck assigned to a driver (for real-time updates)
+  Stream<Truck?> getTruckByDriverIdStream(String driverId) {
+    _requireAuth();
+
+    return _db
+        .collection('trucks')
+        .where('assignedDriverId', isEqualTo: driverId)
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+      if (snapshot.docs.isEmpty) return null;
+      return Truck.fromMap(snapshot.docs.first.id, snapshot.docs.first.data());
+    });
+  }
+
   // ========== UTILITY METHODS ==========
 
   /// Generate next available truck number
