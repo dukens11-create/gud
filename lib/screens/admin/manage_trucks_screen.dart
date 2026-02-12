@@ -284,6 +284,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
     
     int selectedYear = truck?.year ?? DateTime.now().year;
     String selectedStatus = truck?.status ?? 'available';
+    // Loading state managed via closure in StatefulBuilder's setState
     bool isLoading = false;
 
     final result = await showDialog<bool>(
@@ -476,8 +477,8 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
                   }
                 } catch (e) {
                   // Show error INSIDE dialog, keep it open
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
                       SnackBar(
                         content: Text('Error: $e'),
                         backgroundColor: Colors.red,
