@@ -232,7 +232,11 @@ class TruckService {
         .snapshots()
         .map((snapshot) {
       if (snapshot.docs.isEmpty) return null;
-      return Truck.fromMap(snapshot.docs.first.id, snapshot.docs.first.data());
+      
+      final data = snapshot.docs.first.data();
+      if (data == null) return null;
+      
+      return Truck.fromMap(snapshot.docs.first.id, data);
     });
   }
 
