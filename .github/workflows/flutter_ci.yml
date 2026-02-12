@@ -196,6 +196,12 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Validate iOS Firebase Configuration
+        run: |
+          chmod +x scripts/validate_firebase_ios.sh
+          ./scripts/validate_firebase_ios.sh || echo "⚠️ iOS Firebase validation failed - this is expected if using placeholder values"
+        continue-on-error: true
+
       - name: Build iOS app (no codesign)
         run: flutter build ios --release --no-codesign
 

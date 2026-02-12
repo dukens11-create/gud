@@ -96,11 +96,20 @@ If you need to check or manage indexes manually:
 - **Web**: Firebase hosting deployment
 
 ## Quick Links
+
+### iOS Development
 - [iOS Code Signing Setup Guide](docs/ios_codesign_setup.md) - **Complete iOS code signing guide for all contributors**
 - [iOS Code Signing Quick Setup](IOS_CODE_SIGNING_QUICK_SETUP.md) - 5-minute setup guide
 - [iOS Local Build Guide](IOS_LOCAL_BUILD_GUIDE.md) - Complete local development guide
 - [iOS Build & Deploy Guide](IOS_BUILD_AND_DEPLOY_GUIDE.md) - CI/CD and App Store
 - [iOS Provisioning Guide](IOS_PROVISIONING_GUIDE.md) - Profile management
+
+### Firebase Configuration
+- [Firebase Setup Guide](FIREBASE_SETUP.md) - Complete Firebase setup for Android & iOS
+- [iOS Firebase Setup Guide](docs/FIREBASE_IOS_SETUP.md) - **iOS-specific Firebase configuration (Critical!)**
+- [Firestore Index Setup](FIRESTORE_INDEX_SETUP.md) - Database indexes
+
+### Android & General
 - [Android AAB Build Guide](AAB_BUILD_GUIDE.md) - Android builds
 - [Deployment Guide](DEPLOYMENT.md) - General deployment info
 
@@ -278,7 +287,28 @@ firebase login
 
 **Learn more:** See [FIRESTORE_INDEX_SETUP.md](FIRESTORE_INDEX_SETUP.md) for detailed documentation
 
-#### 3. Run the App
+#### 3. Configure iOS Firebase (iOS Developers Only - Critical!)
+
+**⚠️ CRITICAL for iOS**: The current iOS Firebase configuration contains placeholder values that will cause the app to fail on iOS devices.
+
+**Quick Check:**
+```bash
+# Validate your iOS Firebase configuration
+./scripts/validate_firebase_ios.sh
+```
+
+**If validation fails**, you need to:
+
+1. Download the correct `GoogleService-Info.plist` from Firebase Console
+2. Replace `ios/Runner/GoogleService-Info.plist` with the downloaded file
+3. Run validation again
+
+**📱 Complete iOS Firebase Setup:**
+See [docs/FIREBASE_IOS_SETUP.md](docs/FIREBASE_IOS_SETUP.md) for detailed step-by-step instructions.
+
+**Android developers**: Android Firebase configuration (`android/app/google-services.json`) is already properly configured.
+
+#### 4. Run the App
 
 ```bash
 # Run the app

@@ -2,11 +2,22 @@
 
 This guide will help you set up Firebase for the GUD Express Trucking Management App.
 
+## ⚠️ Critical iOS Configuration Notice
+
+**If you're developing for iOS**, the current Firebase configuration file contains **placeholder values** that will cause the app to fail. You must configure iOS Firebase properly before building.
+
+**📱 iOS Developers**: See **[iOS Firebase Setup Guide](docs/FIREBASE_IOS_SETUP.md)** for complete instructions.
+
+**Quick validation**: Run `./scripts/validate_firebase_ios.sh` to check your iOS configuration.
+
+---
+
 ## Prerequisites
 
 - Google Account
 - Flutter SDK installed
 - Android Studio (for Android development)
+- Xcode (for iOS development)
 
 ## Step 1: Create Firebase Project
 
@@ -37,6 +48,34 @@ gud/
     └── app/
         └── google-services.json  # <-- Place here
 ```
+
+## Step 3B: Register iOS App (Critical!)
+
+**⚠️ iOS developers must complete this step!**
+
+The iOS app requires proper Firebase configuration. The current `ios/Runner/GoogleService-Info.plist` contains placeholder values that will NOT work.
+
+### Quick iOS Setup
+
+1. In the Firebase Console, click the **iOS icon** (🍎) to add an iOS app
+2. Enter iOS bundle ID: `com.gudexpress.gud_app`
+3. (Optional) Add a nickname: `GUD iOS App`
+4. Click **Register App**
+5. Download `GoogleService-Info.plist`
+6. Replace the placeholder file:
+   ```bash
+   # Replace placeholder with actual configuration
+   cp /path/to/downloaded/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+   ```
+7. Validate the configuration:
+   ```bash
+   ./scripts/validate_firebase_ios.sh
+   ```
+
+### Complete iOS Instructions
+
+For detailed step-by-step instructions with troubleshooting, see:
+- **[iOS Firebase Setup Guide](docs/FIREBASE_IOS_SETUP.md)** - Complete iOS configuration guide
 
 ## Step 4: Enable Firebase Services
 
@@ -233,9 +272,35 @@ flutter run
 
 ### Common Issues
 
+#### Android Issues
+
 **"Firebase not initialized"**
 - Ensure `google-services.json` is in `android/app/`
 - Run `flutter clean && flutter pub get`
+
+**App crashes on startup (Android)**
+- Check Firebase configuration in `build.gradle` files
+- Verify package name matches in Firebase Console and `build.gradle`
+
+#### iOS Issues
+
+**"Firebase not configured" or authentication fails on iOS**
+- ⚠️ **Most common issue**: Using placeholder values in `GoogleService-Info.plist`
+- Run validation: `./scripts/validate_firebase_ios.sh`
+- See [iOS Firebase Setup Guide](docs/FIREBASE_IOS_SETUP.md) for fix
+
+**iOS app crashes on startup**
+- Verify `GoogleService-Info.plist` exists at `ios/Runner/GoogleService-Info.plist`
+- Check file contains no "placeholder" text
+- Clean and rebuild: `flutter clean && cd ios && pod install && cd ..`
+
+**Authentication works on Android but not iOS**
+- This is the classic placeholder value issue
+- Download correct `GoogleService-Info.plist` from Firebase Console
+- Replace the file at `ios/Runner/GoogleService-Info.plist`
+- Validate: `./scripts/validate_firebase_ios.sh`
+
+#### General Issues
 
 **"User not found" or permission denied**
 - Verify the user document exists in Firestore
@@ -244,10 +309,6 @@ flutter run
 **Security rules error**
 - Verify security rules are published
 - Check that timestamps use `request.time` not `request.timestamp`
-
-**App crashes on startup**
-- Check Firebase configuration in `build.gradle` files
-- Verify package name matches in Firebase Console and `build.gradle`
 
 ### Getting Help
 
