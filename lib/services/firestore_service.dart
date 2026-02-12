@@ -623,6 +623,8 @@ TROUBLESHOOTING:
   /// - [deliveredAt]: Optional delivery timestamp
   /// 
   /// **Security**: Firestore rules ensure drivers can only update their own loads
+  /// 
+  /// Throws [ArgumentError] if status value is invalid
   Future<void> updateLoadStatus({
     required String loadId,
     required String status,
@@ -634,10 +636,13 @@ TROUBLESHOOTING:
     
     print('📝 Updating load status: $loadId → $status');
     
-    // Validate status value
+    // Validate status value - throw error for invalid values
     if (!validLoadStatuses.contains(status)) {
-      print('⚠️  WARNING: Invalid status value "$status"');
+      print('❌ Invalid status value "$status"');
       print('   Valid values: ${validLoadStatuses.join(", ")}');
+      throw ArgumentError(
+        'Invalid status "$status". Must be one of: ${validLoadStatuses.join(", ")}'
+      );
     }
     
     final Map<String, dynamic> updates = {'status': status};
@@ -696,11 +701,14 @@ TROUBLESHOOTING:
         'tripStartAt': FieldValue.serverTimestamp(),
       });
       print('✅ Trip started successfully');
-    } catch (e) {
-      print('❌ Error starting trip: $e');
-      if (e.toString().contains('permission') || e.toString().contains('PERMISSION_DENIED')) {
+    } on FirebaseException catch (e) {
+      print('❌ Firebase error starting trip: ${e.code}');
+      if (e.code == 'permission-denied') {
         print('   ⚠️  Permission denied - driver may not own this load');
       }
+      rethrow;
+    } catch (e) {
+      print('❌ Unexpected error starting trip: $e');
       rethrow;
     }
   }
@@ -738,11 +746,17 @@ TROUBLESHOOTING:
       
       // Note: Driver statistics update should be triggered by a Cloud Function
       // or handled separately after this operation completes
-    } catch (e) {
-      print('❌ Error completing delivery: $e');
-      if (e.toString().contains('permission') || e.toString().contains('PERMISSION_DENIED')) {
+    } on FirebaseException catch (e) {
+      print('❌ Firebase error completing delivery: ${e.code}');
+      if (e.code == 'permission-denied') {
         print('   ⚠️  Permission denied - driver may not own this load');
       }
+      rethrow;
+    } catch (e) {
+      print('❌ Unexpected error completing delivery: $e');
+      rethrow;
+    }
+  }
       rethrow;
     }
   }
