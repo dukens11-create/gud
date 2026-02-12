@@ -956,6 +956,10 @@ TROUBLESHOOTING:
   /// **Usage**: Call before assigning loads to ensure driver is valid
   /// 
   /// **Integration**: Prevents orphaned loads with invalid driverIds
+  /// 
+  /// **Validation**: Checks BOTH isActive field and status field:
+  /// - isActive must be true (defaults to true if not present)
+  /// - status must NOT be 'inactive' (valid: 'available', 'on_trip')
   Future<bool> isDriverValid(String driverId) async {
     _requireAuth();
     
@@ -973,9 +977,15 @@ TROUBLESHOOTING:
       
       final data = doc.data() as Map<String, dynamic>?;
       final isActive = data?['isActive'] ?? true;
+      final status = data?['status'] as String?;
       
       if (!isActive) {
-        print('⚠️  Driver $driverId exists but is not active');
+        print('⚠️  Driver $driverId exists but is not active (isActive=false)');
+        return false;
+      }
+      
+      if (status == 'inactive') {
+        print('⚠️  Driver $driverId exists but has inactive status');
         return false;
       }
       
