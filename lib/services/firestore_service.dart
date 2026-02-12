@@ -347,13 +347,27 @@ class FirestoreService {
   /// Stream all loads with real-time updates
   /// 
   /// Returns loads ordered by creation time (newest first)
+  /// Limited to 100 most recent loads to prevent memory issues
+  /// Skips documents that fail to parse instead of throwing
   Stream<List<LoadModel>> streamAllLoads() {
     _requireAuth();
     return _db
         .collection('loads')
         .orderBy('createdAt', descending: true)
+        .limit(100)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => LoadModel.fromDoc(doc)).toList());
+        .map((snapshot) {
+          final loads = <LoadModel>[];
+          for (final doc in snapshot.docs) {
+            try {
+              loads.add(LoadModel.fromDoc(doc));
+            } catch (e) {
+              // Log error but continue processing other documents
+              print('Warning: Failed to parse load document ${doc.id}: $e');
+            }
+          }
+          return loads;
+        });
   }
 
   /// Stream loads for a specific driver

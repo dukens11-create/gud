@@ -558,21 +558,21 @@ class _AdminHomeState extends State<AdminHome> {
                           ),
                         ),
                         child: Semantics(
-                          label: 'Load ${load.loadNumber}, driver ${load.driverName ?? load.driverId}, status ${load.status}, rate ${load.rate} dollars',
+                          label: 'Load ${load.loadNumber.isNotEmpty ? load.loadNumber : "Unknown"}, driver ${load.driverName ?? load.driverId}, status ${load.status}, rate ${load.rate} dollars',
                           button: true,
                           child: Card(
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             child: ListTile(
                               title: Text(
-                                load.loadNumber,
+                                load.loadNumber.isNotEmpty ? load.loadNumber : 'Unknown Load',
                                 style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
-                                  Text('Driver: ${load.driverName ?? load.driverId}'),
-                                  Text('${load.pickupAddress} → ${load.deliveryAddress}'),
+                                  Text('Driver: ${(load.driverName?.isNotEmpty ?? false) ? load.driverName : (load.driverId.isNotEmpty ? load.driverId : "Unassigned")}'),
+                                  Text('${load.pickupAddress.isNotEmpty ? load.pickupAddress : "Unknown"} → ${load.deliveryAddress.isNotEmpty ? load.deliveryAddress : "Unknown"}'),
                                 ],
                               ),
                               trailing: Column(
@@ -597,7 +597,7 @@ class _AdminHomeState extends State<AdminHome> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      load.status,
+                                      load.status.isNotEmpty ? load.status : 'unknown',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 10,

@@ -142,20 +142,20 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                         leading: CircleAvatar(
                           backgroundColor: _getStatusColor(load.status),
                           child: Text(
-                            load.status[0].toUpperCase(),
+                            load.status.isNotEmpty ? load.status[0].toUpperCase() : '?',
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
                         title: Text(
-                          load.loadNumber,
+                          load.loadNumber.isNotEmpty ? load.loadNumber : 'Unknown Load',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 4),
-                            Text('From: ${load.pickupAddress}'),
-                            Text('To: ${load.deliveryAddress}'),
+                            Text('From: ${load.pickupAddress.isNotEmpty ? load.pickupAddress : "Unknown"}'),
+                            Text('To: ${load.deliveryAddress.isNotEmpty ? load.deliveryAddress : "Unknown"}'),
                             const SizedBox(height: 4),
                             Text(
                               'Completed: ${DateFormat('MMM dd, yyyy').format(load.createdAt)}',
@@ -186,7 +186,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                load.status,
+                                load.status.isNotEmpty ? load.status : 'unknown',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
