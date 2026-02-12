@@ -418,16 +418,18 @@ class FirestoreService {
               print('      3. Ensure Firestore security rules allow driver to read their loads');
             }
             
-            return snapshot.docs.map((doc) {
+            final loads = <LoadModel>[];
+            for (final doc in snapshot.docs) {
               try {
                 final load = LoadModel.fromDoc(doc);
                 print('   ✓ Load ${load.loadNumber}: status=${load.status}, driverId=${load.driverId}');
-                return load;
+                loads.add(load);
               } catch (e) {
                 print('❌ Error parsing load document ${doc.id}: $e');
-                rethrow;
+                // Continue processing other documents instead of crashing
               }
-            }).toList();
+            }
+            return loads;
           })
           .handleError((error) {
             print('❌ Error streaming driver loads: $error');
@@ -538,17 +540,19 @@ class FirestoreService {
               print('      5. Check Firestore indexes are deployed and enabled');
             }
             
-            return snapshot.docs.map((doc) {
+            final loads = <LoadModel>[];
+            for (final doc in snapshot.docs) {
               try {
                 final load = LoadModel.fromDoc(doc);
                 print('   ✓ Load ${load.loadNumber}: status=${load.status}, driverId=${load.driverId}, createdAt=${load.createdAt}');
-                return load;
+                loads.add(load);
               } catch (e) {
                 print('❌ Error parsing load document ${doc.id}: $e');
                 print('   Document data: ${doc.data()}');
-                rethrow;
+                // Continue processing other documents instead of crashing
               }
-            }).toList();
+            }
+            return loads;
           })
           .handleError((error) {
             print('❌ Error streaming driver loads by status: $error');

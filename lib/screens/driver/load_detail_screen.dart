@@ -20,7 +20,7 @@ class LoadDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(load.loadNumber),
+        title: Text(load.loadNumber.isNotEmpty ? load.loadNumber : 'Load Details'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -43,7 +43,7 @@ class LoadDetailScreen extends StatelessWidget {
                         ),
                         Chip(
                           label: Text(
-                            load.status.toUpperCase(),
+                            load.status.isNotEmpty ? load.status.toUpperCase() : 'UNKNOWN',
                             style: const TextStyle(color: Colors.white),
                           ),
                           backgroundColor: _getStatusColor(load.status),
@@ -68,8 +68,8 @@ class LoadDetailScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
-                    _buildDetailRow('Load Number', load.loadNumber),
-                    if (load.driverName != null)
+                    _buildDetailRow('Load Number', load.loadNumber.isNotEmpty ? load.loadNumber : 'Unknown'),
+                    if (load.driverName != null && load.driverName!.isNotEmpty)
                       _buildDetailRow('Driver', load.driverName!),
                     _buildDetailRow('Rate', '\$${load.rate.toStringAsFixed(2)}'),
                     if (load.miles > 0)
@@ -107,7 +107,7 @@ class LoadDetailScreen extends StatelessWidget {
                                 'Pickup',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
-                              Text(load.pickupAddress),
+                              Text(load.pickupAddress.isNotEmpty ? load.pickupAddress : 'Unknown'),
                             ],
                           ),
                         ),
@@ -127,7 +127,7 @@ class LoadDetailScreen extends StatelessWidget {
                                 'Delivery',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
-                              Text(load.deliveryAddress),
+                              Text(load.deliveryAddress.isNotEmpty ? load.deliveryAddress : 'Unknown'),
                             ],
                           ),
                         ),
