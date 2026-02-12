@@ -90,7 +90,7 @@ class _DriverHomeState extends State<DriverHome> {
         return _firestoreService
             .streamDriverLoadsByStatus(
               driverId: widget.driverId,
-              status: $_statusFilter,
+              status: _statusFilter,
             )
             .map((loads) {
               print('✅ Received ${loads.length} loads from Firestore with status $_statusFilter');

@@ -444,10 +444,14 @@ class FirestoreService {
     print('   🎯 Query filters: driverId == $driverId AND status == $status');
     print('   ⚠️  Status value check: "${status}" (must use underscores, e.g., "in_transit")');
     
-    // Validate status value format
-    if (status.contains('-') && status != 'all') {
-      print('⚠️  WARNING: Status contains hyphen! This may cause no results.');
-      print('   Expected: "in_transit", Got: "$status"');
+    // Validate status value format - check against known valid values
+    const validStatuses = ['assigned', 'in_transit', 'delivered', 'completed', 'picked_up'];
+    if (!validStatuses.contains(status)) {
+      print('⚠️  WARNING: Unexpected status value: "$status"');
+      print('   Valid values: ${validStatuses.join(", ")}');
+      if (status.contains('-')) {
+        print('   NOTE: Status contains hyphen - should use underscore (e.g., "in_transit" not "in-transit")');
+      }
     }
     
     try {
