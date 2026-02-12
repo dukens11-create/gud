@@ -622,16 +622,15 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
 
     if (confirmed == true && mounted) {
       try {
-        // Show loading indicator
-        if (mounted) {
-          NavigationService.showSuccess('Initializing sample data...');
-        }
-
         final initService = FirebaseInitService();
-        await initService.initializeTrucks();
+        final success = await initService.initializeTrucks();
 
         if (mounted) {
-          NavigationService.showSuccess('Sample data initialized successfully');
+          if (success) {
+            NavigationService.showSuccess('Sample data initialized successfully');
+          } else {
+            NavigationService.showSuccess('Sample data already exists or initialization skipped');
+          }
         }
       } catch (e) {
         if (mounted) {

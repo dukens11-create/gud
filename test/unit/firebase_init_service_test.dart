@@ -68,7 +68,7 @@ void main() {
         'make': 'Ford',
         'model': 'F-150',
         'year': 2022,
-        'plateNumber': 'ABC-1234',
+        'plateNumber': 'GUD-1234',
         'status': 'available',
         'assignedDriverId': null,
         'assignedDriverName': null,
