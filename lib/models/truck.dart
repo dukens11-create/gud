@@ -16,6 +16,33 @@ class Truck {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Valid status values
+  static const List<String> validStatuses = [
+    'available',
+    'in_use',
+    'maintenance',
+    'inactive'
+  ];
+
+  /// Validate and normalize status
+  /// Returns 'available' for null, empty, or invalid status values
+  static String normalizeStatus(String? status) {
+    if (status == null || status.isEmpty) {
+      return 'available';
+    }
+    
+    if (!validStatuses.contains(status)) {
+      // Use debugPrint for development logging
+      assert(() {
+        print('⚠️ Invalid truck status "$status", defaulting to "available"');
+        return true;
+      }());
+      return 'available';
+    }
+    
+    return status;
+  }
+
   Truck({
     required this.id,
     required this.truckNumber,
@@ -60,7 +87,7 @@ class Truck {
       model: data['model'] as String? ?? '',
       year: data['year'] as int? ?? DateTime.now().year,
       plateNumber: data['plateNumber'] as String? ?? '',
-      status: data['status'] as String? ?? 'available',
+      status: normalizeStatus(data['status'] as String?),
       assignedDriverId: data['assignedDriverId'] as String?,
       assignedDriverName: data['assignedDriverName'] as String?,
       notes: data['notes'] as String?,

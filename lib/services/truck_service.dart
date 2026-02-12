@@ -32,7 +32,14 @@ class TruckService {
       throw Exception('Truck number ${truck.truckNumber} already exists');
     }
 
-    final docRef = await _db.collection('trucks').add(truck.toMap());
+    // Ensure truck has a valid status
+    final validatedTruck = truck.copyWith(
+      status: Truck.normalizeStatus(truck.status),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    final docRef = await _db.collection('trucks').add(validatedTruck.toMap());
     return docRef.id;
   }
 
@@ -98,27 +105,28 @@ class TruckService {
 
   /// Stream all trucks (excluding inactive)
   /// 
-  /// Uses `whereIn` instead of `isNotEqualTo` to avoid requiring additional
-  /// composite indexes. This works with the existing status + truckNumber index.
+  /// Uses in-memory filtering to avoid requiring additional composite indexes.
+  /// This ensures trucks with null, empty, or other status values are still loaded
+  /// and can be properly displayed or filtered.
   Stream<List<Truck>> streamTrucks({bool includeInactive = false}) {
     _requireAuth();
 
-    final baseQuery = _db.collection('trucks');
-    final Query<Map<String, dynamic>> query;
-
-    if (includeInactive) {
-      // Get all trucks, sorted by truckNumber
-      query = baseQuery.orderBy('truckNumber');
-    } else {
-      // Get only active trucks (available, in_use, maintenance)
-      // Using whereIn instead of isNotEqualTo to work with existing indexes
-      query = baseQuery
-          .where('status', whereIn: ['available', 'in_use', 'maintenance'])
-          .orderBy('truckNumber');
-    }
-
-    return query.snapshots().map((snapshot) =>
-        snapshot.docs.map((doc) => Truck.fromMap(doc.id, doc.data())).toList());
+    // Get all trucks and filter in-memory to avoid index issues
+    return _db.collection('trucks')
+        .orderBy('truckNumber')
+        .snapshots()
+        .map((snapshot) {
+          final trucks = snapshot.docs
+              .map((doc) => Truck.fromMap(doc.id, doc.data()))
+              .toList();
+          
+          if (!includeInactive) {
+            // Filter out inactive trucks in-memory
+            return trucks.where((truck) => truck.status != 'inactive').toList();
+          }
+          
+          return trucks;
+        });
   }
 
   /// Stream available trucks only
