@@ -103,16 +103,16 @@ class TruckService {
   Stream<List<Truck>> streamTrucks({bool includeInactive = false}) {
     _requireAuth();
 
-    Query<Map<String, dynamic>> query;
+    final baseQuery = _db.collection('trucks');
+    final Query<Map<String, dynamic>> query;
 
     if (includeInactive) {
       // Get all trucks, sorted by truckNumber
-      query = _db.collection('trucks').orderBy('truckNumber');
+      query = baseQuery.orderBy('truckNumber');
     } else {
       // Get only active trucks (available, in_use, maintenance)
       // Using whereIn instead of isNotEqualTo to work with existing indexes
-      query = _db
-          .collection('trucks')
+      query = baseQuery
           .where('status', whereIn: ['available', 'in_use', 'maintenance'])
           .orderBy('truckNumber');
     }
