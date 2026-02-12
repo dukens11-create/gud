@@ -32,7 +32,11 @@ class Truck {
     }
     
     if (!validStatuses.contains(status)) {
-      print('⚠️ Invalid truck status "$status", defaulting to "available"');
+      // Use debugPrint for development logging
+      assert(() {
+        print('⚠️ Invalid truck status "$status", defaulting to "available"');
+        return true;
+      }());
       return 'available';
     }
     

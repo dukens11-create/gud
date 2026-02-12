@@ -8,10 +8,12 @@
 /// Usage:
 ///   dart scripts/fix_truck_statuses.dart
 /// 
-/// Note: This script requires Firebase Admin SDK or appropriate permissions.
-/// In production, this can be run as a Cloud Function or from an admin context.
+/// Note: This script requires Firebase to be initialized before running.
+/// It should be run from within the app context where Firebase is already
+/// initialized, or you need to add Firebase Admin SDK initialization.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 Future<void> fixTruckStatuses() async {
   final db = FirebaseFirestore.instance;
@@ -56,6 +58,17 @@ void main() async {
     print('================================');
     print('');
     
+    // Initialize Firebase if not already initialized
+    try {
+      await Firebase.initializeApp();
+      print('✅ Firebase initialized successfully');
+      print('');
+    } catch (e) {
+      print('ℹ️  Firebase already initialized or initialization failed: $e');
+      print('   Continuing with existing Firebase instance...');
+      print('');
+    }
+    
     await fixTruckStatuses();
     
     print('');
@@ -66,5 +79,6 @@ void main() async {
     print('');
     print('Note: This script requires proper Firebase configuration.');
     print('Make sure you have initialized Firebase before running this script.');
+    print('It is recommended to run this from within the app context.');
   }
 }

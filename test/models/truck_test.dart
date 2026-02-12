@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gud_app/models/truck.dart';
 
 void main() {
+  // Use fixed timestamp for deterministic tests
+  final testDate = DateTime(2024, 1, 15, 10, 30, 0);
+  
   group('Truck Model', () {
     test('normalizeStatus returns "available" for null status', () {
       expect(Truck.normalizeStatus(null), 'available');
@@ -26,7 +29,6 @@ void main() {
     });
 
     test('fromMap normalizes invalid status to "available"', () {
-      final now = DateTime.now();
       final data = {
         'truckNumber': '004',
         'vin': 'VIN123',
@@ -35,8 +37,8 @@ void main() {
         'year': 2020,
         'plateNumber': 'ABC123',
         'status': null, // null status should become 'available'
-        'createdAt': Timestamp.fromDate(now),
-        'updatedAt': Timestamp.fromDate(now),
+        'createdAt': Timestamp.fromDate(testDate),
+        'updatedAt': Timestamp.fromDate(testDate),
       };
 
       final truck = Truck.fromMap('truck-123', data);
@@ -46,7 +48,6 @@ void main() {
     });
 
     test('fromMap normalizes empty status to "available"', () {
-      final now = DateTime.now();
       final data = {
         'truckNumber': '005',
         'vin': 'VIN456',
@@ -55,8 +56,8 @@ void main() {
         'year': 2021,
         'plateNumber': 'XYZ789',
         'status': '', // empty status should become 'available'
-        'createdAt': Timestamp.fromDate(now),
-        'updatedAt': Timestamp.fromDate(now),
+        'createdAt': Timestamp.fromDate(testDate),
+        'updatedAt': Timestamp.fromDate(testDate),
       };
 
       final truck = Truck.fromMap('truck-456', data);
@@ -65,7 +66,6 @@ void main() {
     });
 
     test('fromMap preserves valid status values', () {
-      final now = DateTime.now();
       final statuses = ['available', 'in_use', 'maintenance', 'inactive'];
 
       for (final status in statuses) {
@@ -77,8 +77,8 @@ void main() {
           'year': 2022,
           'plateNumber': 'LMN456',
           'status': status,
-          'createdAt': Timestamp.fromDate(now),
-          'updatedAt': Timestamp.fromDate(now),
+          'createdAt': Timestamp.fromDate(testDate),
+          'updatedAt': Timestamp.fromDate(testDate),
         };
 
         final truck = Truck.fromMap('truck-789', data);
@@ -95,7 +95,6 @@ void main() {
     });
 
     test('toMap serializes truck correctly', () {
-      final now = DateTime.now();
       final truck = Truck(
         id: 'truck-123',
         truckNumber: '007',
@@ -108,8 +107,8 @@ void main() {
         assignedDriverId: 'driver-456',
         assignedDriverName: 'John Driver',
         notes: 'Test notes',
-        createdAt: now,
-        updatedAt: now,
+        createdAt: testDate,
+        updatedAt: testDate,
       );
 
       final map = truck.toMap();
@@ -129,7 +128,6 @@ void main() {
     });
 
     test('copyWith creates new instance with updated fields', () {
-      final now = DateTime.now();
       final original = Truck(
         id: 'truck-123',
         truckNumber: '008',
@@ -139,8 +137,8 @@ void main() {
         year: 2020,
         plateNumber: 'ASD456',
         status: 'available',
-        createdAt: now,
-        updatedAt: now,
+        createdAt: testDate,
+        updatedAt: testDate,
       );
 
       final updated = original.copyWith(status: 'in_use');
@@ -160,8 +158,8 @@ void main() {
         year: 2021,
         plateNumber: 'ZXC789',
         status: 'available',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
       );
 
       expect(truck.isAvailable, true);
@@ -180,8 +178,8 @@ void main() {
           year: 2022,
           plateNumber: 'RTY123',
           status: status,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
         );
 
         expect(truck.isAvailable, false);
@@ -206,8 +204,8 @@ void main() {
           year: 2023,
           plateNumber: 'FGH456',
           status: entry.key,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
         );
 
         expect(truck.statusDisplayName, entry.value);
