@@ -15,13 +15,24 @@ class FirebaseInitService {
   /// Creates 5 sample trucks with various statuses.
   /// Uses batch writes for efficiency.
   /// 
-  /// Returns true if initialization was performed, false if trucks already exist.
+  /// **Note**: This requires admin authentication to create trucks.
+  /// Will silently fail if user is not authenticated or not an admin.
+  /// 
+  /// Returns true if initialization was performed, false if trucks already exist
+  /// or if initialization was skipped due to permissions.
   /// Throws exceptions on errors.
   Future<bool> initializeTrucks() async {
     try {
       print('🚛 Checking trucks collection...');
 
+      // Check authentication first
+      if (_auth.currentUser == null) {
+        print('ℹ️ No user authenticated, skipping truck initialization');
+        return false;
+      }
+
       // Check if trucks collection is empty
+      // Note: This requires at least authenticated user (read permission)
       final snapshot = await _db.collection('trucks').limit(1).get();
       
       if (snapshot.docs.isNotEmpty) {

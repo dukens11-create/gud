@@ -30,6 +30,28 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
   String _statusFilter = 'all';
   String _sortBy = 'truckNumber'; // truckNumber, make, year
   bool _showInactive = false;
+  bool _hasInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Try to initialize trucks collection on first load
+    _initializeTrucksIfNeeded();
+  }
+
+  /// Initialize trucks collection if empty (runs once on screen load)
+  Future<void> _initializeTrucksIfNeeded() async {
+    if (_hasInitialized) return;
+    _hasInitialized = true;
+
+    try {
+      final initService = FirebaseInitService();
+      await initService.initializeTrucks();
+    } catch (e) {
+      print('⚠️ Auto-initialization failed (non-critical): $e');
+      // Silently fail - user can use debug button if needed
+    }
+  }
 
   @override
   void dispose() {
