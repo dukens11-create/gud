@@ -532,11 +532,38 @@ class _DriverHomeState extends State<DriverHome> {
           StreamBuilder<Truck?>(
             stream: _truckService.getTruckByDriverIdStream(widget.driverId),
             builder: (context, snapshot) {
-              if (snapshot.hasData && snapshot.data != null) {
-                final truck = snapshot.data!;
+              // Handle error state
+              if (snapshot.hasError) {
                 return Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Card(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade200, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red.shade700, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Error loading truck info. Please try again later.',
+                          style: TextStyle(fontSize: 14, color: Colors.red.shade900),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              if (snapshot.hasData && snapshot.data != null) {
+                final truck = snapshot.data!;
+                return Semantics(
+                  label: 'Assigned truck: ${truck.truckNumber}, ${truck.displayInfo}, Status: ${truck.statusDisplayName}',
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -548,13 +575,13 @@ class _DriverHomeState extends State<DriverHome> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
+                              color: Colors.blue.shade100,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               Icons.local_shipping,
                               size: 32,
-                              color: Colors.blue.shade700,
+                              color: Colors.blue.shade800,
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -585,6 +612,7 @@ class _DriverHomeState extends State<DriverHome> {
                       ),
                     ),
                   ),
+                ),
                 );
               } else if (snapshot.connectionState == ConnectionState.waiting) {
                 // Show placeholder card during loading to prevent layout shift
@@ -625,18 +653,20 @@ class _DriverHomeState extends State<DriverHome> {
                 );
               } else {
                 // No truck assigned - show info message
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.orange.shade200,
-                      width: 1,
+                return Semantics(
+                  label: 'No truck assigned. Contact admin to get a truck assignment.',
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.orange.shade200,
+                        width: 1,
+                      ),
                     ),
-                  ),
-                  child: Row(
+                    child: Row(
                     children: [
                       Icon(
                         Icons.info_outline,
@@ -655,6 +685,7 @@ class _DriverHomeState extends State<DriverHome> {
                       ),
                     ],
                   ),
+                ),
                 );
               }
             },
