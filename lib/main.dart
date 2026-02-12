@@ -15,6 +15,7 @@ import 'services/geofence_service.dart';
 import 'services/sync_service.dart';
 import 'services/remote_config_service.dart';
 import 'services/document_expiration_service.dart';
+import 'services/firebase_init_service.dart';
 import 'app.dart';
 
 /// Initialize all background services
@@ -144,6 +145,9 @@ void main() async {
     // Initialize all services
     await initializeServices();
     
+    // Initialize database with sample data (runs async, doesn't block app start)
+    _initializeDatabaseAsync();
+    
     // Log app open event
     FirebaseAnalytics analytics = FirebaseAnalytics.instance;
     await analytics.logAppOpen();
@@ -155,4 +159,29 @@ void main() async {
   }
   
   runApp(const GUDApp());
+}
+
+/// Initialize database with sample data asynchronously
+/// 
+/// This runs in the background and doesn't block app startup.
+/// Errors are logged but don't prevent the app from running.
+void _initializeDatabaseAsync() {
+  Future.microtask(() async {
+    try {
+      final initService = FirebaseInitService();
+      await initService.initializeDatabase();
+    } catch (e) {
+      print('⚠️ Database initialization failed (non-critical): $e');
+      // Log to crash reporting if available
+      try {
+        await CrashReportingService().logError(
+          e,
+          StackTrace.current,
+          reason: 'Database initialization failed',
+        );
+      } catch (_) {
+        // Ignore if crash reporting fails
+      }
+    }
+  });
 }
