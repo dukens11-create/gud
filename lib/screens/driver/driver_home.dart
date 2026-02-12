@@ -587,7 +587,42 @@ class _DriverHomeState extends State<DriverHome> {
                   ),
                 );
               } else if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox.shrink();
+                // Show placeholder card during loading to prevent layout shift
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Text(
+                            'Loading truck info...',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
               } else {
                 // No truck assigned - show info message
                 return Container(
