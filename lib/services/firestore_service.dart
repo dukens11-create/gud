@@ -27,14 +27,15 @@ class FirestoreService {
   /// (e.g., 'in_transit', not 'in-transit')
   /// 
   /// **Note**: 'picked_up' is a legacy status that may exist in older database records.
-  /// It has been replaced by 'in_transit' in current usage but is kept for backward compatibility.
-  /// Can be removed once all historical loads are migrated to use 'in_transit'.
+  /// While it has been replaced by 'in_transit' for new loads, it remains valid for queries
+  /// to support backward compatibility. Historical loads with 'picked_up' status will continue
+  /// to be returned by queries. Can be removed once all historical loads are migrated.
   static const List<String> validLoadStatuses = [
     'assigned',    // Load assigned to driver but not started
-    'in_transit',  // Load currently being transported (underscore!)
+    'in_transit',  // Load currently being transported (underscore!) - preferred over 'picked_up'
     'delivered',   // Load has been delivered
     'completed',   // Load fully completed
-    'picked_up',   // Legacy status - replaced by 'in_transit' (kept for backward compatibility)
+    'picked_up',   // Legacy status - still valid for queries to support historical loads
   ];
   
   /// Email validation regex pattern
