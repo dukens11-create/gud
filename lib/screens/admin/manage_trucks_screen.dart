@@ -590,7 +590,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
 }
 
 /// Widget for displaying a truck card
-class _TruckCard extends StatelessWidget {
+class _TruckCard extends StatefulWidget {
   final Truck truck;
   final VoidCallback onTap;
   final VoidCallback onDelete;
@@ -601,8 +601,16 @@ class _TruckCard extends StatelessWidget {
     required this.onDelete,
   });
 
+  @override
+  State<_TruckCard> createState() => _TruckCardState();
+}
+
+class _TruckCardState extends State<_TruckCard> {
+  final _truckService = TruckService();
+  bool _isToggling = false;
+
   Color _getStatusColor() {
-    switch (truck.status) {
+    switch (widget.truck.status) {
       case 'available':
         return Colors.green;
       case 'in_use':
@@ -617,7 +625,7 @@ class _TruckCard extends StatelessWidget {
   }
 
   IconData _getStatusIcon() {
-    switch (truck.status) {
+    switch (widget.truck.status) {
       case 'available':
         return Icons.check_circle;
       case 'in_use':
@@ -631,13 +639,31 @@ class _TruckCard extends StatelessWidget {
     }
   }
 
+  Future<void> _toggleStatus() async {
+    setState(() => _isToggling = true);
+    try {
+      await _truckService.toggleTruckStatus(widget.truck.id);
+      if (mounted) {
+        NavigationService.showSuccess('Truck status updated successfully');
+      }
+    } catch (e) {
+      if (mounted) {
+        NavigationService.showError('Error updating truck status: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isToggling = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dismissible(
-      key: Key(truck.id),
+      key: Key(widget.truck.id),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
-        onDelete();
+        widget.onDelete();
         return false; // Don't auto-dismiss, let the dialog handle it
       },
       background: Container(
@@ -656,7 +682,7 @@ class _TruckCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: InkWell(
-          onTap: onTap,
+          onTap: widget.onTap,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -676,13 +702,13 @@ class _TruckCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            truck.truckNumber,
+                            widget.truck.truckNumber,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
                           Text(
-                            truck.displayInfo,
+                            widget.truck.displayInfo,
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   color: Colors.grey[600],
                                 ),
@@ -710,7 +736,7 @@ class _TruckCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            truck.statusDisplayName,
+                            widget.truck.statusDisplayName,
                             style: TextStyle(
                               color: _getStatusColor(),
                               fontWeight: FontWeight.bold,
@@ -729,14 +755,14 @@ class _TruckCard extends StatelessWidget {
                       child: _InfoRow(
                         icon: Icons.confirmation_number,
                         label: 'VIN',
-                        value: truck.vin,
+                        value: widget.truck.vin,
                       ),
                     ),
                     Expanded(
                       child: _InfoRow(
                         icon: Icons.calendar_today,
                         label: 'Year',
-                        value: truck.year.toString(),
+                        value: widget.truck.year.toString(),
                       ),
                     ),
                   ],
@@ -745,9 +771,9 @@ class _TruckCard extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.credit_card,
                   label: 'Plate',
-                  value: truck.plateNumber,
+                  value: widget.truck.plateNumber,
                 ),
-                if (truck.assignedDriverName != null) ...[
+                if (widget.truck.assignedDriverName != null) ...[
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -760,7 +786,7 @@ class _TruckCard extends StatelessWidget {
                         const Icon(Icons.person, size: 16, color: Colors.blue),
                         const SizedBox(width: 8),
                         Text(
-                          'Driver: ${truck.assignedDriverName}',
+                          'Driver: ${widget.truck.assignedDriverName}',
                           style: const TextStyle(
                             color: Colors.blue,
                             fontWeight: FontWeight.w500,
@@ -770,10 +796,10 @@ class _TruckCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (truck.notes != null && truck.notes!.isNotEmpty) ...[
+                if (widget.truck.notes != null && widget.truck.notes!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
-                    truck.notes!,
+                    widget.truck.notes!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey[600],
                           fontStyle: FontStyle.italic,
@@ -782,13 +808,47 @@ class _TruckCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
+                // Toggle status button - only show if truck is available or in_use
+                if (widget.truck.status == 'available' || widget.truck.status == 'in_use') ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isToggling ? null : _toggleStatus,
+                      icon: _isToggling
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Icon(
+                              widget.truck.status == 'in_use'
+                                  ? Icons.check_circle_outline
+                                  : Icons.local_shipping,
+                            ),
+                      label: Text(
+                        widget.truck.status == 'in_use'
+                            ? 'Set Not In Use'
+                            : 'Set In Use',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: widget.truck.status == 'in_use'
+                            ? Colors.green
+                            : Colors.blue,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ),
     );
-    }
+  }
 }
 
 /// Widget for displaying info rows

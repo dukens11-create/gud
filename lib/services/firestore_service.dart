@@ -669,6 +669,24 @@ TROUBLESHOOTING:
     }
   }
 
+  /// Mark load as delivered (one-tap action for drivers)
+  /// 
+  /// Simple wrapper for updateLoadStatus that marks a load as delivered.
+  /// This provides a single-tap action for drivers to complete a delivery.
+  /// 
+  /// **Security**: Firestore rules ensure drivers can only update their own loads
+  Future<void> markLoadAsDelivered(String loadId) async {
+    _requireAuth();
+    
+    print('📦 Marking load as delivered: $loadId');
+    
+    await updateLoadStatus(
+      loadId: loadId,
+      status: 'delivered',
+      deliveredAt: DateTime.now(),
+    );
+  }
+
   /// Update load with arbitrary data
   /// 
   /// Generic method for updating load document with any data map.

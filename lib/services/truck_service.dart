@@ -62,6 +62,30 @@ class TruckService {
     );
   }
 
+  /// Toggle truck status between 'in_use' and 'available'
+  /// This is a simple one-tap action for users to quickly update truck status
+  Future<void> toggleTruckStatus(String truckId) async {
+    _requireAuth();
+
+    final truck = await getTruck(truckId);
+    if (truck == null) {
+      throw Exception('Truck not found');
+    }
+
+    // Don't allow toggling for trucks in maintenance or inactive status
+    if (truck.status == 'maintenance' || truck.status == 'inactive') {
+      throw Exception('Cannot toggle status for trucks in ${truck.status} state');
+    }
+
+    // Toggle between in_use and available
+    final newStatus = truck.status == 'in_use' ? 'available' : 'in_use';
+
+    await _db.collection('trucks').doc(truckId).update({
+      'status': newStatus,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   /// Soft delete a truck (set status to inactive)
   Future<void> deleteTruck(String truckId) async {
     _requireAuth();
