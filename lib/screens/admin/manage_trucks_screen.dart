@@ -284,9 +284,12 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
     
     int selectedYear = truck?.year ?? DateTime.now().year;
     String selectedStatus = truck?.status ?? 'available';
+    // Loading state managed via closure in StatefulBuilder's setState
+    bool isLoading = false;
 
     final result = await showDialog<bool>(
       context: context,
+      barrierDismissible: false, // Prevent dismissing during save
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(title),
@@ -405,11 +408,11 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
+              onPressed: isLoading ? null : () => Navigator.pop(dialogContext, false),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: isLoading ? null : () async {
                 // Validate
                 if (truckNumberController.text.trim().isEmpty ||
                     vinController.text.trim().isEmpty ||
@@ -437,53 +440,79 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
                   return;
                 }
 
-                Navigator.pop(dialogContext, true);
+                // Set loading state
+                setState(() => isLoading = true);
+
+                try {
+                  // Build the truck object
+                  final now = DateTime.now();
+                  final newTruck = Truck(
+                    id: truck?.id ?? '',
+                    truckNumber: truckNumberController.text.trim(),
+                    vin: vinController.text.trim(),
+                    make: makeController.text.trim(),
+                    model: modelController.text.trim(),
+                    year: selectedYear,
+                    plateNumber: plateController.text.trim(),
+                    status: selectedStatus,
+                    assignedDriverId: truck?.assignedDriverId,
+                    assignedDriverName: truck?.assignedDriverName,
+                    notes: notesController.text.trim().isEmpty 
+                        ? null 
+                        : notesController.text.trim(),
+                    createdAt: truck?.createdAt ?? now,
+                    updatedAt: now,
+                  );
+
+                  // Save to database BEFORE closing dialog
+                  if (truck == null) {
+                    await _truckService.createTruck(newTruck);
+                  } else {
+                    await _truckService.updateTruck(truck.id, newTruck);
+                  }
+
+                  // Only close on success
+                  if (dialogContext.mounted) {
+                    Navigator.pop(dialogContext, true);
+                  }
+                } catch (e) {
+                  // Show error INSIDE dialog, keep it open
+                  // Note: Using dialogContext to maintain consistency with validation errors above
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                  // Reset loading state on error
+                  setState(() => isLoading = false);
+                  return;
+                }
               },
-              child: const Text('Save'),
+              child: isLoading 
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Save'),
             ),
           ],
         ),
       ),
     );
 
+    // Show success message after dialog closes
     if (result == true && mounted) {
-      try {
-        final now = DateTime.now();
-        final newTruck = Truck(
-          id: truck?.id ?? '',
-          truckNumber: truckNumberController.text.trim(),
-          vin: vinController.text.trim(),
-          make: makeController.text.trim(),
-          model: modelController.text.trim(),
-          year: selectedYear,
-          plateNumber: plateController.text.trim(),
-          status: selectedStatus,
-          assignedDriverId: truck?.assignedDriverId,
-          assignedDriverName: truck?.assignedDriverName,
-          notes: notesController.text.trim().isEmpty 
-              ? null 
-              : notesController.text.trim(),
-          createdAt: truck?.createdAt ?? now,
-          updatedAt: now,
-        );
-
-        if (truck == null) {
-          // Create new truck
-          await _truckService.createTruck(newTruck);
-          if (mounted) {
-            NavigationService.showSuccess('Truck added successfully');
-          }
-        } else {
-          // Update existing truck
-          await _truckService.updateTruck(truck.id, newTruck);
-          if (mounted) {
-            NavigationService.showSuccess('Truck updated successfully');
-          }
-        }
-      } catch (e) {
-        if (mounted) {
-          NavigationService.showError('Error: $e');
-        }
+      if (truck == null) {
+        NavigationService.showSuccess('Truck added successfully');
+      } else {
+        NavigationService.showSuccess('Truck updated successfully');
       }
     }
 
