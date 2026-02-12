@@ -1,30 +1,49 @@
 FIREBASE CONFIGURATION FOR iOS
 ================================
 
-The GoogleService-Info.plist file is already configured for the development
-Firebase project (gud-express).
+⚠️ IMPORTANT: PLACEHOLDER VALUES DETECTED
+The current GoogleService-Info.plist file contains PLACEHOLDER values that 
+will cause Firebase services to FAIL on iOS devices.
 
-Current Configuration:
+You MUST replace this file with valid configuration from Firebase Console
+before building for iOS.
+
+Current Issues:
+- CLIENT_ID: Contains "placeholder" instead of real OAuth client ID
+- REVERSED_CLIENT_ID: Contains "placeholder" instead of real reversed client ID
+- GOOGLE_APP_ID: Contains "placeholder" instead of real iOS app ID
+
+Quick Fix:
+==========
+1. Download the correct GoogleService-Info.plist from Firebase Console
+   URL: https://console.firebase.google.com/project/gud-express/settings/general
+   
+2. Replace: ios/Runner/GoogleService-Info.plist
+
+3. Validate: ./scripts/validate_firebase_ios.sh
+
+Project Information:
+====================
 - Project ID: gud-express
 - Bundle ID: com.gudexpress.gud_app
 - Storage Bucket: gud-express.firebasestorage.app
+- Project Number: 750390855294
 
-This file is located at: ios/Runner/GoogleService-Info.plist
+Detailed Setup Instructions:
+============================
+See docs/FIREBASE_IOS_SETUP.md for complete step-by-step instructions including:
+- How to register iOS app in Firebase Console
+- How to download the correct configuration
+- How to validate your configuration
+- Troubleshooting common issues
 
-If you need to set up a different Firebase project (e.g., for production):
+Template File:
+==============
+A template file is available at: ios/Runner/GoogleService-Info.plist.template
+This shows the structure but should NOT be used for actual builds.
 
-1. Go to Firebase Console (https://console.firebase.google.com)
-2. Select your project or create a new one
-3. Click "Add app" → iOS
-4. Enter Bundle ID: com.gudexpress.gud_app
-5. Register app and download GoogleService-Info.plist
-6. Replace the file here: ios/Runner/GoogleService-Info.plist
-
-NOTE: The current development configuration is committed to the repository.
-For production deployments, ensure you use a separate Firebase project
-with appropriate security rules.
-
-For more details, see:
-- DEPLOYMENT_PRODUCTION.md
-- FIREBASE_SETUP.md
-- ios/README.md
+For More Information:
+=====================
+- docs/FIREBASE_IOS_SETUP.md - Complete iOS Firebase setup guide
+- FIREBASE_SETUP.md - General Firebase setup
+- README.md - Main project documentation
