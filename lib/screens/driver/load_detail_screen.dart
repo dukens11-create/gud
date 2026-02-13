@@ -20,6 +20,7 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
   late LoadModel _currentLoad;
   bool _isRefreshing = false;
   bool _isLoading = false;
+  final FirestoreService firestoreService = FirestoreService();
 
   @override
   void initState() {
