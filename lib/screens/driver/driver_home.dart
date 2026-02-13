@@ -1093,8 +1093,40 @@ class _DriverHomeState extends State<DriverHome> {
                                 ),
                                 isThreeLine: true,
                               ),
-                              // Add Delivered button if load is not already delivered
-                              if (load.status != 'delivered')
+                              // Show Accept/Decline buttons for pending loads
+                              if (load.status == 'pending')
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          icon: const Icon(Icons.check_circle),
+                                          label: const Text('Accept Load'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          onPressed: () => _showAcceptDialog(load),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          icon: const Icon(Icons.cancel),
+                                          label: const Text('Decline'),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Colors.red,
+                                            side: const BorderSide(color: Colors.red),
+                                          ),
+                                          onPressed: () => _showDeclineDialog(load),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              // Add Delivered button if load is not already delivered or pending
+                              if (load.status != 'delivered' && load.status != 'pending')
                                 Padding(
                                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                                   child: SizedBox(
@@ -1139,17 +1171,17 @@ class _DriverHomeState extends State<DriverHome> {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return Colors.orange;
+        return Colors.orange.shade600; // Yellow/Orange (awaiting action)
       case 'accepted':
-        return Colors.green;
+        return Colors.lightBlue.shade600; // Light Blue (ready to start)
       case 'assigned':
         return Colors.blue;
       case 'in_transit':
-        return Colors.purple;
+        return Colors.blue.shade700; // Blue (in progress)
       case 'delivered':
-        return Colors.green.shade700;
+        return Colors.green.shade700; // Green (completed)
       case 'declined':
-        return Colors.red;
+        return Colors.red.shade600; // Red (rejected)
       default:
         return Colors.grey;
     }
@@ -1360,5 +1392,113 @@ class _DriverHomeState extends State<DriverHome> {
         ),
       ),
     );
+  }
+
+  /// Show accept load confirmation dialog
+  Future<void> _showAcceptDialog(LoadModel load) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Accept Load?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Load: ${load.loadNumber}'),
+            const SizedBox(height: 8),
+            Text('Destination: ${load.deliveryAddress}'),
+            const SizedBox(height: 16),
+            const Text(
+              'Once accepted, you\'ll need to complete this delivery.',
+              style: TextStyle(fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Yes, Accept'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await _firestoreService.acceptLoad(load.id);
+        if (mounted) {
+          NavigationService.showSuccess('Load accepted! Tap "Start Trip" when ready.');
+        }
+      } catch (e) {
+        if (mounted) {
+          NavigationService.showError('Error accepting load: $e');
+        }
+      }
+    }
+  }
+
+  /// Show decline load dialog with optional reason field
+  Future<void> _showDeclineDialog(LoadModel load) async {
+    final reasonController = TextEditingController();
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Decline Load?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Please provide a reason for declining (optional):'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'e.g., Schedule conflict, truck maintenance, etc.',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Decline Load'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await _firestoreService.declineLoad(
+          load.id,
+          reason: reasonController.text.trim(),
+        );
+        if (mounted) {
+          NavigationService.showSuccess('Load declined. Admin has been notified.');
+        }
+      } catch (e) {
+        if (mounted) {
+          NavigationService.showError('Error declining load: $e');
+        }
+      }
+    }
+    
+    reasonController.dispose();
   }
 }

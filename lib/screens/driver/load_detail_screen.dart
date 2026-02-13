@@ -392,24 +392,9 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          try {
-                            await firestoreService.updateLoadStatus(
-                              loadId: load.id,
-                              status: 'accepted',
-                            );
-                            if (context.mounted) {
-                              NavigationService.showSuccess('Load accepted successfully');
-                              Navigator.pop(context);
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              NavigationService.showError('Error accepting load: $e');
-                            }
-                          }
-                        },
+                        onPressed: () => _showAcceptDialog(load, firestoreService),
                         icon: const Icon(Icons.check_circle),
-                        label: const Text('Accept Load'),
+                        label: const Text('Accept This Load'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
@@ -422,46 +407,7 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: () async {
-                          // Show confirmation dialog
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Decline Load?'),
-                              content: const Text(
-                                'Are you sure you want to decline this load? Your admin will be notified.',
-                              ),
-                              actions: [
-                                TextButton(
-                                  child: const Text('Cancel'),
-                                  onPressed: () => Navigator.pop(context, false),
-                                ),
-                                TextButton(
-                                  child: const Text('Decline'),
-                                  onPressed: () => Navigator.pop(context, true),
-                                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                ),
-                              ],
-                            ),
-                          );
-                          
-                          if (confirmed == true && context.mounted) {
-                            try {
-                              await firestoreService.updateLoadStatus(
-                                loadId: load.id,
-                                status: 'declined',
-                              );
-                              if (context.mounted) {
-                                NavigationService.showSuccess('Load declined');
-                                Navigator.pop(context);
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                NavigationService.showError('Error declining load: $e');
-                              }
-                            }
-                          }
-                        },
+                        onPressed: () => _showDeclineDialog(load, firestoreService),
                         icon: const Icon(Icons.cancel),
                         label: const Text('Decline Load'),
                         style: OutlinedButton.styleFrom(
@@ -693,19 +639,19 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return Colors.orange;
+        return Colors.orange.shade600; // Yellow/Orange (awaiting action)
       case 'accepted':
-        return Colors.green;
+        return Colors.lightBlue.shade600; // Light Blue (ready to start)
       case 'assigned':
         return Colors.blue;
       case 'picked_up':
         return Colors.orange;
       case 'in_transit':
-        return Colors.purple;
+        return Colors.blue.shade700; // Blue (in progress)
       case 'delivered':
-        return Colors.green.shade700;
+        return Colors.green.shade700; // Green (completed)
       case 'declined':
-        return Colors.red;
+        return Colors.red.shade600; // Red (rejected)
       default:
         return Colors.grey;
     }
@@ -759,5 +705,115 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
         ),
       ),
     );
+  }
+
+  /// Show accept load confirmation dialog
+  Future<void> _showAcceptDialog(LoadModel load, FirestoreService firestoreService) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Accept Load?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Load: ${load.loadNumber}'),
+            const SizedBox(height: 8),
+            Text('Destination: ${load.deliveryAddress}'),
+            const SizedBox(height: 16),
+            const Text(
+              'Once accepted, you\'ll need to complete this delivery.',
+              style: TextStyle(fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Yes, Accept'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await firestoreService.acceptLoad(load.id);
+        if (mounted) {
+          await _refreshLoadData();
+          NavigationService.showSuccess('Load accepted! Tap "Start Trip" when ready.');
+        }
+      } catch (e) {
+        if (mounted) {
+          NavigationService.showError('Error accepting load: $e');
+        }
+      }
+    }
+  }
+
+  /// Show decline load dialog with optional reason field
+  Future<void> _showDeclineDialog(LoadModel load, FirestoreService firestoreService) async {
+    final reasonController = TextEditingController();
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Decline Load?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Please provide a reason for declining (optional):'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'e.g., Schedule conflict, truck maintenance, etc.',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Decline Load'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await firestoreService.declineLoad(
+          load.id,
+          reason: reasonController.text.trim(),
+        );
+        if (mounted) {
+          NavigationService.showSuccess('Load declined. Admin has been notified.');
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          NavigationService.showError('Error declining load: $e');
+        }
+      }
+    }
+    
+    reasonController.dispose();
   }
 }

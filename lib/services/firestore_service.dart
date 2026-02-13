@@ -810,6 +810,89 @@ TROUBLESHOOTING:
     }
   }
 
+  /// Accept a pending load
+  /// 
+  /// Changes load status from 'pending' to 'accepted' and records acceptance timestamp.
+  /// 
+  /// Parameters:
+  /// - loadId: The ID of the load to accept
+  /// 
+  /// Throws:
+  /// - Exception if load not found or user not authenticated
+  Future<void> acceptLoad(String loadId) async {
+    _requireAuth();
+    
+    final loadRef = _db.collection('loads').doc(loadId);
+    final loadDoc = await loadRef.get();
+    
+    if (!loadDoc.exists) {
+      throw Exception('Load not found');
+    }
+    
+    final loadData = loadDoc.data()!;
+    
+    // Verify the load is assigned to current user
+    if (loadData['driverId'] != _auth.currentUser?.uid) {
+      throw Exception('You are not assigned to this load');
+    }
+    
+    // Verify load is in pending status
+    if (loadData['status'] != 'pending') {
+      throw Exception('Load is not in pending status');
+    }
+    
+    await loadRef.update({
+      'status': 'accepted',
+      'acceptedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Decline a pending load
+  /// 
+  /// Changes load status from 'pending' to 'declined' and records reason.
+  /// 
+  /// Parameters:
+  /// - loadId: The ID of the load to decline
+  /// - reason: Optional reason for declining (shown to admin)
+  /// 
+  /// Throws:
+  /// - Exception if load not found or user not authenticated
+  Future<void> declineLoad(String loadId, {String? reason}) async {
+    _requireAuth();
+    
+    final loadRef = _db.collection('loads').doc(loadId);
+    final loadDoc = await loadRef.get();
+    
+    if (!loadDoc.exists) {
+      throw Exception('Load not found');
+    }
+    
+    final loadData = loadDoc.data()!;
+    
+    // Verify the load is assigned to current user
+    if (loadData['driverId'] != _auth.currentUser?.uid) {
+      throw Exception('You are not assigned to this load');
+    }
+    
+    // Verify load is in pending status
+    if (loadData['status'] != 'pending') {
+      throw Exception('Load is not in pending status');
+    }
+    
+    final updateData = {
+      'status': 'declined',
+      'declinedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    
+    if (reason != null && reason.isNotEmpty) {
+      updateData['declineReason'] = reason;
+    }
+    
+    await loadRef.update(updateData);
+  }
+
   /// Get count of completed loads for a driver
   /// 
   /// Counts loads with status 'delivered' or 'completed'
