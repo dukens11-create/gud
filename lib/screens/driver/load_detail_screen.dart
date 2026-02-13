@@ -7,10 +7,44 @@ import '../../services/navigation_service.dart';
 import 'upload_pod_screen.dart';
 import 'upload_bol_screen.dart';
 
-class LoadDetailScreen extends StatelessWidget {
+class LoadDetailScreen extends StatefulWidget {
   final LoadModel load;
 
   const LoadDetailScreen({super.key, required this.load});
+
+  @override
+  State<LoadDetailScreen> createState() => _LoadDetailScreenState();
+}
+
+class _LoadDetailScreenState extends State<LoadDetailScreen> {
+  late LoadModel _currentLoad;
+  bool _isRefreshing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentLoad = widget.load;
+  }
+
+  Future<void> _refreshLoadData() async {
+    setState(() => _isRefreshing = true);
+    
+    try {
+      final firestoreService = FirestoreService();
+      final updatedLoad = await firestoreService.getLoad(widget.load.id);
+      if (updatedLoad != null && mounted) {
+        setState(() => _currentLoad = updatedLoad);
+      }
+    } catch (e) {
+      if (mounted) {
+        NavigationService.showError('Failed to refresh load data');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,6 +52,7 @@ class LoadDetailScreen extends StatelessWidget {
     final firestoreService = FirestoreService();
     final currentUserId = mockService.currentUserId ?? '';
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
+    final load = _currentLoad;
 
     return Scaffold(
       appBar: AppBar(
@@ -233,15 +268,9 @@ class LoadDetailScreen extends StatelessWidget {
                                   builder: (context) => UploadBOLScreen(load: load),
                                 ),
                               );
-                              if (result == true && context.mounted) {
-                                // Refresh the screen by popping and pushing again
-                                // or use state management to update
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => LoadDetailScreen(load: load),
-                                  ),
-                                );
+                              if (result == true) {
+                                // Refresh load data to show newly uploaded photo
+                                await _refreshLoadData();
                               }
                             },
                             icon: Icon(load.bolPhotoUrl == null ? Icons.camera_alt : Icons.refresh),
@@ -313,14 +342,9 @@ class LoadDetailScreen extends StatelessWidget {
                                         builder: (context) => UploadPODScreen(load: load),
                                       ),
                                     );
-                                    if (result == true && context.mounted) {
-                                      // Refresh the screen
-                                      Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => LoadDetailScreen(load: load),
-                                        ),
-                                      );
+                                    if (result == true) {
+                                      // Refresh load data to show newly uploaded photo
+                                      await _refreshLoadData();
                                     }
                                   }
                                 : null,

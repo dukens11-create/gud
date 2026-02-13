@@ -56,4 +56,13 @@ class DateTimeUtils {
   static Timestamp? toTimestamp(DateTime? dateTime) {
     return dateTime != null ? Timestamp.fromDate(dateTime) : null;
   }
+
+  /// Format DateTime for display in UI
+  /// 
+  /// Formats as "MM/DD/YYYY HH:MM"
+  /// 
+  /// Example: "1/15/2024 14:30"
+  static String formatDisplayDateTime(DateTime dateTime) {
+    return '${dateTime.month}/${dateTime.day}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
 }

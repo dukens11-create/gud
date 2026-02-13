@@ -158,7 +158,8 @@ class DocumentUploadService {
       final ref = _storage.refFromURL(photoUrl);
       await ref.delete();
     } catch (e) {
-      print('Error deleting photo: $e');
+      // Silently handle deletion errors
+      // File may not exist or network error occurred
     }
   }
 }

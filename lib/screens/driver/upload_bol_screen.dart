@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/load.dart';
 import '../../services/document_upload_service.dart';
 import '../../services/navigation_service.dart';
+import '../../utils/datetime_utils.dart';
 
 class UploadBOLScreen extends StatefulWidget {
   final LoadModel load;
@@ -71,7 +72,7 @@ class _UploadBOLScreenState extends State<UploadBOLScreen> {
                           ),
                           if (widget.load.bolUploadedAt != null)
                             Text(
-                              'Uploaded: ${_formatDateTime(widget.load.bolUploadedAt!)}',
+                              'Uploaded: ${DateTimeUtils.formatDisplayDateTime(widget.load.bolUploadedAt!)}',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           const SizedBox(height: 8),
@@ -288,9 +289,5 @@ class _UploadBOLScreenState extends State<UploadBOLScreen> {
       }
       // User can now select new photo
     }
-  }
-
-  String _formatDateTime(DateTime dt) {
-    return '${dt.month}/${dt.day}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }
