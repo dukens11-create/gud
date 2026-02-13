@@ -86,6 +86,28 @@ class TruckService {
     });
   }
 
+  /// Check if truck has active loads
+  /// 
+  /// Returns the count of active loads assigned to the driver currently using this truck.
+  /// Active loads are those with status: assigned, accepted, in_transit, or picked_up.
+  Future<int> getTruckActiveLoadCount(String truckId) async {
+    _requireAuth();
+    
+    final truck = await getTruck(truckId);
+    if (truck == null || truck.assignedDriverId == null) {
+      return 0;
+    }
+    
+    // Check for active loads assigned to the driver using this truck
+    final snapshot = await _db
+        .collection('loads')
+        .where('driverId', isEqualTo: truck.assignedDriverId)
+        .where('status', whereIn: ['assigned', 'accepted', 'in_transit', 'picked_up'])
+        .get();
+        
+    return snapshot.docs.length;
+  }
+
   /// Soft delete a truck (set status to inactive)
   Future<void> deleteTruck(String truckId) async {
     _requireAuth();

@@ -31,6 +31,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
   String _sortBy = 'truckNumber'; // truckNumber, make, year
   bool _showInactive = false;
   bool _hasInitialized = false;
+  bool _deleteMode = false;
 
   @override
   void initState() {
@@ -72,6 +73,15 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
               tooltip: 'Re-initialize Sample Data (Debug)',
               onPressed: _reinitializeSampleData,
             ),
+          // Delete mode toggle
+          IconButton(
+            icon: Icon(_deleteMode ? Icons.delete : Icons.delete_outline),
+            tooltip: _deleteMode ? 'Disable Delete Mode' : 'Enable Delete Mode',
+            onPressed: () {
+              setState(() => _deleteMode = !_deleteMode);
+            },
+            color: _deleteMode ? Colors.red : null,
+          ),
           IconButton(
             icon: Icon(_showInactive ? Icons.visibility : Icons.visibility_off),
             tooltip: _showInactive ? 'Hide Inactive' : 'Show Inactive',
@@ -291,6 +301,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
                       truck: truck,
                       onTap: () => _showEditTruckDialog(truck),
                       onDelete: () => _confirmDeleteTruck(truck),
+                      deleteMode: _deleteMode,
                     );
                   },
                 );
@@ -583,6 +594,26 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
   }
 
   Future<void> _confirmDeleteTruck(Truck truck) async {
+    // First check if truck has active loads
+    try {
+      final activeLoadCount = await _truckService.getTruckActiveLoadCount(truck.id);
+      
+      if (activeLoadCount > 0) {
+        if (mounted) {
+          NavigationService.showError(
+            'Cannot delete truck - assigned to $activeLoadCount active load(s)'
+          );
+        }
+        return;
+      }
+    } catch (e) {
+      if (mounted) {
+        NavigationService.showError('Error checking truck status: $e');
+      }
+      return;
+    }
+
+    // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -609,7 +640,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
       try {
         await _truckService.deleteTruck(truck.id);
         if (mounted) {
-          NavigationService.showSuccess('Truck deleted successfully');
+          NavigationService.showSuccess('Truck ${truck.truckNumber} deleted successfully');
         }
       } catch (e) {
         if (mounted) {
@@ -672,11 +703,13 @@ class _TruckCard extends StatefulWidget {
   final Truck truck;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final bool deleteMode;
 
   const _TruckCard({
     required this.truck,
     required this.onTap,
     required this.onDelete,
+    required this.deleteMode,
   });
 
   @override
@@ -737,63 +770,58 @@ class _TruckCardState extends State<_TruckCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Dismissible(
-      key: Key(widget.truck.id),
-      direction: DismissDirection.endToStart,
-      confirmDismiss: (direction) async {
-        widget.onDelete();
-        return false; // Don't auto-dismiss, let the dialog handle it
-      },
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.delete, color: Colors.white),
+    final cardWidget = Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: widget.deleteMode 
+            ? BorderSide(color: Colors.red.shade200, width: 2)
+            : BorderSide.none,
       ),
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.local_shipping,
-                      size: 32,
-                      color: Theme.of(context).primaryColor,
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.local_shipping,
+                    size: 32,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.truck.truckNumber,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        Text(
+                          widget.truck.displayInfo,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.truck.truckNumber,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          Text(
-                            widget.truck.displayInfo,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  ),
+                  // Show delete button in delete mode, otherwise show status badge
+                  if (widget.deleteMode)
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: widget.onDelete,
+                      tooltip: 'Delete Truck',
+                    )
+                  else
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -824,108 +852,131 @@ class _TruckCardState extends State<_TruckCard> {
                         ],
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _InfoRow(
-                        icon: Icons.confirmation_number,
-                        label: 'VIN',
-                        value: widget.truck.vin,
-                      ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _InfoRow(
+                      icon: Icons.confirmation_number,
+                      label: 'VIN',
+                      value: widget.truck.vin,
                     ),
-                    Expanded(
-                      child: _InfoRow(
-                        icon: Icons.calendar_today,
-                        label: 'Year',
-                        value: widget.truck.year.toString(),
-                      ),
+                  ),
+                  Expanded(
+                    child: _InfoRow(
+                      icon: Icons.calendar_today,
+                      label: 'Year',
+                      value: widget.truck.year.toString(),
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _InfoRow(
+                icon: Icons.credit_card,
+                label: 'Plate',
+                value: widget.truck.plateNumber,
+              ),
+              if (widget.truck.assignedDriverName != null) ...[
                 const SizedBox(height: 8),
-                _InfoRow(
-                  icon: Icons.credit_card,
-                  label: 'Plate',
-                  value: widget.truck.plateNumber,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.person, size: 16, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Driver: ${widget.truck.assignedDriverName}',
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                if (widget.truck.assignedDriverName != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.person, size: 16, color: Colors.blue),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Driver: ${widget.truck.assignedDriverName}',
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                if (widget.truck.notes != null && widget.truck.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.truck.notes!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                          fontStyle: FontStyle.italic,
-                        ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-                // Toggle status button - only show if truck is available or in_use
-                if (widget.truck.status == 'available' || widget.truck.status == 'in_use') ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _isToggling ? null : _toggleStatus,
-                      icon: _isToggling
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : Icon(
-                              widget.truck.status == 'in_use'
-                                  ? Icons.check_circle_outline
-                                  : Icons.local_shipping,
-                            ),
-                      label: Text(
-                        widget.truck.status == 'in_use'
-                            ? 'Set Not In Use'
-                            : 'Set In Use',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: widget.truck.status == 'in_use'
-                            ? Colors.green
-                            : Colors.blue,
-                      ),
-                    ),
-                  ),
-                ],
               ],
-            ),
+              if (widget.truck.notes != null && widget.truck.notes!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  widget.truck.notes!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              // Toggle status button - only show if truck is available or in_use and not in delete mode
+              if (!widget.deleteMode && (widget.truck.status == 'available' || widget.truck.status == 'in_use')) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isToggling ? null : _toggleStatus,
+                    icon: _isToggling
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Icon(
+                            widget.truck.status == 'in_use'
+                                ? Icons.check_circle_outline
+                                : Icons.local_shipping,
+                          ),
+                    label: Text(
+                      widget.truck.status == 'in_use'
+                          ? 'Set Not In Use'
+                          : 'Set In Use',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: widget.truck.status == 'in_use'
+                          ? Colors.green
+                          : Colors.blue,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
     );
+
+    // Only enable swipe-to-delete when NOT in delete mode
+    if (!widget.deleteMode) {
+      return Dismissible(
+        key: Key(widget.truck.id),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (direction) async {
+          widget.onDelete();
+          return false; // Don't auto-dismiss, let the dialog handle it
+        },
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        child: cardWidget,
+      );
+    }
+    
+    return cardWidget;
   }
 }
 
