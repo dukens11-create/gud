@@ -402,61 +402,122 @@ class DriverExtendedService {
   Future<Map<String, dynamic>> getDriverPerformanceMetrics(
       String driverId) async {
     _requireAuth();
-    // Get basic driver info
-    final driverDoc = await _db.collection('drivers').doc(driverId).get();
-    final driverData = driverDoc.data() ?? {};
-
-    // Get ratings
-    final ratingsSnapshot = await _db
-        .collection('drivers')
-        .doc(driverId)
-        .collection('ratings')
-        .get();
-
-    // Get completed loads
-    final loadsSnapshot = await _db
-        .collection('loads')
-        .where('driverId', isEqualTo: driverId)
-        .where('status', isEqualTo: 'delivered')
-        .get();
-
-    // Calculate metrics
-    final totalLoads = loadsSnapshot.docs.length;
-    final totalEarnings = loadsSnapshot.docs.fold<double>(
-      0.0,
-      (sum, doc) => sum + ((doc.data()['rate'] ?? 0) as num).toDouble(),
-    );
-
-    // On-time delivery calculation (assuming deliveryDate vs expectedDate)
-    int onTimeDeliveries = 0;
-    for (var load in loadsSnapshot.docs) {
-      final data = load.data();
-      final deliveredAt = DateTimeUtils.parseDateTime(data['deliveredAt']);
-      final expectedDate = DateTimeUtils.parseDateTime(data['expectedDate']);
+    
+    print('📊 Calculating performance metrics for driver: $driverId');
+    
+    // Validate driver ID
+    if (driverId.isEmpty) {
+      print('❌ Error: Empty driver ID provided');
+      throw ArgumentError('Driver ID cannot be empty');
+    }
+    
+    try {
+      // Get basic driver info
+      final driverDoc = await _db.collection('drivers').doc(driverId).get();
       
-      if (deliveredAt != null && expectedDate != null) {
-        if (deliveredAt.isBefore(expectedDate) ||
-            deliveredAt.isAtSameMomentAs(expectedDate)) {
-          onTimeDeliveries++;
+      if (!driverDoc.exists) {
+        print('⚠️  Warning: Driver document not found for ID: $driverId');
+      }
+      
+      final driverData = driverDoc.data() ?? {};
+      print('   Driver name: ${driverData['name'] ?? 'Unknown'}');
+
+      // Get ratings
+      final ratingsSnapshot = await _db
+          .collection('drivers')
+          .doc(driverId)
+          .collection('ratings')
+          .get();
+      print('   Total ratings: ${ratingsSnapshot.docs.length}');
+
+      // Get completed loads
+      print('   Querying loads: driverId=$driverId, status=delivered');
+      final loadsSnapshot = await _db
+          .collection('loads')
+          .where('driverId', isEqualTo: driverId)
+          .where('status', isEqualTo: 'delivered')
+          .get();
+      
+      print('   ✅ Found ${loadsSnapshot.docs.length} completed loads');
+      
+      if (loadsSnapshot.docs.isEmpty) {
+        print('   ℹ️  No completed loads found. Possible reasons:');
+        print('      1. Driver has not completed any deliveries yet');
+        print('      2. Load driverId does not match driver document ID');
+        print('      3. Load status is not set to "delivered"');
+        print('      4. Firestore composite index may be missing');
+      } else {
+        // Log sample load IDs for debugging
+        final sampleLoadIds = loadsSnapshot.docs.take(3).map((d) => d.id).toList();
+        print('   Sample load IDs: $sampleLoadIds');
+      }
+
+      // Calculate metrics
+      final totalLoads = loadsSnapshot.docs.length;
+      final totalEarnings = loadsSnapshot.docs.fold<double>(
+        0.0,
+        (sum, doc) {
+          final rate = ((doc.data()['rate'] ?? 0) as num).toDouble();
+          return sum + rate;
+        },
+      );
+      
+      print('   Total earnings calculated: \$$totalEarnings');
+
+      // On-time delivery calculation (assuming deliveryDate vs expectedDate)
+      int onTimeDeliveries = 0;
+      for (var load in loadsSnapshot.docs) {
+        final data = load.data();
+        final deliveredAt = DateTimeUtils.parseDateTime(data['deliveredAt']);
+        final expectedDate = DateTimeUtils.parseDateTime(data['expectedDate']);
+        
+        if (deliveredAt != null && expectedDate != null) {
+          if (deliveredAt.isBefore(expectedDate) ||
+              deliveredAt.isAtSameMomentAs(expectedDate)) {
+            onTimeDeliveries++;
+          }
         }
       }
+
+      final onTimeRate = totalLoads > 0 
+          ? (onTimeDeliveries / totalLoads * 100).round()
+          : 0;
+      
+      print('   On-time deliveries: $onTimeDeliveries/$totalLoads ($onTimeRate%)');
+
+      final metrics = {
+        'driverId': driverId,
+        'driverName': driverData['name'] ?? 'Unknown',
+        'truckNumber': driverData['truckNumber'] ?? '',
+        'averageRating': driverData['averageRating'] ?? 0.0,
+        'totalRatings': ratingsSnapshot.docs.length,
+        'completedLoads': totalLoads,
+        'totalEarnings': totalEarnings,
+        'onTimeDeliveryRate': onTimeRate,
+        'status': driverData['status'] ?? 'unknown',
+      };
+      
+      print('✅ Performance metrics calculated successfully for ${driverData['name']}');
+      return metrics;
+      
+    } on FirebaseException catch (e) {
+      print('❌ Firebase error calculating metrics for driver $driverId:');
+      print('   Error code: ${e.code}');
+      print('   Error message: ${e.message}');
+      
+      if (e.code == 'failed-precondition' || (e.message?.contains('index') ?? false)) {
+        print('   ⚠️  CRITICAL: Missing Firestore composite index!');
+        print('   Required index: loads collection with fields (driverId, status)');
+        print('   Run: firebase deploy --only firestore:indexes');
+      }
+      
+      rethrow;
+    } catch (e, stackTrace) {
+      print('❌ Unexpected error calculating metrics for driver $driverId:');
+      print('   Error: $e');
+      print('   Stack trace: $stackTrace');
+      rethrow;
     }
-
-    final onTimeRate = totalLoads > 0 
-        ? (onTimeDeliveries / totalLoads * 100).round()
-        : 0;
-
-    return {
-      'driverId': driverId,
-      'driverName': driverData['name'] ?? 'Unknown',
-      'truckNumber': driverData['truckNumber'] ?? '',
-      'averageRating': driverData['averageRating'] ?? 0.0,
-      'totalRatings': ratingsSnapshot.docs.length,
-      'completedLoads': totalLoads,
-      'totalEarnings': totalEarnings,
-      'onTimeDeliveryRate': onTimeRate,
-      'status': driverData['status'] ?? 'unknown',
-    };
   }
 
   /// Get all drivers performance summary
@@ -475,21 +536,68 @@ class DriverExtendedService {
   /// with error code 'failed-precondition' and a message containing 'index'.
   Future<List<Map<String, dynamic>>> getAllDriversPerformance() async {
     _requireAuth();
-    final driversSnapshot = await _db.collection('drivers').get();
     
-    final performanceList = <Map<String, dynamic>>[];
+    print('📊 Loading performance data for all drivers...');
     
-    for (var driverDoc in driversSnapshot.docs) {
-      try {
-        final metrics = await getDriverPerformanceMetrics(driverDoc.id);
-        performanceList.add(metrics);
-      } catch (e) {
-        // Skip drivers with errors
-        continue;
+    try {
+      final driversSnapshot = await _db.collection('drivers').get();
+      print('   Found ${driversSnapshot.docs.length} drivers in database');
+      
+      if (driversSnapshot.docs.isEmpty) {
+        print('   ⚠️  No drivers found in database');
+        return [];
       }
-    }
+      
+      final performanceList = <Map<String, dynamic>>[];
+      int successCount = 0;
+      int errorCount = 0;
+      
+      for (var driverDoc in driversSnapshot.docs) {
+        try {
+          final metrics = await getDriverPerformanceMetrics(driverDoc.id);
+          performanceList.add(metrics);
+          successCount++;
+        } on FirebaseException catch (e) {
+          errorCount++;
+          print('⚠️  Failed to get metrics for driver ${driverDoc.id}: ${e.code}');
+          
+          // Re-throw index errors so dashboard can show helpful message
+          if (e.code == 'failed-precondition' || (e.message?.contains('index') ?? false)) {
+            rethrow;
+          }
+          // Skip other errors
+          continue;
+        } catch (e) {
+          errorCount++;
+          print('⚠️  Unexpected error for driver ${driverDoc.id}: $e');
+          // Skip drivers with errors
+          continue;
+        }
+      }
+      
+      print('✅ Performance data loaded: $successCount success, $errorCount errors');
+      
+      if (performanceList.isEmpty && driversSnapshot.docs.isNotEmpty) {
+        print('⚠️  WARNING: No performance data retrieved for any driver!');
+        print('   Possible issues:');
+        print('   1. All drivers have 0 completed loads');
+        print('   2. Load driverIds do not match driver document IDs');
+        print('   3. Missing Firestore indexes');
+      }
 
-    return performanceList;
+      return performanceList;
+      
+    } on FirebaseException catch (e) {
+      print('❌ Firebase error loading driver performance:');
+      print('   Error code: ${e.code}');
+      print('   Error message: ${e.message}');
+      rethrow;
+    } catch (e, stackTrace) {
+      print('❌ Unexpected error loading driver performance:');
+      print('   Error: $e');
+      print('   Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   // ========== TRUCK DOCUMENT MANAGEMENT ==========
