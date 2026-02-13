@@ -720,6 +720,50 @@ TROUBLESHOOTING:
     );
   }
 
+  /// Accept a pending load
+  /// 
+  /// Changes load status from 'pending' to 'accepted' and records acceptance timestamp.
+  /// This allows the driver to start the trip when ready.
+  /// 
+  /// Parameters:
+  /// - loadId: The ID of the load to accept
+  /// 
+  /// Throws:
+  /// - Exception if load not found or user not authenticated
+  /// - Exception if load is not in pending status
+  /// - Exception if user is not assigned to this load
+  Future<void> acceptLoad(String loadId) async {
+    _requireAuth();
+    
+    final loadRef = _db.collection('loads').doc(loadId);
+    final loadDoc = await loadRef.get();
+    
+    if (!loadDoc.exists) {
+      throw Exception('Load not found');
+    }
+    
+    final loadData = loadDoc.data()!;
+    
+    // Verify the load is assigned to current user
+    if (loadData['driverId'] != _auth.currentUser?.uid) {
+      throw Exception('You are not assigned to this load');
+    }
+    
+    // Verify load is in pending status
+    if (loadData['status'] != 'pending') {
+      throw Exception('This load has already been accepted or is no longer available');
+    }
+    
+    // Update load to accepted status
+    await loadRef.update({
+      'status': 'accepted',
+      'acceptedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    
+    debugPrint('✅ Load $loadId accepted by driver ${_auth.currentUser?.uid}');
+  }
+
   /// Update load with arbitrary data
   /// 
   /// Generic method for updating load document with any data map.

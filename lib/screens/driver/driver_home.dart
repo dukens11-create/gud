@@ -1093,8 +1093,28 @@ class _DriverHomeState extends State<DriverHome> {
                                 ),
                                 isThreeLine: true,
                               ),
-                              // Add Delivered button if load is not already delivered
-                              if (load.status != 'delivered')
+                              // Action buttons based on load status
+                              if (load.status == 'pending')
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () => _showAcceptDialog(load),
+                                      icon: const Icon(Icons.check_circle_outline, size: 24),
+                                      label: const Text('Accept Load', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                        minimumSize: const Size(double.infinity, 56),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else if (load.status != 'delivered')
                                 Padding(
                                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                                   child: SizedBox(
@@ -1136,18 +1156,104 @@ class _DriverHomeState extends State<DriverHome> {
     );
   }
 
+  Future<void> _showAcceptDialog(LoadModel load) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.local_shipping, color: Colors.green),
+            SizedBox(width: 12),
+            Text('Accept Load?'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Load: ${load.loadNumber}', 
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('From: ${load.pickupAddress}'),
+            const SizedBox(height: 4),
+            Text('To: ${load.deliveryAddress}'),
+            const SizedBox(height: 4),
+            Text('Rate: \$${load.rate.toStringAsFixed(2)}', 
+              style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Text('Once accepted, you can start the trip when ready.',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.check),
+            label: const Text('Accept Load'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _acceptLoad(load.id);
+    }
+  }
+
+  Future<void> _acceptLoad(String loadId) async {
+    try {
+      setState(() => _isLoading = true);
+      
+      await _firestoreService.acceptLoad(loadId);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Load accepted! Tap "Start Trip" when ready.'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error accepting load: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
         return Colors.orange;
       case 'accepted':
-        return Colors.green;
+        return Colors.lightBlue;  // Accepted, ready to start
       case 'assigned':
         return Colors.blue;
       case 'in_transit':
-        return Colors.purple;
+        return Colors.blue;  // Trip in progress
       case 'delivered':
-        return Colors.green.shade700;
+        return Colors.green;  // Delivery completed
       case 'declined':
         return Colors.red;
       default:

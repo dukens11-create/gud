@@ -34,6 +34,7 @@ class LoadModel {
   final String? podPhotoUrl;      // Proof of Delivery photo URL
   final DateTime? bolUploadedAt;  // When BOL was uploaded
   final DateTime? podUploadedAt;  // When POD was uploaded
+  final DateTime? acceptedAt;     // When driver accepted the load
 
   LoadModel({
     required this.id,
@@ -56,6 +57,7 @@ class LoadModel {
     this.podPhotoUrl,
     this.bolUploadedAt,
     this.podUploadedAt,
+    this.acceptedAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
@@ -78,6 +80,7 @@ class LoadModel {
     if (podPhotoUrl != null) 'podPhotoUrl': podPhotoUrl,
     if (bolUploadedAt != null) 'bolUploadedAt': bolUploadedAt!.toIso8601String(),
     if (podUploadedAt != null) 'podUploadedAt': podUploadedAt!.toIso8601String(),
+    if (acceptedAt != null) 'acceptedAt': acceptedAt!.toIso8601String(),
   };
 
   static LoadModel fromDoc(DocumentSnapshot doc) {
@@ -111,6 +114,7 @@ class LoadModel {
         podPhotoUrl: d['podPhotoUrl'] as String?,
         bolUploadedAt: DateTimeUtils.parseDateTime(d['bolUploadedAt']),
         podUploadedAt: DateTimeUtils.parseDateTime(d['podUploadedAt']),
+        acceptedAt: DateTimeUtils.parseDateTime(d['acceptedAt']),
       );
     } catch (e) {
       throw FormatException(
