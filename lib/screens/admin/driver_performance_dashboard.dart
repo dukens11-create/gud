@@ -349,6 +349,10 @@ class _DriverPerformanceDashboardState
     final totalDrivers = _drivers.length;
     final totalLoads = _drivers.fold<int>(
       0,
+      (sum, d) => sum + (d['totalLoads'] as int? ?? 0),
+    );
+    final completedLoads = _drivers.fold<int>(
+      0,
       (sum, d) => sum + (d['completedLoads'] as int),
     );
     final totalEarnings = _drivers.fold<double>(
@@ -556,6 +560,8 @@ class _DriverPerformanceDashboardState
                   (driver['averageRating'] as double).toStringAsFixed(2)),
               _DetailRow(
                   'Total Ratings', (driver['totalRatings'] as int).toString()),
+              _DetailRow('Total Loads',
+                  (driver['totalLoads'] as int? ?? 0).toString()),
               _DetailRow('Completed Loads',
                   (driver['completedLoads'] as int).toString()),
               _DetailRow('Total Earnings',
