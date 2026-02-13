@@ -60,67 +60,85 @@ done
 echo ""
 echo -e "${BLUE}🔧 Configuring Development Team...${NC}"
 
-# Backup the project file
-cp "$PROJECT_FILE" "${PROJECT_FILE}.backup"
-echo -e "${GREEN}✅ Project file backed up to ${PROJECT_FILE}.backup${NC}"
+# Note: The project is already configured for automatic code signing with
+# DEVELOPMENT_TEAM environment variable. This script helps you set it up.
 
-# Add DEVELOPMENT_TEAM to build settings
-# We need to add it to both Debug and Release configurations
+# Check if DEVELOPMENT_TEAM is already configured in project
+if grep -q 'DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)"' "$PROJECT_FILE"; then
+    echo -e "${GREEN}✅ Project is configured for automatic code signing${NC}"
+    echo "   DEVELOPMENT_TEAM uses environment variable"
+else
+    echo -e "${YELLOW}⚠️  Project configuration might need updating${NC}"
+    echo "   Expected: DEVELOPMENT_TEAM = \"\$(DEVELOPMENT_TEAM)\""
+fi
 
-# Function to add DEVELOPMENT_TEAM after PRODUCT_BUNDLE_IDENTIFIER
-add_development_team() {
-    # Using sed to add DEVELOPMENT_TEAM after PRODUCT_BUNDLE_IDENTIFIER if not already present
-    if ! grep -q "DEVELOPMENT_TEAM = $TEAM_ID" "$PROJECT_FILE"; then
-        # Check if PRODUCT_BUNDLE_IDENTIFIER exists
-        if ! grep -q "PRODUCT_BUNDLE_IDENTIFIER = com.gudexpress.gud_app" "$PROJECT_FILE"; then
-            echo -e "${YELLOW}⚠️  Warning: Expected bundle identifier not found in project${NC}"
-            echo "   Expected: PRODUCT_BUNDLE_IDENTIFIER = com.gudexpress.gud_app"
-            echo "   The project structure might have changed."
-            echo ""
-            read -p "Continue anyway? (y/n): " CONTINUE
-            if [[ ! $CONTINUE =~ ^[Yy]$ ]]; then
-                echo "Aborted."
-                exit 1
-            fi
+echo ""
+echo -e "${BLUE}Setting up environment variable...${NC}"
+
+# Detect shell
+SHELL_NAME=$(basename "$SHELL")
+case "$SHELL_NAME" in
+    bash)
+        SHELL_RC="$HOME/.bashrc"
+        if [ -f "$HOME/.bash_profile" ]; then
+            SHELL_RC="$HOME/.bash_profile"
         fi
-        
-        # Add DEVELOPMENT_TEAM in Debug configuration
-        sed -i.tmp "/PRODUCT_BUNDLE_IDENTIFIER = com.gudexpress.gud_app;/a\\
-				DEVELOPMENT_TEAM = $TEAM_ID;
-" "$PROJECT_FILE"
-        
-        # Remove the temporary file created by sed
-        rm -f "${PROJECT_FILE}.tmp"
-        
-        # Verify the insertion was successful
-        if grep -q "DEVELOPMENT_TEAM = $TEAM_ID" "$PROJECT_FILE"; then
-            echo -e "${GREEN}✅ Added DEVELOPMENT_TEAM = $TEAM_ID to project configuration${NC}"
-        else
-            echo -e "${RED}❌ Failed to add DEVELOPMENT_TEAM to project${NC}"
-            echo "   Please configure manually in Xcode"
-            exit 1
-        fi
+        ;;
+    zsh)
+        SHELL_RC="$HOME/.zshrc"
+        ;;
+    *)
+        SHELL_RC="$HOME/.profile"
+        ;;
+esac
+
+echo "Detected shell: $SHELL_NAME"
+echo "Configuration file: $SHELL_RC"
+echo ""
+
+# Check if DEVELOPMENT_TEAM is already set in the shell config
+if [ -f "$SHELL_RC" ] && grep -q "export DEVELOPMENT_TEAM=" "$SHELL_RC"; then
+    CURRENT_TEAM=$(grep "export DEVELOPMENT_TEAM=" "$SHELL_RC" | tail -1 | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    echo -e "${YELLOW}ℹ️  DEVELOPMENT_TEAM already set in $SHELL_RC${NC}"
+    echo "   Current value: $CURRENT_TEAM"
+    echo ""
+    read -p "Update with new Team ID ($TEAM_ID)? (y/n): " UPDATE
+    if [[ $UPDATE =~ ^[Yy]$ ]]; then
+        # Comment out old entries
+        sed -i.backup "/export DEVELOPMENT_TEAM=/s/^/# /" "$SHELL_RC"
+        # Add new entry
+        echo "" >> "$SHELL_RC"
+        echo "# Apple Developer Team ID for iOS code signing" >> "$SHELL_RC"
+        echo "export DEVELOPMENT_TEAM=\"$TEAM_ID\"" >> "$SHELL_RC"
+        echo -e "${GREEN}✅ Updated $SHELL_RC${NC}"
+        echo "   Old entries commented out, new value added"
     else
-        echo -e "${YELLOW}ℹ️  DEVELOPMENT_TEAM already configured${NC}"
+        echo "Skipped updating shell configuration"
     fi
-}
+else
+    # Add DEVELOPMENT_TEAM to shell config
+    echo "" >> "$SHELL_RC"
+    echo "# Apple Developer Team ID for iOS code signing" >> "$SHELL_RC"
+    echo "export DEVELOPMENT_TEAM=\"$TEAM_ID\"" >> "$SHELL_RC"
+    echo -e "${GREEN}✅ Added DEVELOPMENT_TEAM to $SHELL_RC${NC}"
+fi
 
-add_development_team
+# Set for current session
+export DEVELOPMENT_TEAM="$TEAM_ID"
+echo -e "${GREEN}✅ Set DEVELOPMENT_TEAM for current session${NC}"
 
-# Update ExportOptions.plist with Team ID
+# Note: ExportOptions.plist now uses $(DEVELOPMENT_TEAM) environment variable
+# No need to modify it directly
 EXPORT_OPTIONS="ios/ExportOptions.plist"
 if [ -f "$EXPORT_OPTIONS" ]; then
-    echo ""
-    echo -e "${BLUE}🔧 Updating ExportOptions.plist...${NC}"
-    
-    # Backup ExportOptions.plist
-    cp "$EXPORT_OPTIONS" "${EXPORT_OPTIONS}.backup"
-    
-    # Replace YOUR_TEAM_ID with actual Team ID
-    sed -i.tmp "s/YOUR_TEAM_ID/$TEAM_ID/g" "$EXPORT_OPTIONS"
-    rm -f "${EXPORT_OPTIONS}.tmp"
-    
-    echo -e "${GREEN}✅ Updated ExportOptions.plist with Team ID${NC}"
+    if grep -q '$(DEVELOPMENT_TEAM)' "$EXPORT_OPTIONS"; then
+        echo ""
+        echo -e "${GREEN}✅ ExportOptions.plist is configured to use DEVELOPMENT_TEAM variable${NC}"
+    else
+        echo ""
+        echo -e "${YELLOW}⚠️  ExportOptions.plist might need manual update${NC}"
+        echo "   Expected: <string>\$(DEVELOPMENT_TEAM)</string>"
+    fi
 fi
 
 echo ""
@@ -129,37 +147,40 @@ echo -e "✅ Development Team configured successfully!"
 echo -e "==========================================${NC}"
 echo ""
 echo "Team ID: $TEAM_ID"
+echo "Environment variable: DEVELOPMENT_TEAM=$TEAM_ID"
 echo ""
-echo -e "${YELLOW}⚠️  IMPORTANT - Required Manual Steps:${NC}"
-echo "Due to Apple's code signing requirements, you must complete setup in Xcode:"
+echo -e "${YELLOW}⚠️  IMPORTANT - Next Steps:${NC}"
 echo ""
-echo "  1. Open the workspace:"
-echo "     cd ios && open Runner.xcworkspace"
+echo -e "${BLUE}1. Reload your shell to apply the environment variable:${NC}"
+echo "   source $SHELL_RC"
+echo "   # Or open a new terminal window"
 echo ""
-echo "  2. In Xcode:"
+echo -e "${BLUE}2. Complete setup in Xcode:${NC}"
+echo "   cd ios && open Runner.xcworkspace"
+echo ""
+echo "   In Xcode:"
 echo "     • Select 'Runner' target in left sidebar"
 echo "     • Click 'Signing & Capabilities' tab"
-echo "     • Check '✓ Automatically manage signing'"
+echo "     • Check '✓ Automatically manage signing' (should already be checked)"
 echo "     • Select your team from 'Team' dropdown"
 echo "     • Wait for Xcode to create provisioning profiles"
 echo ""
-echo "  3. Verify:"
-echo "     • 'Signing Certificate' shows: Apple Development"
-echo "     • 'Provisioning Profile' shows: Xcode Managed Profile"
-echo "     • No errors or warnings appear"
+echo -e "${BLUE}3. Verify signing status:${NC}"
+echo "     • 'Signing Certificate' should show: Apple Development"
+echo "     • 'Provisioning Profile' should show: Xcode Managed Profile"
+echo "     • No errors or warnings should appear"
+echo ""
+echo -e "${BLUE}4. Run the pre-build check:${NC}"
+echo "   ./scripts/check_code_signing.sh"
+echo ""
+echo -e "${BLUE}5. Try building:${NC}"
+echo "   flutter build ios --release"
 echo ""
 echo -e "${BLUE}Troubleshooting:${NC}"
 echo "  • If team doesn't appear: Log into Xcode with your Apple ID"
-echo "    (Xcode → Preferences → Accounts → Add Account)"
-echo "  • If profile fails: See docs/ios_codesign_setup.md"
-echo "  • Run check script: ./scripts/check_ios_setup.sh"
+echo "    (Xcode → Settings → Accounts → Add Account)"
+echo "  • If profile fails: See ios/CODE_SIGNING_SETUP.md"
+echo "  • Run diagnostic: ./scripts/check_ios_setup.sh"
 echo ""
-echo "Backup files created:"
-echo "  - ${PROJECT_FILE}.backup"
-if [ -f "${EXPORT_OPTIONS}.backup" ]; then
-    echo "  - ${EXPORT_OPTIONS}.backup"
-fi
+echo "📖 Complete documentation: ios/CODE_SIGNING_SETUP.md"
 echo ""
-echo "📖 Full guide: docs/ios_codesign_setup.md"
-echo ""
-echo "If something goes wrong, restore from backups."

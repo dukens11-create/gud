@@ -24,11 +24,36 @@ cd ..
 ```
 
 ### 3. Configure Signing
-1. Open `ios/Runner.xcworkspace` in Xcode (NOT .xcodeproj)
-2. Select the Runner target
-3. Go to "Signing & Capabilities"
-4. Select your development team
-5. Xcode will automatically create provisioning profiles
+
+**Quick Setup (5-10 minutes):**
+
+The project is now configured for automatic code signing. Follow these steps:
+
+1. **Set your Development Team:**
+   ```bash
+   ./scripts/configure_team.sh
+   ```
+   This script will prompt you for your Apple Developer Team ID and configure your environment.
+
+2. **Complete setup in Xcode:**
+   ```bash
+   cd ios && open Runner.xcworkspace  # Open workspace, NOT .xcodeproj
+   ```
+   - Select the Runner target
+   - Go to "Signing & Capabilities"
+   - Verify "Automatically manage signing" is checked ✓
+   - Select your team from the dropdown
+   - Wait for Xcode to create provisioning profiles
+
+3. **Verify configuration:**
+   ```bash
+   ./scripts/check_code_signing.sh
+   ```
+
+**For detailed instructions, see:**
+- **[CODE_SIGNING_SETUP.md](CODE_SIGNING_SETUP.md)** - Complete code signing guide
+- **[../IOS_CODE_SIGNING_QUICK_SETUP.md](../IOS_CODE_SIGNING_QUICK_SETUP.md)** - Quick 5-minute setup
+- **[../IOS_LOCAL_BUILD_GUIDE.md](../IOS_LOCAL_BUILD_GUIDE.md)** - Comprehensive build guide
 
 ### 4. Enable Capabilities
 In Xcode, under "Signing & Capabilities", add:
@@ -73,9 +98,12 @@ cd ..
 ```
 
 ### Signing Issues
+- **Quick fix:** Run `./scripts/configure_team.sh` from project root
+- **Pre-build check:** Run `./scripts/check_code_signing.sh` to diagnose issues
 - Make sure you have a valid Apple Developer account
-- Check that your bundle identifier matches in Xcode and Firebase
+- Check that your bundle identifier is `com.gudexpress.gud_app`
 - Try "Automatically manage signing" in Xcode
+- **See detailed troubleshooting:** [CODE_SIGNING_SETUP.md](CODE_SIGNING_SETUP.md#troubleshooting)
 
 ### Firebase Not Working
 - Verify `GoogleService-Info.plist` is properly configured

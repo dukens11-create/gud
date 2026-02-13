@@ -24,10 +24,10 @@
     TEAM ID: Your Apple Developer Team ID
     Find it in Apple Developer Console under Membership
     or run: ./scripts/configure_team.sh to set it automatically
-    Set via TEAM_ID secret in GitHub Actions
+    Set via TEAM_ID secret in GitHub Actions or DEVELOPMENT_TEAM environment variable
     -->
     <key>teamID</key>
-    <string>YOUR_TEAM_ID</string>
+    <string>$(DEVELOPMENT_TEAM)</string>
     
     <!-- 
     UPLOAD SYMBOLS: Upload symbols to Apple for crash reporting
