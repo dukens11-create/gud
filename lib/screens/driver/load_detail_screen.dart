@@ -43,7 +43,7 @@ class LoadDetailScreen extends StatelessWidget {
                         ),
                         Chip(
                           label: Text(
-                            load.status.isNotEmpty ? load.status.toUpperCase() : 'UNKNOWN',
+                            _getStatusLabel(load.status),
                             style: const TextStyle(color: Colors.white),
                           ),
                           backgroundColor: _getStatusColor(load.status),
@@ -510,6 +510,27 @@ class LoadDetailScreen extends StatelessWidget {
         return Colors.red;
       default:
         return Colors.grey;
+    }
+  }
+
+  String _getStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'AWAITING ACCEPTANCE';
+      case 'accepted':
+        return 'ACCEPTED';
+      case 'declined':
+        return 'DECLINED';
+      case 'assigned':
+        return 'ASSIGNED';
+      case 'picked_up':
+        return 'PICKED UP';
+      case 'in_transit':
+        return 'IN TRANSIT';
+      case 'delivered':
+        return 'DELIVERED';
+      default:
+        return status.isNotEmpty ? status.toUpperCase() : 'UNKNOWN';
     }
   }
 }
