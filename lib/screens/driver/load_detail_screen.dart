@@ -32,7 +32,6 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
     setState(() => _isRefreshing = true);
     
     try {
-      final firestoreService = FirestoreService();
       final updatedLoad = await firestoreService.getLoad(widget.load.id);
       if (updatedLoad != null && mounted) {
         setState(() => _currentLoad = updatedLoad);
@@ -51,7 +50,6 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final mockService = MockDataService();
-    final firestoreService = FirestoreService();
     final currentUserId = mockService.currentUserId ?? '';
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
     final load = _currentLoad;
