@@ -33,6 +33,7 @@ class _DriverHomeState extends State<DriverHome> {
   String _statusFilter = 'all';
   Timer? _debounce;
   bool _isSendingLocation = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
