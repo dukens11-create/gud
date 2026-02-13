@@ -371,6 +371,15 @@ class _AdminHomeState extends State<AdminHome> {
                   onSelected: (_) => _onFilterChanged('delivered'),
                   avatar: _statusFilter == 'delivered' ? const Icon(Icons.check, size: 18) : null,
                 ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Declined'),
+                  selected: _statusFilter == 'declined',
+                  onSelected: (_) => _onFilterChanged('declined'),
+                  avatar: _statusFilter == 'declined' 
+                      ? const Icon(Icons.check, size: 18) 
+                      : const Icon(Icons.cancel, size: 18, color: Colors.red),
+                ),
               ],
             ),
           ),
@@ -591,6 +600,34 @@ class _AdminHomeState extends State<AdminHome> {
                                   const SizedBox(height: 4),
                                   Text('Driver: ${_getDriverDisplayName(load)}'),
                                   Text('${load.pickupAddress.isNotEmpty ? load.pickupAddress : "Unknown"} → ${load.deliveryAddress.isNotEmpty ? load.deliveryAddress : "Unknown"}'),
+                                  // Show decline reason if load is declined
+                                  if (load.status == 'declined' && load.declineReason != null && load.declineReason!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade50,
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: Colors.red.shade200),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.info_outline, size: 16, color: Colors.red.shade700),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              'Reason: ${load.declineReason}',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.red.shade700,
+                                                fontStyle: FontStyle.italic,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                   const SizedBox(height: 4),
                                   // Document status indicators
                                   Row(
@@ -754,17 +791,17 @@ class _AdminHomeState extends State<AdminHome> {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return Colors.orange;
+        return Colors.orange.shade600; // Yellow/Orange (awaiting action)
       case 'accepted':
-        return Colors.green;
+        return Colors.lightBlue.shade600; // Light Blue (ready to start)
       case 'assigned':
         return Colors.blue;
       case 'in_transit':
-        return Colors.purple;
+        return Colors.blue.shade700; // Blue (in progress)
       case 'delivered':
-        return Colors.green.shade700;
+        return Colors.green.shade700; // Green (completed)
       case 'declined':
-        return Colors.red;
+        return Colors.red.shade600; // Red (rejected)
       case 'cancelled':
         return Colors.red;
       default:
