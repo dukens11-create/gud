@@ -47,7 +47,11 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
 
     try {
       final initService = FirebaseInitService();
-      await initService.initializeTrucks();
+      if (await initService.needsInitialization()) {
+        print('🚚 Initializing sample trucks...');
+        await initService.initializeSampleTrucks();
+        print('✅ Sample trucks created successfully!');
+      }
     } catch (e) {
       print('⚠️ Auto-initialization failed (non-critical): $e');
       // Silently fail - user can use debug button if needed
@@ -716,14 +720,10 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
     if (confirmed == true && mounted) {
       try {
         final initService = FirebaseInitService();
-        final success = await initService.initializeTrucks();
+        await initService.initializeSampleTrucks();
 
         if (mounted) {
-          if (success) {
-            NavigationService.showSuccess('Sample data initialized successfully');
-          } else {
-            NavigationService.showSuccess('Sample data already exists or initialization skipped');
-          }
+          NavigationService.showSuccess('✅ Sample trucks added!');
         }
       } catch (e) {
         if (mounted) {

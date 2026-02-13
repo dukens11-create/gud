@@ -145,9 +145,17 @@ void main() async {
     // Initialize all services
     await initializeServices();
     
-    // Note: Database initialization with sample data is now triggered
-    // manually via the debug button in ManageTrucksScreen (debug mode only)
-    // or automatically when an admin first accesses the screen.
+    // Initialize sample data if needed
+    try {
+      final initService = FirebaseInitService();
+      if (await initService.needsInitialization()) {
+        print('🚚 Initializing sample trucks...');
+        await initService.initializeSampleTrucks();
+        print('✅ Sample trucks created successfully!');
+      }
+    } catch (e) {
+      print('⚠️ Error initializing sample data: $e');
+    }
     
     // Log app open event
     FirebaseAnalytics analytics = FirebaseAnalytics.instance;
