@@ -294,6 +294,54 @@ class TruckService {
     });
   }
 
+  /// Stream truck assigned to a driver with fallback lookup
+  /// 
+  /// This method implements a dual-lookup strategy to handle data inconsistencies:
+  /// 1. First checks the user document for 'assignedTruckId' field
+  /// 2. If found, fetches the truck document directly
+  /// 3. If not found, falls back to querying trucks by 'assignedDriverId'
+  /// 
+  /// This ensures the driver sees their assigned truck even if there's a 
+  /// mismatch between the user document and truck document assignments.
+  Stream<Truck?> getTruckByDriverIdStreamEnhanced(String driverId) async* {
+    _requireAuth();
+
+    // First, check if the user document has an assignedTruckId
+    await for (final userSnapshot in _db.collection('users').doc(driverId).snapshots()) {
+      if (!userSnapshot.exists) {
+        // User document doesn't exist, fall back to truck query
+        yield* getTruckByDriverIdStream(driverId);
+        return;
+      }
+
+      final userData = userSnapshot.data();
+      final assignedTruckId = userData?['assignedTruckId'] as String?;
+
+      if (assignedTruckId != null && assignedTruckId.isNotEmpty) {
+        // User has an assignedTruckId, fetch the truck document
+        await for (final truckSnapshot in _db.collection('trucks').doc(assignedTruckId).snapshots()) {
+          if (truckSnapshot.exists) {
+            final truckData = truckSnapshot.data();
+            if (truckData != null) {
+              yield Truck.fromMap(truckSnapshot.id, truckData);
+            } else {
+              yield null;
+            }
+          } else {
+            // Truck doesn't exist, fall back to query by assignedDriverId
+            yield* getTruckByDriverIdStream(driverId);
+            return;
+          }
+        }
+        return; // Exit after streaming from assignedTruckId
+      } else {
+        // No assignedTruckId in user document, use the standard query
+        yield* getTruckByDriverIdStream(driverId);
+        return;
+      }
+    }
+  }
+
   // ========== UTILITY METHODS ==========
 
   /// Generate next available truck number
