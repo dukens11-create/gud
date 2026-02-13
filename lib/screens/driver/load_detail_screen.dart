@@ -19,6 +19,7 @@ class LoadDetailScreen extends StatefulWidget {
 class _LoadDetailScreenState extends State<LoadDetailScreen> {
   late LoadModel _currentLoad;
   bool _isRefreshing = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -386,127 +387,87 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
                 load.status != 'declined')
               Column(
                 children: [
-                  // For pending status - show Accept/Decline buttons
+                  // For pending status - show Accept button with info card
                   if (load.status == 'pending') ...[
-                    // Accept Load button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          try {
-                            await firestoreService.updateLoadStatus(
-                              loadId: load.id,
-                              status: 'accepted',
-                            );
-                            if (context.mounted) {
-                              NavigationService.showSuccess('Load accepted successfully');
-                              Navigator.pop(context);
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              NavigationService.showError('Error accepting load: $e');
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.check_circle),
-                        label: const Text('Accept Load'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.all(16),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Decline Load button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          // Show confirmation dialog
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Decline Load?'),
-                              content: const Text(
-                                'Are you sure you want to decline this load? Your admin will be notified.',
+                    Card(
+                      color: Colors.orange.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.orange.shade700),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'This load is pending. Accept it to start your trip.',
+                                style: TextStyle(color: Colors.orange.shade900),
                               ),
-                              actions: [
-                                TextButton(
-                                  child: const Text('Cancel'),
-                                  onPressed: () => Navigator.pop(context, false),
-                                ),
-                                TextButton(
-                                  child: const Text('Decline'),
-                                  onPressed: () => Navigator.pop(context, true),
-                                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                ),
-                              ],
                             ),
-                          );
-                          
-                          if (confirmed == true && context.mounted) {
-                            try {
-                              await firestoreService.updateLoadStatus(
-                                loadId: load.id,
-                                status: 'declined',
-                              );
-                              if (context.mounted) {
-                                NavigationService.showSuccess('Load declined');
-                                Navigator.pop(context);
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                NavigationService.showError('Error declining load: $e');
-                              }
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.cancel),
-                        label: const Text('Decline Load'),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.red),
-                          foregroundColor: Colors.red,
-                          padding: const EdgeInsets.all(16),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                  
-                  // For accepted, assigned, picked_up, or in_transit - show workflow buttons
-                  if (_canShowTripButtons(load.status)) ...[
-                    // Simple one-tap "Delivered" button for quick delivery marking
+                    const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          try {
-                            await firestoreService.markLoadAsDelivered(load.id);
-                            if (context.mounted) {
-                              NavigationService.showSuccess('Load marked as delivered');
-                              Navigator.pop(context);
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              NavigationService.showError('Error marking load as delivered: $e');
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.check_circle),
-                        label: const Text('Mark as Delivered'),
+                        onPressed: () => _acceptLoad(),
+                        icon: const Icon(Icons.check_circle_outline, size: 28),
+                        label: const Text('Accept This Load', 
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.all(16),
+                          minimumSize: const Size(double.infinity, 64),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 12),
-                  ],
-                  // Existing detailed workflow buttons
-                  if (load.status == 'assigned' || load.status == 'accepted')
+                  ]
+                  // For accepted status - show Start Trip button
+                  else if (load.status == 'accepted') ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _startTrip(),
+                        icon: const Icon(Icons.play_arrow, size: 28),
+                        label: const Text('Start Trip', 
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 64),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ]
+                  // For in_transit status - show Mark Delivered button
+                  else if (load.status == 'in_transit') ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _markDelivered(),
+                        icon: const Icon(Icons.check_circle, size: 28),
+                        label: const Text('Mark as Delivered', 
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 64),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ]
+                  // For assigned status (legacy) - show Mark as Picked Up and Start Trip  
+                  else if (load.status == 'assigned') ...[
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -530,7 +491,9 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
                         ),
                       ),
                     ),
-                  if (load.status == 'picked_up')
+                  ]
+                  // For picked_up status (legacy) - show Start Trip
+                  else if (load.status == 'picked_up') ...[
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -554,94 +517,111 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
                         ),
                       ),
                     ),
-                  if (load.status == 'in_transit')
-                    Column(
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => UploadPODScreen(load: load),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.camera_alt),
-                            label: const Text('Upload Proof of Delivery'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.all(16),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              // Show dialog to enter miles
-                              final milesController = TextEditingController();
-                              try {
-                                final confirmed = await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Complete Delivery'),
-                                    content: TextField(
-                                      controller: milesController,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Total Miles',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context, false),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context, true),
-                                        child: const Text('Complete'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-
-                                if (confirmed == true && context.mounted) {
-                                  final miles = double.tryParse(milesController.text) ?? 0.0;
-                                  await mockService.updateLoadStatus(
-                                    loadId: load.id,
-                                    status: 'delivered',
-                                    deliveredAt: DateTime.now(),
-                                  );
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Delivery completed')),
-                                    );
-                                    Navigator.pop(context);
-                                  }
-                                }
-                              } finally {
-                                milesController.dispose();
-                              }
-                            },
-                            icon: const Icon(Icons.done_all),
-                            label: const Text('Complete Delivery'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.all(16),
-                              backgroundColor: Colors.green,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  ],
                 ],
               ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _acceptLoad() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Accept Load?'),
+        content: const Text('Once accepted, you can start the trip when ready.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Accept'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      setState(() => _isLoading = true);
+      
+      await firestoreService.acceptLoad(widget.load.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Load accepted! You can now start the trip.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _startTrip() async {
+    try {
+      setState(() => _isLoading = true);
+      
+      await firestoreService.startTrip(widget.load.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Trip started!'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _markDelivered() async {
+    try {
+      setState(() => _isLoading = true);
+      
+      await firestoreService.markLoadAsDelivered(widget.load.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Load marked as delivered!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Widget _buildDetailRow(String label, String value) {
@@ -693,17 +673,17 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return Colors.orange;
+        return Colors.orange;  // Awaiting driver acceptance
       case 'accepted':
-        return Colors.green;
+        return Colors.lightBlue;  // Accepted, ready to start
       case 'assigned':
         return Colors.blue;
       case 'picked_up':
         return Colors.orange;
       case 'in_transit':
-        return Colors.purple;
+        return Colors.blue;  // Trip in progress
       case 'delivered':
-        return Colors.green.shade700;
+        return Colors.green;  // Delivery completed
       case 'declined':
         return Colors.red;
       default:
@@ -714,7 +694,7 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
   String _getStatusLabel(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'AWAITING ACCEPTANCE';
+        return 'PENDING';
       case 'accepted':
         return 'ACCEPTED';
       case 'declined':
