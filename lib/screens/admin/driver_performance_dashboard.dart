@@ -349,11 +349,15 @@ class _DriverPerformanceDashboardState
     final totalDrivers = _drivers.length;
     final totalLoads = _drivers.fold<int>(
       0,
-      (sum, d) => sum + (d['completedLoads'] as int),
+      (sum, d) => sum + (d['totalLoads'] as int? ?? 0),
+    );
+    final completedLoads = _drivers.fold<int>(
+      0,
+      (sum, d) => sum + (d['completedLoads'] as int? ?? 0),
     );
     final totalEarnings = _drivers.fold<double>(
       0.0,
-      (sum, d) => sum + (d['totalEarnings'] as double),
+      (sum, d) => sum + (d['totalEarnings'] as double? ?? 0.0),
     );
     final avgRating = totalDrivers > 0
         ? _drivers.fold<double>(
@@ -421,12 +425,12 @@ class _DriverPerformanceDashboardState
   }
 
   Widget _buildDriverCard(Map<String, dynamic> driver) {
-    final rating = driver['averageRating'] as double;
-    final totalRatings = driver['totalRatings'] as int;
-    final loads = driver['completedLoads'] as int;
-    final earnings = driver['totalEarnings'] as double;
-    final onTimeRate = driver['onTimeDeliveryRate'] as int;
-    final status = driver['status'] as String;
+    final rating = (driver['averageRating'] as double? ?? 0.0);
+    final totalRatings = (driver['totalRatings'] as int? ?? 0);
+    final loads = (driver['completedLoads'] as int? ?? 0);
+    final earnings = (driver['totalEarnings'] as double? ?? 0.0);
+    final onTimeRate = (driver['onTimeDeliveryRate'] as int? ?? 0);
+    final status = (driver['status'] as String? ?? 'unknown');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -550,18 +554,20 @@ class _DriverPerformanceDashboardState
             children: [
               _DetailRow('Driver ID', driver['driverId'] as String),
               _DetailRow('Truck Number', driver['truckNumber'] as String),
-              _DetailRow('Status', driver['status'] as String),
+              _DetailRow('Status', driver['status'] as String? ?? 'unknown'),
               const Divider(height: 24),
               _DetailRow('Average Rating',
-                  (driver['averageRating'] as double).toStringAsFixed(2)),
+                  (driver['averageRating'] as double? ?? 0.0).toStringAsFixed(2)),
               _DetailRow(
-                  'Total Ratings', (driver['totalRatings'] as int).toString()),
+                  'Total Ratings', (driver['totalRatings'] as int? ?? 0).toString()),
+              _DetailRow('Total Loads',
+                  (driver['totalLoads'] as int? ?? 0).toString()),
               _DetailRow('Completed Loads',
-                  (driver['completedLoads'] as int).toString()),
+                  (driver['completedLoads'] as int? ?? 0).toString()),
               _DetailRow('Total Earnings',
-                  '\$${(driver['totalEarnings'] as double).toStringAsFixed(2)}'),
+                  '\$${(driver['totalEarnings'] as double? ?? 0.0).toStringAsFixed(2)}'),
               _DetailRow('On-Time Delivery',
-                  '${driver['onTimeDeliveryRate']}%'),
+                  '${driver['onTimeDeliveryRate'] as int? ?? 0}%'),
             ],
           ),
         ),

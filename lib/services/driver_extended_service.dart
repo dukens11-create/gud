@@ -435,17 +435,26 @@ class DriverExtendedService {
           .get();
       print('   Total ratings: ${ratingsSnapshot.docs.length}');
 
+      // Get ALL loads (regardless of status) for total count
+      print('   Querying all loads: driverId=$driverId');
+      final allLoadsSnapshot = await _db
+          .collection('loads')
+          .where('driverId', isEqualTo: driverId)
+          .get();
+      
+      print('   ✅ Found ${allLoadsSnapshot.docs.length} total loads');
+
       // Get completed loads
-      print('   Querying loads: driverId=$driverId, status=delivered');
-      final loadsSnapshot = await _db
+      print('   Querying completed loads: driverId=$driverId, status=delivered');
+      final completedLoadsSnapshot = await _db
           .collection('loads')
           .where('driverId', isEqualTo: driverId)
           .where('status', isEqualTo: 'delivered')
           .get();
       
-      print('   ✅ Found ${loadsSnapshot.docs.length} completed loads');
+      print('   ✅ Found ${completedLoadsSnapshot.docs.length} completed loads');
       
-      if (loadsSnapshot.docs.isEmpty) {
+      if (completedLoadsSnapshot.docs.isEmpty) {
         print('   ℹ️  No completed loads found. Possible reasons:');
         print('      1. Driver has not completed any deliveries yet');
         print('      2. Load driverId does not match driver document ID');
@@ -453,13 +462,14 @@ class DriverExtendedService {
         print('      4. Firestore composite index may be missing');
       } else {
         // Log sample load IDs for debugging
-        final sampleLoadIds = loadsSnapshot.docs.take(3).map((d) => d.id).toList();
+        final sampleLoadIds = completedLoadsSnapshot.docs.take(3).map((d) => d.id).toList();
         print('   Sample load IDs: $sampleLoadIds');
       }
 
       // Calculate metrics
-      final totalLoads = loadsSnapshot.docs.length;
-      final totalEarnings = loadsSnapshot.docs.fold<double>(
+      final totalLoads = allLoadsSnapshot.docs.length;
+      final completedLoads = completedLoadsSnapshot.docs.length;
+      final totalEarnings = completedLoadsSnapshot.docs.fold<double>(
         0.0,
         (sum, doc) {
           final rate = ((doc.data()['rate'] ?? 0) as num).toDouble();
@@ -471,7 +481,7 @@ class DriverExtendedService {
 
       // On-time delivery calculation (assuming deliveryDate vs expectedDate)
       int onTimeDeliveries = 0;
-      for (var load in loadsSnapshot.docs) {
+      for (var load in completedLoadsSnapshot.docs) {
         final data = load.data();
         final deliveredAt = DateTimeUtils.parseDateTime(data['deliveredAt']);
         final expectedDate = DateTimeUtils.parseDateTime(data['expectedDate']);
@@ -484,11 +494,11 @@ class DriverExtendedService {
         }
       }
 
-      final onTimeRate = totalLoads > 0 
-          ? (onTimeDeliveries / totalLoads * 100).round()
+      final onTimeRate = completedLoads > 0 
+          ? (onTimeDeliveries / completedLoads * 100).round()
           : 0;
       
-      print('   On-time deliveries: $onTimeDeliveries/$totalLoads ($onTimeRate%)');
+      print('   On-time deliveries: $onTimeDeliveries/$completedLoads ($onTimeRate%)');
 
       final metrics = {
         'driverId': driverId,
@@ -496,7 +506,8 @@ class DriverExtendedService {
         'truckNumber': driverData['truckNumber'] ?? '',
         'averageRating': driverData['averageRating'] ?? 0.0,
         'totalRatings': ratingsSnapshot.docs.length,
-        'completedLoads': totalLoads,
+        'totalLoads': totalLoads,
+        'completedLoads': completedLoads,
         'totalEarnings': totalEarnings,
         'onTimeDeliveryRate': onTimeRate,
         'status': driverData['status'] ?? 'unknown',
