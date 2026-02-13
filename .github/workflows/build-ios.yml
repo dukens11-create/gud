@@ -147,6 +147,8 @@ jobs:
           /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" ios/Runner/Info.plist || true
 
       - name: Build IPA
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.TEAM_ID }}
         run: |
           flutter build ipa --release \
             --export-options-plist=ios/ExportOptions.plist \
