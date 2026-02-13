@@ -367,6 +367,11 @@ class _DriverPerformanceDashboardState
             totalDrivers
         : 0.0;
 
+    // Count drivers with warnings
+    final driversWithNoLoads = _drivers.where((d) => (d['completedLoads'] as int? ?? 0) == 0).length;
+    final driversWithNoEarnings = _drivers.where((d) => (d['totalEarnings'] as double? ?? 0.0) == 0.0).length;
+    final hasWarnings = driversWithNoLoads > 0 || driversWithNoEarnings > 0;
+
     return Column(
       children: [
         Row(
@@ -412,6 +417,11 @@ class _DriverPerformanceDashboardState
             ),
           ],
         ),
+        // Warning banner section
+        if (hasWarnings) ...[
+          const SizedBox(height: 16),
+          _buildWarningBanner(driversWithNoLoads, driversWithNoEarnings),
+        ],
         const SizedBox(height: 24),
         Text(
           'Driver Details',
@@ -424,6 +434,48 @@ class _DriverPerformanceDashboardState
     );
   }
 
+  Widget _buildWarningBanner(int noLoadsCount, int noEarningsCount) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.amber.shade300, width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber, color: Colors.amber.shade700, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Data Warnings',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber.shade900,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                if (noLoadsCount > 0)
+                  Text(
+                    '• $noLoadsCount driver(s) with zero completed loads',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                if (noEarningsCount > 0)
+                  Text(
+                    '• $noEarningsCount driver(s) with zero earnings',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDriverCard(Map<String, dynamic> driver) {
     final rating = (driver['averageRating'] as double? ?? 0.0);
     final totalRatings = (driver['totalRatings'] as int? ?? 0);
@@ -432,9 +484,18 @@ class _DriverPerformanceDashboardState
     final onTimeRate = (driver['onTimeDeliveryRate'] as int? ?? 0);
     final status = (driver['status'] as String? ?? 'unknown');
 
+    // Detect data issues
+    final hasNoLoads = loads == 0;
+    final hasNoEarnings = earnings == 0.0;
+    final hasLowRating = rating > 0 && rating < 3.0;
+    final hasPoorOnTime = onTimeRate < 70 && loads > 0;
+    final hasWarnings = hasNoLoads || hasNoEarnings || hasLowRating || hasPoorOnTime;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
+      // Highlight card with warning color if issues exist (light background for readability)
+      color: hasWarnings ? Colors.red.shade100 : null,
       child: InkWell(
         onTap: () => _showDriverDetails(driver),
         borderRadius: BorderRadius.circular(12),
@@ -483,6 +544,40 @@ class _DriverPerformanceDashboardState
                   _StatusBadge(status: status),
                 ],
               ),
+              // Warning badges section
+              if (hasWarnings) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (hasNoLoads)
+                      _WarningChip(
+                        icon: Icons.warning_amber,
+                        label: 'No Completed Loads',
+                        color: Colors.orange,
+                      ),
+                    if (hasNoEarnings)
+                      _WarningChip(
+                        icon: Icons.money_off,
+                        label: 'No Earnings',
+                        color: Colors.red,
+                      ),
+                    if (hasLowRating)
+                      _WarningChip(
+                        icon: Icons.star_border,
+                        label: 'Low Rating (${rating.toStringAsFixed(1)})',
+                        color: Colors.orange,
+                      ),
+                    if (hasPoorOnTime)
+                      _WarningChip(
+                        icon: Icons.schedule,
+                        label: 'Poor On-Time Rate ($onTimeRate%)',
+                        color: Colors.red,
+                      ),
+                  ],
+                ),
+              ],
               const Divider(height: 24),
 
               // Performance metrics
@@ -503,7 +598,7 @@ class _DriverPerformanceDashboardState
                       label: 'Loads',
                       value: loads.toString(),
                       subtitle: 'completed',
-                      color: Colors.blue,
+                      color: hasNoLoads ? Colors.red : Colors.blue,
                     ),
                   ),
                 ],
@@ -517,7 +612,7 @@ class _DriverPerformanceDashboardState
                       label: 'Earnings',
                       value: '\$${earnings.toStringAsFixed(0)}',
                       subtitle: 'total',
-                      color: Colors.green,
+                      color: hasNoEarnings ? Colors.red : Colors.green,
                     ),
                   ),
                   Expanded(
@@ -750,6 +845,36 @@ class _DetailRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _WarningChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _WarningChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: Icon(icon, size: 16, color: Colors.white),
+      label: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      backgroundColor: color,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 }
