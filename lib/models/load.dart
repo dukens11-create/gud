@@ -30,6 +30,10 @@ class LoadModel {
   final DateTime? deliveredAt;
   final String? notes;
   final String createdBy;
+  final String? bolPhotoUrl;      // Bill of Lading photo URL
+  final String? podPhotoUrl;      // Proof of Delivery photo URL
+  final DateTime? bolUploadedAt;  // When BOL was uploaded
+  final DateTime? podUploadedAt;  // When POD was uploaded
 
   LoadModel({
     required this.id,
@@ -48,6 +52,10 @@ class LoadModel {
     this.deliveredAt,
     this.notes,
     this.createdBy = '',
+    this.bolPhotoUrl,
+    this.podPhotoUrl,
+    this.bolUploadedAt,
+    this.podUploadedAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
@@ -66,6 +74,10 @@ class LoadModel {
     if (deliveredAt != null) 'deliveredAt': deliveredAt!.toIso8601String(),
     if (notes != null) 'notes': notes,
     'createdBy': createdBy,
+    if (bolPhotoUrl != null) 'bolPhotoUrl': bolPhotoUrl,
+    if (podPhotoUrl != null) 'podPhotoUrl': podPhotoUrl,
+    if (bolUploadedAt != null) 'bolUploadedAt': bolUploadedAt!.toIso8601String(),
+    if (podUploadedAt != null) 'podUploadedAt': podUploadedAt!.toIso8601String(),
   };
 
   static LoadModel fromDoc(DocumentSnapshot doc) {
@@ -95,6 +107,10 @@ class LoadModel {
         deliveredAt: DateTimeUtils.parseDateTime(d['deliveredAt']),
         notes: d['notes'] as String?,
         createdBy: (d['createdBy'] ?? '') as String,
+        bolPhotoUrl: d['bolPhotoUrl'] as String?,
+        podPhotoUrl: d['podPhotoUrl'] as String?,
+        bolUploadedAt: DateTimeUtils.parseDateTime(d['bolUploadedAt']),
+        podUploadedAt: DateTimeUtils.parseDateTime(d['podUploadedAt']),
       );
     } catch (e) {
       throw FormatException(

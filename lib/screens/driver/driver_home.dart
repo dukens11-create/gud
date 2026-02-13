@@ -1022,12 +1022,52 @@ class _DriverHomeState extends State<DriverHome> {
                                     Text('From: ${load.pickupAddress.isNotEmpty ? load.pickupAddress : "Unknown"}'),
                                     Text('To: ${load.deliveryAddress.isNotEmpty ? load.deliveryAddress : "Unknown"}'),
                                     const SizedBox(height: 4),
-                                    Text(
-                                      'Rate: \$${load.rate.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.green,
-                                      ),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Rate: \$${load.rate.toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        // Document status indicators
+                                        if (load.bolPhotoUrl != null)
+                                          Tooltip(
+                                            message: 'BOL Uploaded',
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green.shade100,
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Icon(
+                                                Icons.description,
+                                                size: 16,
+                                                color: Colors.green.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                        if (load.bolPhotoUrl != null && load.podPhotoUrl != null)
+                                          const SizedBox(width: 4),
+                                        if (load.podPhotoUrl != null)
+                                          Tooltip(
+                                            message: 'POD Uploaded',
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.shade100,
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Icon(
+                                                Icons.check_box,
+                                                size: 16,
+                                                color: Colors.blue.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ],
                                 ),

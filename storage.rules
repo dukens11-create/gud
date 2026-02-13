@@ -11,7 +11,17 @@ service firebase.storage {
       return isAuthenticated() && request.auth.token.role == 'admin';
     }
     
-    // POD images - in loads/{loadId}/pods/{fileName}
+    // BOL and POD images - in loads/{loadId}/{document}/{fileName}
+    match /loads/{loadId}/{document}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        (document == 'bol' || document == 'pod') &&
+        request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+        request.resource.contentType.matches('image/.*');
+      allow delete: if isAuthenticated();
+    }
+    
+    // POD images - in loads/{loadId}/pods/{fileName} (legacy path)
     match /loads/{loadId}/pods/{fileName} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && 

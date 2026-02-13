@@ -5,16 +5,16 @@ import '../../services/document_upload_service.dart';
 import '../../services/navigation_service.dart';
 import '../../utils/datetime_utils.dart';
 
-class UploadPODScreen extends StatefulWidget {
+class UploadBOLScreen extends StatefulWidget {
   final LoadModel load;
 
-  const UploadPODScreen({super.key, required this.load});
+  const UploadBOLScreen({super.key, required this.load});
 
   @override
-  State<UploadPODScreen> createState() => _UploadPODScreenState();
+  State<UploadBOLScreen> createState() => _UploadBOLScreenState();
 }
 
-class _UploadPODScreenState extends State<UploadPODScreen> {
+class _UploadBOLScreenState extends State<UploadBOLScreen> {
   final _uploadService = DocumentUploadService();
   File? _selectedPhoto;
   bool _isUploading = false;
@@ -24,7 +24,7 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload Proof of Delivery'),
+        title: const Text('Upload Bill of Lading'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -51,13 +51,13 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Existing POD photo (if any)
-            if (widget.load.podPhotoUrl != null) ...[
+            // Existing BOL photo (if any)
+            if (widget.load.bolPhotoUrl != null) ...[
               Card(
                 child: Column(
                   children: [
                     Image.network(
-                      widget.load.podPhotoUrl!,
+                      widget.load.bolPhotoUrl!,
                       height: 300,
                       width: double.infinity,
                       fit: BoxFit.cover,
@@ -67,12 +67,12 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
                       child: Column(
                         children: [
                           Text(
-                            'Current POD',
+                            'Current BOL',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
-                          if (widget.load.podUploadedAt != null)
+                          if (widget.load.bolUploadedAt != null)
                             Text(
-                              'Uploaded: ${DateTimeUtils.formatDisplayDateTime(widget.load.podUploadedAt!)}',
+                              'Uploaded: ${DateTimeUtils.formatDisplayDateTime(widget.load.bolUploadedAt!)}',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           const SizedBox(height: 8),
@@ -164,7 +164,7 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
 
             // Info card
             Card(
-              color: Colors.green.shade50,
+              color: Colors.blue.shade50,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -172,24 +172,24 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info_outline, color: Colors.green.shade700),
+                        Icon(Icons.info_outline, color: Colors.blue.shade700),
                         const SizedBox(width: 8),
                         Text(
-                          'Tips for POD Photos',
+                          'Tips for BOL Photos',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.green.shade900,
+                            color: Colors.blue.shade900,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '• Capture signature clearly\n'
-                      '• Include full delivery receipt\n'
-                      '• Ensure good lighting\n'
+                      '• Ensure all text is clearly visible\n'
+                      '• Capture the entire document\n'
+                      '• Use good lighting\n'
                       '• Avoid shadows and glare',
-                      style: TextStyle(color: Colors.green.shade900),
+                      style: TextStyle(color: Colors.blue.shade900),
                     ),
                   ],
                 ),
@@ -229,7 +229,7 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
 
     try {
       // Upload to Firebase Storage
-      final photoUrl = await _uploadService.uploadPOD(
+      final photoUrl = await _uploadService.uploadBOL(
         loadId: widget.load.id,
         driverId: widget.load.driverId,
         photo: _selectedPhoto!,
@@ -239,18 +239,18 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
       );
 
       // Update Firestore
-      await _uploadService.updateLoadPOD(
+      await _uploadService.updateLoadBOL(
         loadId: widget.load.id,
         photoUrl: photoUrl,
       );
 
       if (mounted) {
-        NavigationService.showSuccess('POD uploaded successfully');
+        NavigationService.showSuccess('BOL uploaded successfully');
         Navigator.pop(context, true); // Return true to indicate success
       }
     } catch (e) {
       if (mounted) {
-        NavigationService.showError('Failed to upload POD: $e');
+        NavigationService.showError('Failed to upload BOL: $e');
       }
     } finally {
       if (mounted) {
@@ -263,9 +263,9 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Replace POD Photo?'),
+        title: const Text('Replace BOL Photo?'),
         content: const Text(
-          'Are you sure you want to replace the existing POD photo? '
+          'Are you sure you want to replace the existing BOL photo? '
           'The old photo will be permanently deleted.',
         ),
         actions: [
@@ -284,8 +284,8 @@ class _UploadPODScreenState extends State<UploadPODScreen> {
 
     if (confirmed == true) {
       // Delete old photo
-      if (widget.load.podPhotoUrl != null) {
-        await _uploadService.deletePhoto(widget.load.podPhotoUrl!);
+      if (widget.load.bolPhotoUrl != null) {
+        await _uploadService.deletePhoto(widget.load.bolPhotoUrl!);
       }
       // User can now select new photo
     }
