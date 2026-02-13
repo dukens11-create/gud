@@ -13,7 +13,7 @@ firebase deploy --only firestore:indexes
 
 ## Wait for Index Build
 - Indexes take **2-5 minutes** to build
-- Check status: https://console.firebase.google.com/project/gud-express/firestore/indexes
+- Check status: https://console.firebase.google.com/project/YOUR_PROJECT_ID/firestore/indexes
 
 ## Verify Indexes are Active
 All indexes should show status: **Enabled** (green)
@@ -26,7 +26,7 @@ All indexes should show status: **Enabled** (green)
 ### Error: "Permission denied"
 ```bash
 firebase login
-firebase use gud-express
+firebase use YOUR_PROJECT_ID
 ```
 
 ### Indexes show "Building..."

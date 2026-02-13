@@ -123,7 +123,7 @@ firebase deploy --only firestore:indexes
 ```
 
 Wait 2-5 minutes for indexes to build. Check status at:
-https://console.firebase.google.com/project/gud-express/firestore/indexes
+https://console.firebase.google.com/project/YOUR_PROJECT_ID/firestore/indexes
 
 See [FIRESTORE_INDEXES_DEPLOYMENT.md](FIRESTORE_INDEXES_DEPLOYMENT.md) for details.
 
