@@ -505,7 +505,7 @@ class LoadDetailScreen extends StatelessWidget {
       case 'in_transit':
         return Colors.purple;
       case 'delivered':
-        return Colors.green;
+        return Colors.green.shade700;
       case 'declined':
         return Colors.red;
       default:
