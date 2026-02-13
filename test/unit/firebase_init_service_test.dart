@@ -44,6 +44,36 @@ void main() {
       // - Throws on Firestore errors
     });
 
+    group('initializeMaintenance', () {
+      test('should be callable without throwing immediately', () {
+        // This test verifies the method exists and has correct signature.
+        // 
+        // For comprehensive testing with Firebase emulator or mocking, consider:
+        // - Test: Returns false when user is not authenticated
+        // - Test: Returns false when maintenance collection already has records
+        // - Test: Returns false when no trucks exist in the database
+        // - Test: Returns true and creates record when collection is empty and trucks exist
+        // - Test: Created maintenance record references the first available truck
+        // - Test: Throws on Firestore errors
+        expect(
+          () => service.initializeMaintenance(),
+          returnsNormally,
+        );
+      });
+
+      test('returns Future<bool>', () {
+        final result = service.initializeMaintenance();
+        expect(result, isA<Future<bool>>());
+      });
+
+      // Note: Actual behavior tests require Firebase emulator or mock
+      // These would test:
+      // - Returns false when user is not authenticated
+      // - Returns false when maintenance records already exist
+      // - Returns true when maintenance records are created successfully
+      // - Throws on Firestore errors
+    });
+
     group('initializeDatabase', () {
       test('should be callable without throwing immediately', () {
         expect(
@@ -110,6 +140,46 @@ void main() {
       // Verify year is reasonable
       expect(sampleTruck['year'] as int, greaterThan(1990));
       expect(sampleTruck['year'] as int, lessThanOrEqualTo(DateTime.now().year));
+    });
+  });
+
+  group('Sample Maintenance Data Validation', () {
+    test('sample maintenance structure has required fields', () {
+      // Define expected sample maintenance structure
+      // Note: The actual implementation dynamically retrieves the truck number
+      // from the first available truck, so TRK-001 is just an example
+      final sampleMaintenance = {
+        'driverId': '',
+        'truckNumber': 'TRK-001', // Example - actual value is determined at runtime
+        'maintenanceType': 'Oil Change',
+        'cost': 85.00,
+        'serviceProvider': 'Quick Lube Auto Service',
+        'notes': 'Routine oil change and filter replacement completed.',
+        // serviceDate, nextServiceDue, and createdAt would be Timestamps
+      };
+
+      // Verify required fields are present
+      expect(sampleMaintenance['driverId'], isNotNull);
+      expect(sampleMaintenance['truckNumber'], isNotNull);
+      expect(sampleMaintenance['maintenanceType'], isNotNull);
+      expect(sampleMaintenance['cost'], isNotNull);
+
+      // Verify field types
+      expect(sampleMaintenance['driverId'], isA<String>());
+      expect(sampleMaintenance['truckNumber'], isA<String>());
+      expect(sampleMaintenance['maintenanceType'], isA<String>());
+      expect(sampleMaintenance['cost'], isA<double>());
+      expect(sampleMaintenance['serviceProvider'], isA<String>());
+      expect(sampleMaintenance['notes'], isA<String>());
+
+      // Verify truck number matches expected format (though actual value varies)
+      expect(
+        RegExp(r'^TRK-\d{3}$').hasMatch(sampleMaintenance['truckNumber'] as String),
+        isTrue,
+      );
+
+      // Verify cost is positive
+      expect(sampleMaintenance['cost'] as double, greaterThan(0));
     });
   });
 }

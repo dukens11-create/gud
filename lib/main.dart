@@ -145,9 +145,15 @@ void main() async {
     // Initialize all services
     await initializeServices();
     
-    // Note: Database initialization with sample data is now triggered
-    // manually via the debug button in ManageTrucksScreen (debug mode only)
-    // or automatically when an admin first accesses the screen.
+    // Initialize database with sample data if collections are empty
+    // This runs at app startup to ensure trucks and maintenance records exist
+    try {
+      final initService = FirebaseInitService();
+      await initService.initializeDatabase();
+    } catch (e) {
+      print('⚠️ Database initialization failed (non-critical): $e');
+      // Don't prevent app from starting if initialization fails
+    }
     
     // Log app open event
     FirebaseAnalytics analytics = FirebaseAnalytics.instance;

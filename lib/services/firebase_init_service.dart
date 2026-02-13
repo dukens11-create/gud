@@ -136,21 +136,102 @@ class FirebaseInitService {
     }
   }
 
+  /// Initialize maintenance collection with sample data if empty
+  /// 
+  /// Creates a sample maintenance record for the first available truck.
+  /// Only runs if the maintenance collection is empty and at least one truck exists.
+  /// 
+  /// **Note**: This requires admin authentication.
+  /// Will silently fail if user is not authenticated or not an admin.
+  /// 
+  /// Returns true if initialization was performed, false if maintenance records already exist
+  /// or if initialization was skipped due to permissions.
+  /// Throws exceptions on errors.
+  Future<bool> initializeMaintenance() async {
+    try {
+      print('🔧 Checking maintenance collection...');
+
+      // Check authentication first
+      if (_auth.currentUser == null) {
+        print('ℹ️ No user authenticated, skipping maintenance initialization');
+        return false;
+      }
+
+      // Check if maintenance collection is empty
+      final snapshot = await _db.collection('maintenance').limit(1).get();
+      
+      if (snapshot.docs.isNotEmpty) {
+        print('✅ Maintenance collection already has data, skipping initialization');
+        return false;
+      }
+
+      print('📝 Maintenance collection is empty, creating sample maintenance record...');
+
+      // Find first available truck to associate the maintenance record with
+      final trucksSnapshot = await _db.collection('trucks').limit(1).get();
+      
+      if (trucksSnapshot.docs.isEmpty) {
+        print('ℹ️ No trucks exist yet, skipping maintenance initialization');
+        print('   Maintenance records will be initialized after trucks are created');
+        return false;
+      }
+
+      // Get the truck number from the first available truck
+      final firstTruck = trucksSnapshot.docs.first.data();
+      final truckNumber = firstTruck['truckNumber'] as String? ?? 'TRK-001';
+
+      // Create a sample maintenance record for the first truck
+      final now = DateTime.now();
+      final lastMonth = now.subtract(const Duration(days: 30));
+      final nextMonth = now.add(const Duration(days: 90));
+
+      final sampleMaintenance = {
+        'driverId': '', // Empty driver ID for unassigned truck
+        'truckNumber': truckNumber,
+        'maintenanceType': 'Oil Change',
+        'serviceDate': Timestamp.fromDate(lastMonth),
+        'cost': 85.00,
+        'nextServiceDue': Timestamp.fromDate(nextMonth),
+        'serviceProvider': 'Quick Lube Auto Service',
+        'notes': 'Routine oil change and filter replacement completed.',
+        'createdAt': Timestamp.fromDate(now),
+      };
+
+      // Add maintenance record
+      await _db.collection('maintenance').add(sampleMaintenance);
+
+      print('✅ Successfully created sample maintenance record for truck $truckNumber');
+      return true;
+    } catch (e) {
+      print('❌ Error initializing maintenance: $e');
+      rethrow;
+    }
+  }
+
   /// Initialize all collections with sample data
   /// 
   /// This is the main entry point for database initialization.
-  /// Currently only initializes trucks, but can be extended for other collections.
+  /// Initializes trucks and maintenance collections if they are empty.
   Future<void> initializeDatabase() async {
     try {
       print('🚀 Starting database initialization...');
 
-      // Initialize trucks
+      // Initialize trucks first
       final trucksInitialized = await initializeTrucks();
 
-      if (trucksInitialized) {
+      // Initialize maintenance records
+      final maintenanceInitialized = await initializeMaintenance();
+
+      if (trucksInitialized || maintenanceInitialized) {
         print('✅ Database initialization complete');
+        if (trucksInitialized) {
+          print('  - Trucks collection seeded with sample data');
+        }
+        if (maintenanceInitialized) {
+          print('  - Maintenance collection seeded with sample data');
+        }
       } else {
-        print('ℹ️ Database already initialized');
+        print('ℹ️ Database already initialized, no changes made');
       }
     } catch (e) {
       print('❌ Database initialization failed: $e');
