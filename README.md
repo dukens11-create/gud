@@ -85,6 +85,33 @@ If you need to check or manage indexes manually:
 
 📖 **Detailed Documentation**: For comprehensive information about Firestore indexes, query patterns, and maintenance, see [FIRESTORE_INDEX_SETUP.md](FIRESTORE_INDEX_SETUP.md)
 
+### Document Verification Page Error
+
+**Seeing this specific error on the Document Verification page?**
+```
+Error: [cloud_firestore/failed-precondition] The query requires a COLLECTION_GROUP_ASC index for collection documents and field status.
+```
+
+This means the indexes for the Document Verification feature need to be deployed.
+
+**Quick Fix:**
+```bash
+# Deploy all Firestore indexes (includes Document Verification indexes)
+firebase deploy --only firestore:indexes
+```
+
+**Complete deployment guide:** See [FIRESTORE_INDEX_DEPLOYMENT.md](FIRESTORE_INDEX_DEPLOYMENT.md) for:
+- Detailed deployment steps
+- Index verification instructions
+- Troubleshooting common issues
+- Direct Firebase Console links
+
+**What this fixes:**
+- ✅ Document Verification page loads successfully
+- ✅ Admins can view pending driver documents
+- ✅ Documents can be filtered by status (pending/verified/rejected)
+- ✅ Documents are sorted by upload date
+
 ---
 
 ## Version
