@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/load.dart';
 import '../../services/mock_data_service.dart';
 import '../../services/firestore_service.dart';
@@ -603,6 +604,54 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
   }
 
   Future<void> _markDelivered() async {
+    // Validate the load can be marked as delivered
+    if (widget.load.status == 'delivered') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This load is already marked as delivered'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Ensure load is in a valid state to be delivered
+    if (widget.load.status != 'in_transit' && widget.load.status != 'accepted') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Load must be in transit or accepted before marking as delivered. '
+              'Current status: ${widget.load.status}'
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Validate driver ID matches current user
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (widget.load.driverId != currentUserId) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              '⚠️ Warning: Driver ID mismatch detected. '
+              'This delivery may not be counted in your performance metrics.'
+            ),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+      // Continue anyway but warn the user
+    }
+
     try {
       setState(() => _isLoading = true);
       
@@ -611,8 +660,9 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Load marked as delivered!'),
+            content: Text('✅ Load marked as delivered! Your stats will be updated shortly.'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
         );
         Navigator.pop(context);
@@ -620,7 +670,11 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('❌ Error marking as delivered: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     } finally {
