@@ -303,43 +303,46 @@ class TruckService {
   /// 
   /// This ensures the driver sees their assigned truck even if there's a 
   /// mismatch between the user document and truck document assignments.
-  Stream<Truck?> getTruckByDriverIdStreamEnhanced(String driverId) async* {
+  Stream<Truck?> getTruckByDriverIdStreamEnhanced(String driverId) {
     _requireAuth();
 
-    // First, check if the user document has an assignedTruckId
-    await for (final userSnapshot in _db.collection('users').doc(driverId).snapshots()) {
+    return _db
+        .collection('users')
+        .doc(driverId)
+        .snapshots()
+        .asyncExpand((userSnapshot) {
+      // If user document doesn't exist or has no assignedTruckId,
+      // fall back to querying trucks by assignedDriverId
       if (!userSnapshot.exists) {
-        // User document doesn't exist, fall back to truck query
-        yield* getTruckByDriverIdStream(driverId);
-        return;
+        return getTruckByDriverIdStream(driverId);
       }
 
       final userData = userSnapshot.data();
       final assignedTruckId = userData?['assignedTruckId'] as String?;
 
       if (assignedTruckId != null && assignedTruckId.isNotEmpty) {
-        // User has an assignedTruckId, fetch the truck document
-        await for (final truckSnapshot in _db.collection('trucks').doc(assignedTruckId).snapshots()) {
-          if (truckSnapshot.exists) {
-            final truckData = truckSnapshot.data();
-            if (truckData != null) {
-              yield Truck.fromMap(truckSnapshot.id, truckData);
-            } else {
-              yield null;
-            }
-          } else {
-            // Truck doesn't exist, fall back to query by assignedDriverId
-            yield* getTruckByDriverIdStream(driverId);
-            return;
+        // User has an assignedTruckId, fetch the truck document directly
+        return _db
+            .collection('trucks')
+            .doc(assignedTruckId)
+            .snapshots()
+            .map((truckSnapshot) {
+          if (!truckSnapshot.exists) {
+            return null;
           }
-        }
-        return; // Exit after streaming from assignedTruckId
+
+          final truckData = truckSnapshot.data();
+          if (truckData == null) {
+            return null;
+          }
+
+          return Truck.fromMap(truckSnapshot.id, truckData);
+        });
       } else {
         // No assignedTruckId in user document, use the standard query
-        yield* getTruckByDriverIdStream(driverId);
-        return;
+        return getTruckByDriverIdStream(driverId);
       }
-    }
+    });
   }
 
   // ========== UTILITY METHODS ==========
