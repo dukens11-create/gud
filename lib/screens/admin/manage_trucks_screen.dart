@@ -91,7 +91,7 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
       case 'in_use':
         return 'All trucks are currently available, in maintenance, or inactive';
       case 'maintenance':
-        return 'No trucks are currently marked for maintenance';
+        return 'No trucks are currently in maintenance';
       case 'all':
       default:
         return 'Add your first truck to get started';
