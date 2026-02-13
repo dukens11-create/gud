@@ -871,7 +871,7 @@ TROUBLESHOOTING:
       
       print('✅ Delivery completed successfully');
       print('   Status changed to: delivered');
-      print('   Timestamp: ${DateTime.now().toIso8601String()}');
+      print('   Client timestamp: ${DateTime.now().toIso8601String()} (server timestamp will differ)');
       print('   ℹ️  Cloud Function "calculateEarnings" should now trigger');
       print('   Expected: drivers/${loadDriverId} will be updated with:');
       print('     - totalEarnings += \$$rate');

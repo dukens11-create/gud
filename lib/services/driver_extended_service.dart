@@ -23,6 +23,11 @@ class DriverExtendedService {
       );
     }
   }
+  
+  /// Helper method to check if a Firebase exception is related to missing indexes
+  bool _isIndexError(FirebaseException e) {
+    return e.code == 'failed-precondition' || (e.message?.contains('index') ?? false);
+  }
 
   // ========== RATING SYSTEM ==========
   
@@ -505,7 +510,7 @@ class DriverExtendedService {
       print('   Error code: ${e.code}');
       print('   Error message: ${e.message}');
       
-      if (e.code == 'failed-precondition' || (e.message?.contains('index') ?? false)) {
+      if (_isIndexError(e)) {
         print('   ⚠️  CRITICAL: Missing Firestore composite index!');
         print('   Required index: loads collection with fields (driverId, status)');
         print('   Run: firebase deploy --only firestore:indexes');
@@ -562,7 +567,7 @@ class DriverExtendedService {
           print('⚠️  Failed to get metrics for driver ${driverDoc.id}: ${e.code}');
           
           // Re-throw index errors so dashboard can show helpful message
-          if (e.code == 'failed-precondition' || (e.message?.contains('index') ?? false)) {
+          if (_isIndexError(e)) {
             rethrow;
           }
           // Skip other errors

@@ -96,7 +96,7 @@ async function diagnoseMismatch() {
       }
       
       console.log(`Load: ${load.loadNumber || loadId}`);
-      console.log(`  driverId field: "${load.driverId || 'MISSING'}"`);
+      console.log(`  driverId field: "${load.driverId || 'N/A'}"`);
       console.log(`  driverName field: "${load.driverName || 'N/A'}"`);
       console.log(`  status: ${status}`);
       console.log(`  rate: $${load.rate || 0}`);
