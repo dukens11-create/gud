@@ -60,6 +60,44 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
     super.dispose();
   }
 
+  /// Get appropriate empty state title based on current filters
+  String _getEmptyStateTitle() {
+    if (_searchQuery.isNotEmpty) {
+      return 'No matching trucks';
+    }
+    
+    switch (_statusFilter) {
+      case 'available':
+        return 'No available trucks';
+      case 'in_use':
+        return 'No trucks in use';
+      case 'maintenance':
+        return 'No trucks in maintenance';
+      case 'all':
+      default:
+        return 'No trucks found';
+    }
+  }
+
+  /// Get appropriate empty state subtitle based on current filters
+  String _getEmptyStateSubtitle() {
+    if (_searchQuery.isNotEmpty) {
+      return 'Try adjusting your search or filters';
+    }
+    
+    switch (_statusFilter) {
+      case 'available':
+        return 'All trucks are either in use, in maintenance, or inactive';
+      case 'in_use':
+        return 'All trucks are currently available, in maintenance, or inactive';
+      case 'maintenance':
+        return 'No trucks are currently marked for maintenance';
+      case 'all':
+      default:
+        return 'Add your first truck to get started';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -249,19 +287,17 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
                         Icon(Icons.local_shipping, size: 80, color: Colors.grey[400]),
                         const SizedBox(height: 16),
                         Text(
-                          _searchQuery.isEmpty ? 'No trucks found' : 'No matching trucks',
+                          _getEmptyStateTitle(),
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _searchQuery.isEmpty
-                              ? 'Add your first truck to get started'
-                              : 'Try adjusting your search or filters',
+                          _getEmptyStateSubtitle(),
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: Colors.grey[600],
                               ),
                         ),
-                        if (_searchQuery.isEmpty && !_showInactive) ...[
+                        if (_searchQuery.isEmpty && _statusFilter == 'all' && !_showInactive) ...[
                           const SizedBox(height: 24),
                           Container(
                             padding: const EdgeInsets.all(16),
