@@ -47,6 +47,9 @@ void main() {
     group('initializeMaintenance', () {
       test('should be callable without throwing immediately', () {
         // This test verifies the method exists and has correct signature
+        // Note: This test doesn't validate actual behavior as it would require
+        // Firebase emulator or mock setup. See test header comments for
+        // comprehensive testing recommendations.
         expect(
           () => service.initializeMaintenance(),
           returnsNormally,
@@ -138,13 +141,15 @@ void main() {
   group('Sample Maintenance Data Validation', () {
     test('sample maintenance structure has required fields', () {
       // Define expected sample maintenance structure
+      // Note: The actual implementation dynamically retrieves the truck number
+      // from the first available truck, so TRK-001 is just an example
       final sampleMaintenance = {
         'driverId': '',
-        'truckNumber': 'TRK-001',
+        'truckNumber': 'TRK-001', // Example - actual value is determined at runtime
         'maintenanceType': 'Oil Change',
         'cost': 85.00,
         'serviceProvider': 'Quick Lube Auto Service',
-        'notes': 'Routine oil change and filter replacement.',
+        'notes': 'Routine oil change and filter replacement completed.',
         // serviceDate, nextServiceDue, and createdAt would be Timestamps
       };
 
@@ -162,7 +167,7 @@ void main() {
       expect(sampleMaintenance['serviceProvider'], isA<String>());
       expect(sampleMaintenance['notes'], isA<String>());
 
-      // Verify truck number matches sample truck format
+      // Verify truck number matches expected format (though actual value varies)
       expect(
         RegExp(r'^TRK-\d{3}$').hasMatch(sampleMaintenance['truckNumber'] as String),
         isTrue,

@@ -193,7 +193,7 @@ class FirebaseInitService {
         'cost': 85.00,
         'nextServiceDue': Timestamp.fromDate(nextMonth),
         'serviceProvider': 'Quick Lube Auto Service',
-        'notes': 'Routine oil change and filter replacement. Next service due in 90 days or 3,000 miles.',
+        'notes': 'Routine oil change and filter replacement completed.',
         'createdAt': Timestamp.fromDate(now),
       };
 
