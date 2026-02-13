@@ -456,7 +456,7 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
                         label: const Text('Mark as Delivered', 
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
+                          backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 64),
                           shape: RoundedRectangleBorder(
@@ -553,6 +553,9 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
       
       await firestoreService.acceptLoad(widget.load.id);
 
+      // Refresh the load data to reflect the new status
+      await _refreshLoadData();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -578,6 +581,9 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
       
       await firestoreService.startTrip(widget.load.id);
 
+      // Refresh the load data to reflect the new status
+      await _refreshLoadData();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -585,7 +591,6 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
             backgroundColor: Colors.blue,
           ),
         );
-        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
