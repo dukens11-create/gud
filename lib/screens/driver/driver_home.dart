@@ -561,7 +561,7 @@ class _DriverHomeState extends State<DriverHome> {
               if (snapshot.hasData && snapshot.data != null) {
                 final truck = snapshot.data!;
                 return Semantics(
-                  label: 'Assigned truck: ${truck.truckNumber}, ${truck.displayInfo}, Status: ${truck.statusDisplayName}',
+                  label: 'Assigned truck: ${truck.truckNumber}, ${truck.displayInfo}, Plate: ${truck.plateNumber}, Status: ${truck.statusDisplayName}',
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Card(
