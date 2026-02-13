@@ -109,7 +109,7 @@ firebase deploy --only firestore:indexes
 **What this fixes:**
 - ✅ Document Verification page loads successfully
 - ✅ Admins can view pending driver documents
-- ✅ Documents can be filtered by status (pending/verified/rejected)
+- ✅ Documents can be filtered by status (pending/valid/rejected)
 - ✅ Documents are sorted by upload date
 
 ---
