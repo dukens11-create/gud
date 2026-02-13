@@ -57,27 +57,37 @@ class LoadModel {
   };
 
   static LoadModel fromDoc(DocumentSnapshot doc) {
-    return fromMap(doc.id, doc.data() as Map<String, dynamic>);
+    final data = doc.data();
+    if (data == null) {
+      throw FormatException('Document ${doc.id} has no data');
+    }
+    return fromMap(doc.id, data as Map<String, dynamic>);
   }
 
   static LoadModel fromMap(String id, Map<String, dynamic> d) {
-    return LoadModel(
-      id: id,
-      loadNumber: (d['loadNumber'] ?? '') as String,
-      driverId: (d['driverId'] ?? '') as String,
-      driverName: d['driverName'] as String?,
-      pickupAddress: (d['pickupAddress'] ?? '') as String,
-      deliveryAddress: (d['deliveryAddress'] ?? '') as String,
-      rate: (d['rate'] ?? 0).toDouble(),
-      status: (d['status'] ?? 'assigned') as String,
-      createdAt: DateTimeUtils.parseDateTime(d['createdAt']),
-      pickedUpAt: DateTimeUtils.parseDateTime(d['pickedUpAt']),
-      tripStartAt: DateTimeUtils.parseDateTime(d['tripStartAt']),
-      tripEndAt: DateTimeUtils.parseDateTime(d['tripEndAt']),
-      miles: (d['miles'] ?? 0).toDouble(),
-      deliveredAt: DateTimeUtils.parseDateTime(d['deliveredAt']),
-      notes: d['notes'] as String?,
-      createdBy: (d['createdBy'] ?? '') as String,
-    );
+    try {
+      return LoadModel(
+        id: id,
+        loadNumber: (d['loadNumber'] ?? '') as String,
+        driverId: (d['driverId'] ?? '') as String,
+        driverName: d['driverName'] as String?,
+        pickupAddress: (d['pickupAddress'] ?? '') as String,
+        deliveryAddress: (d['deliveryAddress'] ?? '') as String,
+        rate: (d['rate'] ?? 0).toDouble(),
+        status: (d['status'] ?? 'assigned') as String,
+        createdAt: DateTimeUtils.parseDateTime(d['createdAt']),
+        pickedUpAt: DateTimeUtils.parseDateTime(d['pickedUpAt']),
+        tripStartAt: DateTimeUtils.parseDateTime(d['tripStartAt']),
+        tripEndAt: DateTimeUtils.parseDateTime(d['tripEndAt']),
+        miles: (d['miles'] ?? 0).toDouble(),
+        deliveredAt: DateTimeUtils.parseDateTime(d['deliveredAt']),
+        notes: d['notes'] as String?,
+        createdBy: (d['createdBy'] ?? '') as String,
+      );
+    } catch (e) {
+      throw FormatException(
+        'Failed to parse LoadModel from document $id: $e',
+      );
+    }
   }
 }

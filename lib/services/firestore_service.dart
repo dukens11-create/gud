@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../models/driver.dart';
 import '../models/load.dart';
 import '../models/pod.dart';
@@ -20,6 +21,9 @@ import '../models/pod.dart';
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  /// Maximum number of loads to fetch in a single query to prevent memory issues
+  static const int maxLoadsLimit = 100;
   
   /// Valid load status values
   /// 
@@ -347,13 +351,27 @@ class FirestoreService {
   /// Stream all loads with real-time updates
   /// 
   /// Returns loads ordered by creation time (newest first)
+  /// Limited to most recent loads to prevent memory issues
+  /// Skips documents that fail to parse instead of throwing
   Stream<List<LoadModel>> streamAllLoads() {
     _requireAuth();
     return _db
         .collection('loads')
         .orderBy('createdAt', descending: true)
+        .limit(maxLoadsLimit)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => LoadModel.fromDoc(doc)).toList());
+        .map((snapshot) {
+          final loads = <LoadModel>[];
+          for (final doc in snapshot.docs) {
+            try {
+              loads.add(LoadModel.fromDoc(doc));
+            } catch (e) {
+              // Log error but continue processing other documents
+              debugPrint('Warning: Failed to parse load document ${doc.id}: $e');
+            }
+          }
+          return loads;
+        });
   }
 
   /// Stream loads for a specific driver
@@ -404,16 +422,18 @@ class FirestoreService {
               print('      3. Ensure Firestore security rules allow driver to read their loads');
             }
             
-            return snapshot.docs.map((doc) {
+            final loads = <LoadModel>[];
+            for (final doc in snapshot.docs) {
               try {
                 final load = LoadModel.fromDoc(doc);
                 print('   ✓ Load ${load.loadNumber}: status=${load.status}, driverId=${load.driverId}');
-                return load;
+                loads.add(load);
               } catch (e) {
-                print('❌ Error parsing load document ${doc.id}: $e');
-                rethrow;
+                debugPrint('❌ Error parsing load document ${doc.id}: $e');
+                // Continue processing other documents instead of crashing
               }
-            }).toList();
+            }
+            return loads;
           })
           .handleError((error) {
             print('❌ Error streaming driver loads: $error');
@@ -524,17 +544,19 @@ class FirestoreService {
               print('      5. Check Firestore indexes are deployed and enabled');
             }
             
-            return snapshot.docs.map((doc) {
+            final loads = <LoadModel>[];
+            for (final doc in snapshot.docs) {
               try {
                 final load = LoadModel.fromDoc(doc);
                 print('   ✓ Load ${load.loadNumber}: status=${load.status}, driverId=${load.driverId}, createdAt=${load.createdAt}');
-                return load;
+                loads.add(load);
               } catch (e) {
-                print('❌ Error parsing load document ${doc.id}: $e');
-                print('   Document data: ${doc.data()}');
-                rethrow;
+                debugPrint('❌ Error parsing load document ${doc.id}: $e');
+                debugPrint('   Document data: ${doc.data()}');
+                // Continue processing other documents instead of crashing
               }
-            }).toList();
+            }
+            return loads;
           })
           .handleError((error) {
             print('❌ Error streaming driver loads by status: $error');
