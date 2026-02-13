@@ -494,8 +494,8 @@ class _DriverPerformanceDashboardState
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
-      // Highlight card with warning color if issues exist
-      color: hasWarnings ? Colors.red.shade50 : null,
+      // Highlight card with warning color if issues exist (light background for readability)
+      color: hasWarnings ? Colors.red.shade100 : null,
       child: InkWell(
         onTap: () => _showDriverDetails(driver),
         borderRadius: BorderRadius.circular(12),

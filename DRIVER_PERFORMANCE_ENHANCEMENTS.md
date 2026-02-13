@@ -110,12 +110,11 @@ The Driver Performance Dashboard had issues with calculating metrics properly du
 **Warning Banner** (lines 425-478):
 - Shows count of drivers with zero completed loads
 - Shows count of drivers with zero earnings  
-- Shows count of drivers that failed to load
 - Amber-colored banner with warning icon
 - Only displays when issues are detected
 
 **Driver Card Highlighting** (lines 480-625):
-- **Background highlight**: Cards with warnings show on red.shade50 background
+- **Background highlight**: Cards with warnings show on red.shade100 background for better contrast
 - **Warning badges**: Displays chips for:
   - "No Completed Loads" (orange) - when completedLoads == 0
   - "No Earnings" (red) - when totalEarnings == 0
@@ -138,7 +137,7 @@ The Driver Performance Dashboard had issues with calculating metrics properly du
 1. Open Driver Performance Dashboard
 2. Expected: Yellow warning banner shows "X driver(s) with zero completed loads"
 3. Driver cards with zero loads show:
-   - Red/pink card background
+   - Light red card background (shade100 for readability)
    - Orange "No Completed Loads" badge
    - Red loads metric
 
@@ -146,7 +145,7 @@ The Driver Performance Dashboard had issues with calculating metrics properly du
 1. Open Driver Performance Dashboard
 2. Expected: Yellow warning banner shows "X driver(s) with zero earnings"
 3. Driver cards with zero earnings show:
-   - Red/pink card background
+   - Light red card background (shade100 for readability)
    - Red "No Earnings" badge
    - Red earnings metric
 
@@ -247,7 +246,7 @@ The Driver Performance Dashboard had issues with calculating metrics properly du
 
 ### Error Indicators
 - ⚠️ Yellow warning banner on dashboard
-- ❌ Red/pink highlighted driver cards
+- 🔴 Light red highlighted driver cards (shade100)
 - 🔴 Red warning badges on metrics
 - 🟠 Orange warning for mismatches
 
