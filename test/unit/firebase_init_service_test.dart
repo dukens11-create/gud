@@ -46,10 +46,15 @@ void main() {
 
     group('initializeMaintenance', () {
       test('should be callable without throwing immediately', () {
-        // This test verifies the method exists and has correct signature
-        // Note: This test doesn't validate actual behavior as it would require
-        // Firebase emulator or mock setup. See test header comments for
-        // comprehensive testing recommendations.
+        // This test verifies the method exists and has correct signature.
+        // 
+        // For comprehensive testing with Firebase emulator or mocking, consider:
+        // - Test: Returns false when user is not authenticated
+        // - Test: Returns false when maintenance collection already has records
+        // - Test: Returns false when no trucks exist in the database
+        // - Test: Returns true and creates record when collection is empty and trucks exist
+        // - Test: Created maintenance record references the first available truck
+        // - Test: Throws on Firestore errors
         expect(
           () => service.initializeMaintenance(),
           returnsNormally,

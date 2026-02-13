@@ -138,8 +138,8 @@ class FirebaseInitService {
 
   /// Initialize maintenance collection with sample data if empty
   /// 
-  /// Creates a sample maintenance record for the first truck (TRK-001).
-  /// Only runs if the maintenance collection is empty.
+  /// Creates a sample maintenance record for the first available truck.
+  /// Only runs if the maintenance collection is empty and at least one truck exists.
   /// 
   /// **Note**: This requires admin authentication.
   /// Will silently fail if user is not authenticated or not an admin.
