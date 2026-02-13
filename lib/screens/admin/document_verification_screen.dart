@@ -457,14 +457,14 @@ class _StatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color),
       ),
       child: Text(
-        label,
+        label.toUpperCase(),
         style: TextStyle(
           color: color,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.bold,
           fontSize: 12,
         ),
       ),
