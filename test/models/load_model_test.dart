@@ -228,5 +228,94 @@ void main() {
         expect(deserialized.status, status);
       }
     });
+
+    test('constructor handles BOL and POD fields', () {
+      final testDate = DateTime(2024, 1, 1);
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'assigned',
+        bolPhotoUrl: 'https://example.com/bol.jpg',
+        podPhotoUrl: 'https://example.com/pod.jpg',
+        bolUploadedAt: testDate,
+        podUploadedAt: testDate.add(Duration(hours: 2)),
+      );
+
+      expect(load.bolPhotoUrl, 'https://example.com/bol.jpg');
+      expect(load.podPhotoUrl, 'https://example.com/pod.jpg');
+      expect(load.bolUploadedAt, testDate);
+      expect(load.podUploadedAt, testDate.add(Duration(hours: 2)));
+    });
+
+    test('toMap includes BOL and POD fields when present', () {
+      final testDate = DateTime(2024, 1, 1);
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'assigned',
+        bolPhotoUrl: 'https://example.com/bol.jpg',
+        podPhotoUrl: 'https://example.com/pod.jpg',
+        bolUploadedAt: testDate,
+        podUploadedAt: testDate.add(Duration(hours: 2)),
+      );
+
+      final map = load.toMap();
+
+      expect(map['bolPhotoUrl'], 'https://example.com/bol.jpg');
+      expect(map['podPhotoUrl'], 'https://example.com/pod.jpg');
+      expect(map['bolUploadedAt'], testDate.toIso8601String());
+      expect(map['podUploadedAt'], testDate.add(Duration(hours: 2)).toIso8601String());
+    });
+
+    test('toMap omits BOL and POD fields when null', () {
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'assigned',
+      );
+
+      final map = load.toMap();
+
+      expect(map.containsKey('bolPhotoUrl'), false);
+      expect(map.containsKey('podPhotoUrl'), false);
+      expect(map.containsKey('bolUploadedAt'), false);
+      expect(map.containsKey('podUploadedAt'), false);
+    });
+
+    test('fromMap deserializes BOL and POD fields correctly', () {
+      final testDate = DateTime(2024, 1, 1);
+      final map = {
+        'loadNumber': 'LD-001',
+        'driverId': 'driver-1',
+        'pickupAddress': '123 Main St',
+        'deliveryAddress': '456 Oak Ave',
+        'rate': 1500.0,
+        'status': 'assigned',
+        'createdAt': testDate.toIso8601String(),
+        'bolPhotoUrl': 'https://example.com/bol.jpg',
+        'podPhotoUrl': 'https://example.com/pod.jpg',
+        'bolUploadedAt': testDate.toIso8601String(),
+        'podUploadedAt': testDate.add(Duration(hours: 2)).toIso8601String(),
+      };
+
+      final load = LoadModel.fromMap('test-id', map);
+
+      expect(load.bolPhotoUrl, 'https://example.com/bol.jpg');
+      expect(load.podPhotoUrl, 'https://example.com/pod.jpg');
+      expect(load.bolUploadedAt, testDate);
+      expect(load.podUploadedAt, testDate.add(Duration(hours: 2)));
+    });
   });
 }

@@ -5,6 +5,7 @@ import '../../services/mock_data_service.dart';
 import '../../services/firestore_service.dart';
 import '../../services/navigation_service.dart';
 import 'upload_pod_screen.dart';
+import 'upload_bol_screen.dart';
 
 class LoadDetailScreen extends StatelessWidget {
   final LoadModel load;
@@ -177,6 +178,177 @@ class LoadDetailScreen extends StatelessWidget {
                         dateFormat.format(load.deliveredAt!),
                         Icons.done_all,
                         Colors.green,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // BOL Section
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Bill of Lading (BOL)',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        if (load.bolPhotoUrl != null)
+                          const Icon(Icons.check_circle, color: Colors.green),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (load.bolPhotoUrl != null) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          load.bolPhotoUrl!,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (load.bolUploadedAt != null)
+                        Text(
+                          'Uploaded: ${dateFormat.format(load.bolUploadedAt!)}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      const SizedBox(height: 12),
+                    ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => UploadBOLScreen(load: load),
+                                ),
+                              );
+                              if (result == true && context.mounted) {
+                                // Refresh the screen by popping and pushing again
+                                // or use state management to update
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LoadDetailScreen(load: load),
+                                  ),
+                                );
+                              }
+                            },
+                            icon: Icon(load.bolPhotoUrl == null ? Icons.camera_alt : Icons.refresh),
+                            label: Text(load.bolPhotoUrl == null ? 'Upload BOL' : 'Update BOL'),
+                          ),
+                        ),
+                        if (load.bolPhotoUrl != null) ...[
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: () => _viewFullPhoto(context, load.bolPhotoUrl!),
+                            icon: const Icon(Icons.fullscreen),
+                            tooltip: 'View Full Size',
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // POD Section
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Proof of Delivery (POD)',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        if (load.podPhotoUrl != null)
+                          const Icon(Icons.check_circle, color: Colors.green),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (load.podPhotoUrl != null) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          load.podPhotoUrl!,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (load.podUploadedAt != null)
+                        Text(
+                          'Uploaded: ${dateFormat.format(load.podUploadedAt!)}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      const SizedBox(height: 12),
+                    ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: (load.status == 'delivered' || load.status == 'in_transit')
+                                ? () async {
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UploadPODScreen(load: load),
+                                      ),
+                                    );
+                                    if (result == true && context.mounted) {
+                                      // Refresh the screen
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => LoadDetailScreen(load: load),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                : null,
+                            icon: Icon(load.podPhotoUrl == null ? Icons.camera_alt : Icons.refresh),
+                            label: Text(load.podPhotoUrl == null ? 'Upload POD' : 'Update POD'),
+                          ),
+                        ),
+                        if (load.podPhotoUrl != null) ...[
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: () => _viewFullPhoto(context, load.podPhotoUrl!),
+                            icon: const Icon(Icons.fullscreen),
+                            tooltip: 'View Full Size',
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (load.status != 'delivered' && load.status != 'in_transit')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          'POD can be uploaded after starting trip',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -542,5 +714,26 @@ class LoadDetailScreen extends StatelessWidget {
            status == 'assigned' || 
            status == 'picked_up' || 
            status == 'in_transit';
+  }
+
+  /// View full photo in a modal viewer
+  void _viewFullPhoto(BuildContext context, String photoUrl) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('View Photo'),
+            backgroundColor: Colors.black,
+          ),
+          backgroundColor: Colors.black,
+          body: Center(
+            child: InteractiveViewer(
+              child: Image.network(photoUrl),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
