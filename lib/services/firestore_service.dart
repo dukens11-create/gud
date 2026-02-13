@@ -832,13 +832,50 @@ TROUBLESHOOTING:
     }
     
     try {
+      // First, verify the load exists and get its current data
+      final loadDoc = await _db.collection('loads').doc(loadId).get();
+      
+      if (!loadDoc.exists) {
+        print('❌ Error: Load $loadId not found');
+        throw FirebaseException(
+          plugin: 'firestore',
+          code: 'not-found',
+          message: 'Load not found',
+        );
+      }
+      
+      final loadData = loadDoc.data()!;
+      final loadDriverId = loadData['driverId'];
+      final loadNumber = loadData['loadNumber'] ?? loadId;
+      final rate = loadData['rate'] ?? 0;
+      
+      print('   Load number: $loadNumber');
+      print('   Load driverId: $loadDriverId');
+      print('   Current user UID: ${currentUser?.uid}');
+      print('   Load rate: \$$rate');
+      
+      // Verify driver owns this load
+      if (loadDriverId != currentUser?.uid) {
+        print('⚠️  WARNING: Driver ID mismatch!');
+        print('   Load driverId: $loadDriverId');
+        print('   Current user UID: ${currentUser?.uid}');
+        print('   This may cause permission issues or stats not updating');
+      }
+      
       await _db.collection('loads').doc(loadId).update({
         'status': 'delivered',
         'tripEndAt': FieldValue.serverTimestamp(),
         'deliveredAt': FieldValue.serverTimestamp(),
         'miles': miles,
       });
+      
       print('✅ Delivery completed successfully');
+      print('   Status changed to: delivered');
+      print('   Client timestamp: ${DateTime.now().toIso8601String()} (server timestamp will differ)');
+      print('   ℹ️  Cloud Function "calculateEarnings" should now trigger');
+      print('   Expected: drivers/${loadDriverId} will be updated with:');
+      print('     - totalEarnings += \$$rate');
+      print('     - completedLoads += 1');
       
       // Note: Driver statistics update should be triggered by a Cloud Function
       // or handled separately after this operation completes
@@ -846,6 +883,11 @@ TROUBLESHOOTING:
       print('❌ Firebase error completing delivery: ${e.code}');
       if (e.code == 'permission-denied') {
         print('   ⚠️  Permission denied - driver may not own this load');
+        print('   Check Firestore security rules');
+      } else if (e.code == 'not-found') {
+        print('   ⚠️  Load document not found: $loadId');
+      } else {
+        print('   Error message: ${e.message}');
       }
       rethrow;
     } catch (e) {

@@ -55,14 +55,75 @@ exports.calculateEarnings = functions.firestore
   .onUpdate(async (change, context) => {
     const newData = change.after.data();
     const oldData = change.before.data();
-    if (newData.status === 'delivered' && oldData.status !== 'delivered' && newData.driverId) {
-      const driverDoc = await admin.firestore().collection('drivers').doc(newData.driverId).get();
-      const currentEarnings = driverDoc.data()?.totalEarnings || 0;
-      await admin.firestore().collection('drivers').doc(newData.driverId).update({
-        totalEarnings: currentEarnings + newData.rate,
-        completedLoads: admin.firestore.FieldValue.increment(1)
-      });
+    const loadId = context.params.loadId;
+    
+    // Log all status changes for debugging
+    if (newData.status !== oldData.status) {
+      console.log(`📦 Load ${loadId} status changed: ${oldData.status} -> ${newData.status}`);
     }
+    
+    // Only proceed if status changed to delivered and has driverId
+    if (newData.status === 'delivered' && oldData.status !== 'delivered' && newData.driverId) {
+      console.log(`💰 Calculating earnings for load ${loadId}`);
+      console.log(`   Load Number: ${newData.loadNumber || 'N/A'}`);
+      console.log(`   Driver ID: ${newData.driverId}`);
+      console.log(`   Rate: $${newData.rate ?? 0}`);
+      
+      // Validate rate (0 is valid, but null/undefined is suspicious)
+      if (newData.rate == null) {
+        console.warn(`⚠️  Warning: Load ${loadId} has no rate field`);
+      } else if (newData.rate === 0) {
+        console.warn(`⚠️  Warning: Load ${loadId} has zero rate`);
+      }
+      
+      try {
+        // Get driver document
+        const driverRef = admin.firestore().collection('drivers').doc(newData.driverId);
+        const driverDoc = await driverRef.get();
+        
+        if (!driverDoc.exists) {
+          console.error(`❌ Error: Driver ${newData.driverId} not found in drivers collection`);
+          console.error(`   Load ${loadId} marked as delivered but driver stats cannot be updated`);
+          console.error(`   Possible issue: driverId does not match driver document ID`);
+          return null;
+        }
+        
+        const driverData = driverDoc.data();
+        console.log(`   Driver Name: ${driverData.name || 'Unknown'}`);
+        console.log(`   Current Total Earnings: $${driverData.totalEarnings || 0}`);
+        console.log(`   Current Completed Loads: ${driverData.completedLoads || 0}`);
+        
+        const currentEarnings = driverData.totalEarnings || 0;
+        const loadRate = newData.rate ?? 0;
+        const newEarnings = currentEarnings + loadRate;
+        
+        // Update driver statistics
+        await driverRef.update({
+          totalEarnings: newEarnings,
+          completedLoads: admin.firestore.FieldValue.increment(1)
+        });
+        
+        console.log(`✅ Driver stats updated successfully`);
+        console.log(`   New Total Earnings: $${newEarnings}`);
+        console.log(`   Completed Loads: ${(driverData.completedLoads || 0) + 1}`);
+        
+        return { success: true, driverId: newData.driverId, earnings: loadRate };
+        
+      } catch (error) {
+        console.error(`❌ Error updating driver stats for load ${loadId}:`, error);
+        console.error(`   Driver ID: ${newData.driverId}`);
+        console.error(`   Error code: ${error.code || 'unknown'}`);
+        console.error(`   Error message: ${error.message || 'unknown'}`);
+        
+        // Don't throw - we don't want to fail the entire function
+        // The load is already marked as delivered, which is the most important part
+        return { success: false, error: error.message };
+      }
+    } else if (newData.status === 'delivered' && oldData.status !== 'delivered' && !newData.driverId) {
+      console.error(`❌ Error: Load ${loadId} marked as delivered but has no driverId`);
+      console.error(`   Cannot update driver stats - load will not count toward performance metrics`);
+    }
+    
     return null;
   });
 
