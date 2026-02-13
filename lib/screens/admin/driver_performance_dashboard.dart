@@ -353,11 +353,11 @@ class _DriverPerformanceDashboardState
     );
     final completedLoads = _drivers.fold<int>(
       0,
-      (sum, d) => sum + (d['completedLoads'] as int),
+      (sum, d) => sum + (d['completedLoads'] as int? ?? 0),
     );
     final totalEarnings = _drivers.fold<double>(
       0.0,
-      (sum, d) => sum + (d['totalEarnings'] as double),
+      (sum, d) => sum + (d['totalEarnings'] as double? ?? 0.0),
     );
     final avgRating = totalDrivers > 0
         ? _drivers.fold<double>(
@@ -425,12 +425,12 @@ class _DriverPerformanceDashboardState
   }
 
   Widget _buildDriverCard(Map<String, dynamic> driver) {
-    final rating = driver['averageRating'] as double;
-    final totalRatings = driver['totalRatings'] as int;
-    final loads = driver['completedLoads'] as int;
-    final earnings = driver['totalEarnings'] as double;
-    final onTimeRate = driver['onTimeDeliveryRate'] as int;
-    final status = driver['status'] as String;
+    final rating = (driver['averageRating'] as double? ?? 0.0);
+    final totalRatings = (driver['totalRatings'] as int? ?? 0);
+    final loads = (driver['completedLoads'] as int? ?? 0);
+    final earnings = (driver['totalEarnings'] as double? ?? 0.0);
+    final onTimeRate = (driver['onTimeDeliveryRate'] as int? ?? 0);
+    final status = (driver['status'] as String? ?? 'unknown');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
