@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../models/driver.dart';
 import '../models/load.dart';
 import '../models/pod.dart';
@@ -20,6 +21,9 @@ import '../models/pod.dart';
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  /// Maximum number of loads to fetch in a single query to prevent memory issues
+  static const int maxLoadsLimit = 100;
   
   /// Valid load status values
   /// 
@@ -347,14 +351,14 @@ class FirestoreService {
   /// Stream all loads with real-time updates
   /// 
   /// Returns loads ordered by creation time (newest first)
-  /// Limited to 100 most recent loads to prevent memory issues
+  /// Limited to most recent loads to prevent memory issues
   /// Skips documents that fail to parse instead of throwing
   Stream<List<LoadModel>> streamAllLoads() {
     _requireAuth();
     return _db
         .collection('loads')
         .orderBy('createdAt', descending: true)
-        .limit(100)
+        .limit(maxLoadsLimit)
         .snapshots()
         .map((snapshot) {
           final loads = <LoadModel>[];
@@ -363,7 +367,7 @@ class FirestoreService {
               loads.add(LoadModel.fromDoc(doc));
             } catch (e) {
               // Log error but continue processing other documents
-              print('Warning: Failed to parse load document ${doc.id}: $e');
+              debugPrint('Warning: Failed to parse load document ${doc.id}: $e');
             }
           }
           return loads;
@@ -425,7 +429,7 @@ class FirestoreService {
                 print('   ✓ Load ${load.loadNumber}: status=${load.status}, driverId=${load.driverId}');
                 loads.add(load);
               } catch (e) {
-                print('❌ Error parsing load document ${doc.id}: $e');
+                debugPrint('❌ Error parsing load document ${doc.id}: $e');
                 // Continue processing other documents instead of crashing
               }
             }
@@ -547,8 +551,8 @@ class FirestoreService {
                 print('   ✓ Load ${load.loadNumber}: status=${load.status}, driverId=${load.driverId}, createdAt=${load.createdAt}');
                 loads.add(load);
               } catch (e) {
-                print('❌ Error parsing load document ${doc.id}: $e');
-                print('   Document data: ${doc.data()}');
+                debugPrint('❌ Error parsing load document ${doc.id}: $e');
+                debugPrint('   Document data: ${doc.data()}');
                 // Continue processing other documents instead of crashing
               }
             }

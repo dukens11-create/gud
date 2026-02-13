@@ -558,7 +558,7 @@ class _AdminHomeState extends State<AdminHome> {
                           ),
                         ),
                         child: Semantics(
-                          label: 'Load ${load.loadNumber.isNotEmpty ? load.loadNumber : "Unknown"}, driver ${load.driverName ?? load.driverId}, status ${load.status}, rate ${load.rate} dollars',
+                          label: 'Load ${load.loadNumber.isNotEmpty ? load.loadNumber : "Unknown"}, driver ${_getDriverDisplayName(load)}, status ${load.status}, rate ${load.rate} dollars',
                           button: true,
                           child: Card(
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -571,7 +571,7 @@ class _AdminHomeState extends State<AdminHome> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
-                                  Text('Driver: ${(load.driverName?.isNotEmpty ?? false) ? load.driverName : (load.driverId.isNotEmpty ? load.driverId : "Unassigned")}'),
+                                  Text('Driver: ${_getDriverDisplayName(load)}'),
                                   Text('${load.pickupAddress.isNotEmpty ? load.pickupAddress : "Unknown"} → ${load.deliveryAddress.isNotEmpty ? load.deliveryAddress : "Unknown"}'),
                                 ],
                               ),
@@ -653,6 +653,16 @@ class _AdminHomeState extends State<AdminHome> {
         ],
       ),
     );
+  }
+
+  String _getDriverDisplayName(LoadModel load) {
+    if (load.driverName?.isNotEmpty ?? false) {
+      return load.driverName!;
+    }
+    if (load.driverId.isNotEmpty) {
+      return load.driverId;
+    }
+    return 'Unassigned';
   }
 
   Color _getStatusColor(String status) {
