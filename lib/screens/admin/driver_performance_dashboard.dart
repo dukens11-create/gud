@@ -25,7 +25,6 @@ class _DriverPerformanceDashboardState
   String _sortBy = 'name'; // name, rating, loads, earnings, onTime
   String? _errorMessage;
   String? _indexCreationUrl;
-  int _failedDriverCount = 0;
 
   @override
   void initState() {
@@ -38,7 +37,6 @@ class _DriverPerformanceDashboardState
       _loading = true;
       _errorMessage = null;
       _indexCreationUrl = null;
-      _failedDriverCount = 0;
     });
 
     try {
@@ -47,8 +45,6 @@ class _DriverPerformanceDashboardState
         _drivers = drivers;
         _sortDrivers();
         _loading = false;
-        // Note: _failedDriverCount is tracked in the service's console logs
-        // For future enhancement, we could modify the service to return failed count
       });
     } on FirebaseException catch (e) {
       // Handle Firestore-specific errors, especially missing indexes
@@ -374,7 +370,7 @@ class _DriverPerformanceDashboardState
     // Count drivers with warnings
     final driversWithNoLoads = _drivers.where((d) => (d['completedLoads'] as int? ?? 0) == 0).length;
     final driversWithNoEarnings = _drivers.where((d) => (d['totalEarnings'] as double? ?? 0.0) == 0.0).length;
-    final hasWarnings = driversWithNoLoads > 0 || driversWithNoEarnings > 0 || _failedDriverCount > 0;
+    final hasWarnings = driversWithNoLoads > 0 || driversWithNoEarnings > 0;
 
     return Column(
       children: [
@@ -472,11 +468,6 @@ class _DriverPerformanceDashboardState
                     '• $noEarningsCount driver(s) with zero earnings',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
-                if (_failedDriverCount > 0)
-                  Text(
-                    '• $_failedDriverCount driver(s) failed to load',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
               ],
             ),
           ),
@@ -489,7 +480,6 @@ class _DriverPerformanceDashboardState
     final rating = (driver['averageRating'] as double? ?? 0.0);
     final totalRatings = (driver['totalRatings'] as int? ?? 0);
     final loads = (driver['completedLoads'] as int? ?? 0);
-    final totalLoads = (driver['totalLoads'] as int? ?? 0);
     final earnings = (driver['totalEarnings'] as double? ?? 0.0);
     final onTimeRate = (driver['onTimeDeliveryRate'] as int? ?? 0);
     final status = (driver['status'] as String? ?? 'unknown');
