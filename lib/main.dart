@@ -15,6 +15,7 @@ import 'services/geofence_service.dart';
 import 'services/sync_service.dart';
 import 'services/remote_config_service.dart';
 import 'services/document_expiration_service.dart';
+import 'services/firebase_init_service.dart';
 import 'app.dart';
 
 /// Initialize all background services
@@ -143,6 +144,10 @@ void main() async {
 
     // Initialize all services
     await initializeServices();
+    
+    // Note: Database initialization with sample data is now triggered
+    // manually via the debug button in ManageTrucksScreen (debug mode only)
+    // or automatically when an admin first accesses the screen.
     
     // Log app open event
     FirebaseAnalytics analytics = FirebaseAnalytics.instance;

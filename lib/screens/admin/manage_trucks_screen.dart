@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../models/truck.dart';
 import '../../services/truck_service.dart';
 import '../../services/navigation_service.dart';
+import '../../services/firebase_init_service.dart';
 
 /// Manage Trucks Screen - Comprehensive truck management functionality
 /// 
@@ -28,6 +30,28 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
   String _statusFilter = 'all';
   String _sortBy = 'truckNumber'; // truckNumber, make, year
   bool _showInactive = false;
+  bool _hasInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Try to initialize trucks collection on first load
+    _initializeTrucksIfNeeded();
+  }
+
+  /// Initialize trucks collection if empty (runs once on screen load)
+  Future<void> _initializeTrucksIfNeeded() async {
+    if (_hasInitialized) return;
+    _hasInitialized = true;
+
+    try {
+      final initService = FirebaseInitService();
+      await initService.initializeTrucks();
+    } catch (e) {
+      print('⚠️ Auto-initialization failed (non-critical): $e');
+      // Silently fail - user can use debug button if needed
+    }
+  }
 
   @override
   void dispose() {
@@ -41,6 +65,13 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
       appBar: AppBar(
         title: const Text('Manage Trucks'),
         actions: [
+          // Debug button for re-initializing sample data (only in debug mode)
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Re-initialize Sample Data (Debug)',
+              onPressed: _reinitializeSampleData,
+            ),
           IconButton(
             icon: Icon(_showInactive ? Icons.visibility : Icons.visibility_off),
             tooltip: _showInactive ? 'Hide Inactive' : 'Show Inactive',
@@ -583,6 +614,53 @@ class _ManageTrucksScreenState extends State<ManageTrucksScreen> {
       } catch (e) {
         if (mounted) {
           NavigationService.showError('Error deleting truck: $e');
+        }
+      }
+    }
+  }
+
+  /// Re-initialize sample truck data (debug only)
+  /// 
+  /// This method is only available in debug mode and allows admins
+  /// to re-create the sample trucks for testing purposes.
+  Future<void> _reinitializeSampleData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Re-initialize Sample Data'),
+        content: const Text(
+          'This will create 5 new sample trucks in the database.\n\n'
+          'This is a debug feature and should only be used for testing.\n\n'
+          'Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Initialize'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        final initService = FirebaseInitService();
+        final success = await initService.initializeTrucks();
+
+        if (mounted) {
+          if (success) {
+            NavigationService.showSuccess('Sample data initialized successfully');
+          } else {
+            NavigationService.showSuccess('Sample data already exists or initialization skipped');
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          NavigationService.showError('Error initializing data: $e');
         }
       }
     }
