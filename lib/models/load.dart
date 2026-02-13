@@ -9,7 +9,19 @@ class LoadModel {
   final String pickupAddress;
   final String deliveryAddress;
   final double rate;
-  final String status; // 'assigned', 'picked_up', 'in_transit', 'delivered'
+  /// Load Status Progression:
+  /// 1. pending    - Admin created load, awaiting driver acceptance
+  /// 2. accepted   - Driver accepted the load
+  /// 3. in_transit - Driver started the trip
+  /// 4. delivered  - Driver completed delivery
+  /// 
+  /// Optional:
+  /// - declined    - Driver declined the load
+  /// 
+  /// Legacy statuses (for backward compatibility):
+  /// - assigned    - Old status, treated similar to accepted
+  /// - picked_up   - Legacy status, kept for historical loads
+  final String status;
   final DateTime createdAt;
   final DateTime? pickedUpAt;
   final DateTime? tripStartAt;

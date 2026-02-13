@@ -30,13 +30,24 @@ class FirestoreService {
   /// **CRITICAL**: These values MUST use underscores, NOT hyphens
   /// (e.g., 'in_transit', not 'in-transit')
   /// 
-  /// **Note**: 'picked_up' is a legacy status that may exist in older database records.
-  /// While it has been replaced by 'in_transit' for new loads, it remains valid for queries
-  /// to support backward compatibility. Historical loads with 'picked_up' status will continue
-  /// to be returned by queries. Can be removed once all historical loads are migrated.
+  /// **Status Progression**:
+  /// 1. pending    - Admin created load, awaiting driver acceptance
+  /// 2. accepted   - Driver accepted the load
+  /// 3. in_transit - Driver started the trip (underscore!)
+  /// 4. delivered  - Load has been delivered
+  /// 
+  /// **Optional/Legacy**:
+  /// - declined    - Driver declined the load
+  /// - assigned    - Legacy status (treated like accepted for backward compatibility)
+  /// - picked_up   - Legacy status (kept for historical loads)
+  /// - completed   - Load fully completed
+  /// - cancelled   - Load cancelled/deleted (soft delete)
   static const List<String> validLoadStatuses = [
-    'assigned',    // Load assigned to driver but not started
-    'in_transit',  // Load currently being transported (underscore!) - preferred over 'picked_up'
+    'pending',     // NEW: Load created, awaiting driver acceptance
+    'accepted',    // NEW: Driver accepted the load
+    'declined',    // NEW: Driver declined the load
+    'assigned',    // Legacy: Load assigned to driver but not started
+    'in_transit',  // Load currently being transported (underscore!)
     'delivered',   // Load has been delivered
     'completed',   // Load fully completed
     'picked_up',   // Legacy status - still valid for queries to support historical loads
@@ -322,7 +333,7 @@ class FirestoreService {
         'deliveryAddress': deliveryAddress,
         'rate': rate,
         if (miles != null) 'miles': miles,
-        'status': 'assigned',
+        'status': 'pending',
         if (notes != null) 'notes': notes,
         'createdBy': createdBy,
         'createdAt': FieldValue.serverTimestamp(),

@@ -43,7 +43,7 @@ class LoadDetailScreen extends StatelessWidget {
                         ),
                         Chip(
                           label: Text(
-                            load.status.isNotEmpty ? load.status.toUpperCase() : 'UNKNOWN',
+                            _getStatusLabel(load.status),
                             style: const TextStyle(color: Colors.white),
                           ),
                           backgroundColor: _getStatusColor(load.status),
@@ -184,41 +184,133 @@ class LoadDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Action Buttons (only for assigned driver)
-            if (load.driverId == currentUserId && load.status != 'delivered')
+            // Action Buttons (only for assigned driver and not delivered/declined)
+            if (load.driverId == currentUserId && 
+                load.status != 'delivered' && 
+                load.status != 'declined')
               Column(
                 children: [
-                  // Simple one-tap "Delivered" button for quick delivery marking
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          await firestoreService.markLoadAsDelivered(load.id);
-                          if (context.mounted) {
-                            NavigationService.showSuccess('Load marked as delivered');
-                            Navigator.pop(context);
+                  // For pending status - show Accept/Decline buttons
+                  if (load.status == 'pending') ...[
+                    // Accept Load button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          try {
+                            await firestoreService.updateLoadStatus(
+                              loadId: load.id,
+                              status: 'accepted',
+                            );
+                            if (context.mounted) {
+                              NavigationService.showSuccess('Load accepted successfully');
+                              Navigator.pop(context);
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              NavigationService.showError('Error accepting load: $e');
+                            }
                           }
-                        } catch (e) {
-                          if (context.mounted) {
-                            NavigationService.showError('Error marking load as delivered: $e');
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.check_circle),
-                      label: const Text('Mark as Delivered'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.all(16),
+                        },
+                        icon: const Icon(Icons.check_circle),
+                        label: const Text('Accept Load'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.all(16),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
+                    // Decline Load button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          // Show confirmation dialog
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Decline Load?'),
+                              content: const Text(
+                                'Are you sure you want to decline this load? Your admin will be notified.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  child: const Text('Cancel'),
+                                  onPressed: () => Navigator.pop(context, false),
+                                ),
+                                TextButton(
+                                  child: const Text('Decline'),
+                                  onPressed: () => Navigator.pop(context, true),
+                                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                ),
+                              ],
+                            ),
+                          );
+                          
+                          if (confirmed == true && context.mounted) {
+                            try {
+                              await firestoreService.updateLoadStatus(
+                                loadId: load.id,
+                                status: 'declined',
+                              );
+                              if (context.mounted) {
+                                NavigationService.showSuccess('Load declined');
+                                Navigator.pop(context);
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                NavigationService.showError('Error declining load: $e');
+                              }
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.cancel),
+                        label: const Text('Decline Load'),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.red),
+                          foregroundColor: Colors.red,
+                          padding: const EdgeInsets.all(16),
+                        ),
+                      ),
+                    ),
+                  ],
+                  
+                  // For accepted, assigned, picked_up, or in_transit - show workflow buttons
+                  if (_canShowTripButtons(load.status)) ...[
+                    // Simple one-tap "Delivered" button for quick delivery marking
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          try {
+                            await firestoreService.markLoadAsDelivered(load.id);
+                            if (context.mounted) {
+                              NavigationService.showSuccess('Load marked as delivered');
+                              Navigator.pop(context);
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              NavigationService.showError('Error marking load as delivered: $e');
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.check_circle),
+                        label: const Text('Mark as Delivered'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.all(16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                  ],
                   // Existing detailed workflow buttons
-                  if (load.status == 'assigned')
+                  if (load.status == 'assigned' || load.status == 'accepted')
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -404,6 +496,10 @@ class LoadDetailScreen extends StatelessWidget {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'accepted':
+        return Colors.green;
       case 'assigned':
         return Colors.blue;
       case 'picked_up':
@@ -411,9 +507,40 @@ class LoadDetailScreen extends StatelessWidget {
       case 'in_transit':
         return Colors.purple;
       case 'delivered':
-        return Colors.green;
+        return Colors.green.shade700;
+      case 'declined':
+        return Colors.red;
       default:
         return Colors.grey;
     }
+  }
+
+  String _getStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'AWAITING ACCEPTANCE';
+      case 'accepted':
+        return 'ACCEPTED';
+      case 'declined':
+        return 'DECLINED';
+      case 'assigned':
+        return 'ASSIGNED';
+      case 'picked_up':
+        return 'PICKED UP';
+      case 'in_transit':
+        return 'IN TRANSIT';
+      case 'delivered':
+        return 'DELIVERED';
+      default:
+        return status.isNotEmpty ? status.toUpperCase() : 'UNKNOWN';
+    }
+  }
+
+  /// Check if trip management buttons should be shown for this load status
+  bool _canShowTripButtons(String status) {
+    return status == 'accepted' || 
+           status == 'assigned' || 
+           status == 'picked_up' || 
+           status == 'in_transit';
   }
 }
