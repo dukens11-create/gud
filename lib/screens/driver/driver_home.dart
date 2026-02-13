@@ -734,6 +734,24 @@ class _DriverHomeState extends State<DriverHome> {
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
+                  label: const Text('Pending'),
+                  selected: _statusFilter == 'pending',
+                  onSelected: (_) => _onFilterChanged('pending'),
+                  avatar: _statusFilter == 'pending' 
+                      ? const Icon(Icons.check, size: 18) 
+                      : const Icon(Icons.schedule, size: 18, color: Colors.orange),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Accepted'),
+                  selected: _statusFilter == 'accepted',
+                  onSelected: (_) => _onFilterChanged('accepted'),
+                  avatar: _statusFilter == 'accepted' 
+                      ? const Icon(Icons.check, size: 18) 
+                      : const Icon(Icons.check_circle, size: 18, color: Colors.green),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
                   label: const Text('Assigned'),
                   selected: _statusFilter == 'assigned',
                   onSelected: (_) => _onFilterChanged('assigned'),
@@ -1080,12 +1098,18 @@ class _DriverHomeState extends State<DriverHome> {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'accepted':
+        return Colors.green;
       case 'assigned':
         return Colors.blue;
       case 'in_transit':
-        return Colors.orange;
+        return Colors.purple;
       case 'delivered':
-        return Colors.green;
+        return Colors.green.shade700;
+      case 'declined':
+        return Colors.red;
       default:
         return Colors.grey;
     }
