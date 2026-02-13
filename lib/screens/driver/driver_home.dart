@@ -531,7 +531,7 @@ class _DriverHomeState extends State<DriverHome> {
 
           // Truck Information Card
           StreamBuilder<Truck?>(
-            stream: _truckService.getTruckByDriverIdStream(widget.driverId),
+            stream: _truckService.getTruckByDriverIdStreamEnhanced(widget.driverId),
             builder: (context, snapshot) {
               // Handle error state
               if (snapshot.hasError) {
@@ -561,7 +561,7 @@ class _DriverHomeState extends State<DriverHome> {
               if (snapshot.hasData && snapshot.data != null) {
                 final truck = snapshot.data!;
                 return Semantics(
-                  label: 'Assigned truck: ${truck.truckNumber}, ${truck.displayInfo}, Status: ${truck.statusDisplayName}',
+                  label: 'Assigned truck: ${truck.truckNumber}, ${truck.displayInfo}, Plate: ${truck.plateNumber}, Status: ${truck.statusDisplayName}',
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Card(
@@ -603,6 +603,14 @@ class _DriverHomeState extends State<DriverHome> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey.shade700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Plate: ${truck.plateNumber}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
                                   ),
                                 ),
                               ],
