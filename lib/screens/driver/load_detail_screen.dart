@@ -278,10 +278,7 @@ class LoadDetailScreen extends StatelessWidget {
                   ],
                   
                   // For accepted, assigned, picked_up, or in_transit - show workflow buttons
-                  if (load.status == 'accepted' || 
-                      load.status == 'assigned' || 
-                      load.status == 'picked_up' || 
-                      load.status == 'in_transit') ...[
+                  if (_canShowTripButtons(load.status)) ...[
                     // Simple one-tap "Delivered" button for quick delivery marking
                     SizedBox(
                       width: double.infinity,
@@ -537,5 +534,13 @@ class LoadDetailScreen extends StatelessWidget {
       default:
         return status.isNotEmpty ? status.toUpperCase() : 'UNKNOWN';
     }
+  }
+
+  /// Check if trip management buttons should be shown for this load status
+  bool _canShowTripButtons(String status) {
+    return status == 'accepted' || 
+           status == 'assigned' || 
+           status == 'picked_up' || 
+           status == 'in_transit';
   }
 }
