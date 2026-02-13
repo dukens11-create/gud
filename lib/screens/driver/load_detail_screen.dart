@@ -184,8 +184,10 @@ class LoadDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Action Buttons (only for assigned driver)
-            if (load.driverId == currentUserId && load.status != 'delivered')
+            // Action Buttons (only for assigned driver and not delivered/declined)
+            if (load.driverId == currentUserId && 
+                load.status != 'delivered' && 
+                load.status != 'declined')
               Column(
                 children: [
                   // For pending status - show Accept/Decline buttons
@@ -276,7 +278,10 @@ class LoadDetailScreen extends StatelessWidget {
                   ],
                   
                   // For accepted, assigned, picked_up, or in_transit - show workflow buttons
-                  if (load.status != 'pending') ...[
+                  if (load.status == 'accepted' || 
+                      load.status == 'assigned' || 
+                      load.status == 'picked_up' || 
+                      load.status == 'in_transit') ...[
                     // Simple one-tap "Delivered" button for quick delivery marking
                     SizedBox(
                       width: double.infinity,
