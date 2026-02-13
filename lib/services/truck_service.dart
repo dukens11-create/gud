@@ -301,6 +301,13 @@ class TruckService {
   /// 2. If found, fetches the truck document directly
   /// 3. If not found, falls back to querying trucks by 'assignedDriverId'
   /// 
+  /// **Priority Order**: The user document's 'assignedTruckId' is treated as the 
+  /// source of truth when present. This handles cases where assignment is done via
+  /// user document before the truck document is updated.
+  /// 
+  /// **Stream Management**: Uses asyncExpand for automatic stream switching when
+  /// the user's assignedTruckId changes. StreamBuilder handles subscription cleanup.
+  /// 
   /// This ensures the driver sees their assigned truck even if there's a 
   /// mismatch between the user document and truck document assignments.
   Stream<Truck?> getTruckByDriverIdStreamEnhanced(String driverId) {
