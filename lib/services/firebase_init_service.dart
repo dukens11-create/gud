@@ -167,14 +167,27 @@ class FirebaseInitService {
 
       print('📝 Maintenance collection is empty, creating sample maintenance record...');
 
-      // Create a sample maintenance record for TRK-001
+      // Find first available truck to associate the maintenance record with
+      final trucksSnapshot = await _db.collection('trucks').limit(1).get();
+      
+      if (trucksSnapshot.docs.isEmpty) {
+        print('ℹ️ No trucks exist yet, skipping maintenance initialization');
+        print('   Maintenance records will be initialized after trucks are created');
+        return false;
+      }
+
+      // Get the truck number from the first available truck
+      final firstTruck = trucksSnapshot.docs.first.data();
+      final truckNumber = firstTruck['truckNumber'] as String? ?? 'TRK-001';
+
+      // Create a sample maintenance record for the first truck
       final now = DateTime.now();
       final lastMonth = now.subtract(const Duration(days: 30));
       final nextMonth = now.add(const Duration(days: 90));
 
       final sampleMaintenance = {
         'driverId': '', // Empty driver ID for unassigned truck
-        'truckNumber': 'TRK-001',
+        'truckNumber': truckNumber,
         'maintenanceType': 'Oil Change',
         'serviceDate': Timestamp.fromDate(lastMonth),
         'cost': 85.00,
@@ -187,7 +200,7 @@ class FirebaseInitService {
       // Add maintenance record
       await _db.collection('maintenance').add(sampleMaintenance);
 
-      print('✅ Successfully created sample maintenance record');
+      print('✅ Successfully created sample maintenance record for truck $truckNumber');
       return true;
     } catch (e) {
       print('❌ Error initializing maintenance: $e');
