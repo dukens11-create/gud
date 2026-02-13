@@ -591,6 +591,74 @@ class _AdminHomeState extends State<AdminHome> {
                                   const SizedBox(height: 4),
                                   Text('Driver: ${_getDriverDisplayName(load)}'),
                                   Text('${load.pickupAddress.isNotEmpty ? load.pickupAddress : "Unknown"} → ${load.deliveryAddress.isNotEmpty ? load.deliveryAddress : "Unknown"}'),
+                                  const SizedBox(height: 4),
+                                  // Document status indicators
+                                  Row(
+                                    children: [
+                                      if (load.bolPhotoUrl != null)
+                                        Tooltip(
+                                          message: 'BOL Uploaded',
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green.shade100,
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.description,
+                                                  size: 14,
+                                                  color: Colors.green.shade700,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'BOL',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: Colors.green.shade700,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      if (load.bolPhotoUrl != null && load.podPhotoUrl != null)
+                                        const SizedBox(width: 6),
+                                      if (load.podPhotoUrl != null)
+                                        Tooltip(
+                                          message: 'POD Uploaded',
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue.shade100,
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.check_box,
+                                                  size: 14,
+                                                  color: Colors.blue.shade700,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'POD',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: Colors.blue.shade700,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ],
                               ),
                               trailing: Column(
