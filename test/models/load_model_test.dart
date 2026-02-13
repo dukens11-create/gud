@@ -206,7 +206,7 @@ void main() {
     });
 
     test('handles different load statuses', () {
-      final statuses = ['assigned', 'picked_up', 'in_transit', 'delivered'];
+      final statuses = ['pending', 'accepted', 'declined', 'assigned', 'picked_up', 'in_transit', 'delivered'];
       
       for (final status in statuses) {
         final load = LoadModel(
@@ -316,6 +316,105 @@ void main() {
       expect(load.podPhotoUrl, 'https://example.com/pod.jpg');
       expect(load.bolUploadedAt, testDate);
       expect(load.podUploadedAt, testDate.add(Duration(hours: 2)));
+    });
+
+    test('constructor handles accept/decline fields', () {
+      final testDate = DateTime(2024, 1, 1);
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'accepted',
+        acceptedAt: testDate,
+        declineReason: null,
+      );
+
+      expect(load.acceptedAt, testDate);
+      expect(load.declinedAt, null);
+      expect(load.declineReason, null);
+    });
+
+    test('constructor handles declined load with reason', () {
+      final testDate = DateTime(2024, 1, 1);
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'declined',
+        declinedAt: testDate,
+        declineReason: 'Schedule conflict',
+      );
+
+      expect(load.status, 'declined');
+      expect(load.declinedAt, testDate);
+      expect(load.declineReason, 'Schedule conflict');
+      expect(load.acceptedAt, null);
+    });
+
+    test('toMap includes accept/decline fields when present', () {
+      final testDate = DateTime(2024, 1, 1);
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'declined',
+        declinedAt: testDate,
+        declineReason: 'Truck maintenance',
+      );
+
+      final map = load.toMap();
+
+      expect(map['declinedAt'], testDate.toIso8601String());
+      expect(map['declineReason'], 'Truck maintenance');
+      expect(map.containsKey('acceptedAt'), false);
+    });
+
+    test('toMap omits accept/decline fields when null', () {
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'pending',
+      );
+
+      final map = load.toMap();
+
+      expect(map.containsKey('acceptedAt'), false);
+      expect(map.containsKey('declinedAt'), false);
+      expect(map.containsKey('declineReason'), false);
+    });
+
+    test('fromMap deserializes accept/decline fields correctly', () {
+      final testDate = DateTime(2024, 1, 1);
+      final map = {
+        'loadNumber': 'LD-001',
+        'driverId': 'driver-1',
+        'pickupAddress': '123 Main St',
+        'deliveryAddress': '456 Oak Ave',
+        'rate': 1500.0,
+        'status': 'accepted',
+        'createdAt': testDate.toIso8601String(),
+        'acceptedAt': testDate.add(Duration(hours: 1)).toIso8601String(),
+      };
+
+      final load = LoadModel.fromMap('test-id', map);
+
+      expect(load.status, 'accepted');
+      expect(load.acceptedAt, testDate.add(Duration(hours: 1)));
+      expect(load.declinedAt, null);
+      expect(load.declineReason, null);
     });
   });
 }

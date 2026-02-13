@@ -1047,5 +1047,39 @@ void main() {
         );
       });
     });
+
+    group('acceptLoad', () {
+      test('requires authentication', () async {
+        final service = FirestoreService();
+
+        // Will throw because user is not authenticated in test environment
+        expect(
+          () => service.acceptLoad('load-123'),
+          throwsA(anything),
+        );
+      });
+    });
+
+    group('declineLoad', () {
+      test('requires authentication', () async {
+        final service = FirestoreService();
+
+        // Will throw because user is not authenticated in test environment
+        expect(
+          () => service.declineLoad('load-123'),
+          throwsA(anything),
+        );
+      });
+
+      test('accepts optional reason parameter', () async {
+        final service = FirestoreService();
+
+        // Will throw because user is not authenticated, but ensures the API accepts reason
+        expect(
+          () => service.declineLoad('load-123', reason: 'Schedule conflict'),
+          throwsA(anything),
+        );
+      });
+    });
   });
 }

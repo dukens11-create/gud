@@ -83,10 +83,28 @@ service cloud.firestore {
       allow create: if isAdmin();
       
       // Drivers can update status on their assigned loads, admins can update any load
+      // Specific rules for driver status changes:
+      // - pending → accepted (driver accepts load)
+      // - pending → declined (driver declines load)
+      // - accepted/assigned → in_transit (driver starts trip)
+      // - in_transit → delivered (driver completes delivery)
       allow update: if isAuthenticated() && 
                        (isAdmin() || 
                         (resource.data.driverId == request.auth.uid && 
-                         request.auth.uid != null));
+                         request.auth.uid != null &&
+                         (
+                           // Allow status change from pending to accepted
+                           (resource.data.status == 'pending' && request.resource.data.status == 'accepted') ||
+                           // Allow status change from pending to declined
+                           (resource.data.status == 'pending' && request.resource.data.status == 'declined') ||
+                           // Allow other valid status transitions
+                           (resource.data.status in ['accepted', 'assigned'] && request.resource.data.status in ['picked_up', 'in_transit']) ||
+                           (resource.data.status == 'picked_up' && request.resource.data.status == 'in_transit') ||
+                           (resource.data.status == 'in_transit' && request.resource.data.status == 'delivered') ||
+                           // Allow updating document fields (BOL, POD uploads, etc.) without status change
+                           (resource.data.status == request.resource.data.status)
+                         )
+                        ));
       
       // Only admins can delete loads
       allow delete: if isAdmin();
