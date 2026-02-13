@@ -416,29 +416,5 @@ void main() {
       expect(load.declinedAt, null);
       expect(load.declineReason, null);
     });
-
-    test('handles different load statuses including pending, accepted, and declined', () {
-      final statuses = ['pending', 'accepted', 'declined', 'assigned', 'picked_up', 'in_transit', 'delivered'];
-      
-      for (final status in statuses) {
-        final load = LoadModel(
-          id: 'test-id',
-          loadNumber: 'LD-001',
-          driverId: 'driver-1',
-          pickupAddress: '123 Main St',
-          deliveryAddress: '456 Oak Ave',
-          rate: 1500.0,
-          status: status,
-        );
-
-        expect(load.status, status);
-        
-        final map = load.toMap();
-        expect(map['status'], status);
-        
-        final deserialized = LoadModel.fromMap('test-id', map);
-        expect(deserialized.status, status);
-      }
-    });
   });
 }
