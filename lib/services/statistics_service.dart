@@ -165,4 +165,144 @@ class StatisticsService {
     
     return snapshot.docs.map((doc) => Statistics.fromMap(doc.data() as Map<String, dynamic>)).toList();
   }
+
+  /// Calculate net earnings for a specific driver over an optional date range.
+  /// 
+  /// Returns the net earnings (Revenue - Expenses) for the specified driver.
+  /// Revenue is calculated by summing all 'rate' fields from the 'loads' collection.
+  /// Expenses is calculated by summing all 'amount' fields from the 'expenses' collection.
+  /// 
+  /// **Parameters**:
+  /// - [driverId]: Required. The ID of the driver to calculate earnings for.
+  /// - [startDate]: Optional. If provided, only includes loads/expenses on or after this date.
+  /// - [endDate]: Optional. If provided, only includes loads/expenses on or before this date.
+  /// 
+  /// **Date Filtering**:
+  /// - Loads are filtered using the 'createdAt' field
+  /// - Expenses are filtered using the 'date' field
+  /// 
+  /// **Required Firestore Composite Indexes**:
+  /// 
+  /// When both startDate and endDate are provided:
+  /// 
+  /// 1. For loads collection:
+  /// ```json
+  /// {
+  ///   "collectionGroup": "loads",
+  ///   "queryScope": "COLLECTION",
+  ///   "fields": [
+  ///     {"fieldPath": "driverId", "order": "ASCENDING"},
+  ///     {"fieldPath": "createdAt", "order": "ASCENDING"}
+  ///   ]
+  /// }
+  /// ```
+  /// Note: The index `driverId ASC + createdAt DESC` already exists in firestore.indexes.json
+  /// which can be used for this query (Firestore allows using DESC indexes for ASC queries).
+  /// 
+  /// 2. For expenses collection:
+  /// ```json
+  /// {
+  ///   "collectionGroup": "expenses",
+  ///   "queryScope": "COLLECTION",
+  ///   "fields": [
+  ///     {"fieldPath": "driverId", "order": "ASCENDING"},
+  ///     {"fieldPath": "date", "order": "ASCENDING"}
+  ///   ]
+  /// }
+  /// ```
+  /// Status: ✅ ALREADY EXISTS in firestore.indexes.json
+  /// 
+  /// **Security**: Verifies user authentication before executing queries.
+  /// Throws [FirebaseAuthException] if user is not authenticated.
+  Future<double> getDriverEarnings({
+    required String driverId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    _requireAuth();
+    
+    print('[StatisticsService] Calculating driver earnings for driverId: $driverId');
+    if (startDate != null) {
+      print('  Start date: $startDate');
+    }
+    if (endDate != null) {
+      print('  End date: $endDate');
+    }
+    
+    // Query loads for revenue calculation
+    // Query uses: driverId filter + optional createdAt range
+    Query loadsQuery = _db.collection('loads')
+        .where('driverId', isEqualTo: driverId);
+    
+    if (startDate != null) {
+      loadsQuery = loadsQuery.where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+    }
+    if (endDate != null) {
+      loadsQuery = loadsQuery.where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+    }
+    
+    print('[StatisticsService] Executing loads query');
+    print('  Collection: loads');
+    print('  Where: driverId == $driverId');
+    if (startDate != null) {
+      print('  Where: createdAt >= $startDate');
+    }
+    if (endDate != null) {
+      print('  Where: createdAt <= $endDate');
+    }
+    if (startDate != null || endDate != null) {
+      print('  ✅ Using composite index: driverId ASC + createdAt ASC (existing DESC index can be used)');
+    }
+    
+    final loadsSnapshot = await loadsQuery.get();
+    print('[StatisticsService] Loads query returned ${loadsSnapshot.docs.length} documents');
+    
+    // Calculate total revenue from loads
+    final totalRevenue = loadsSnapshot.docs.fold<double>(
+      0.0,
+      (sum, doc) => sum + (((doc.data() as Map<String, dynamic>)['rate'] ?? 0) as num).toDouble(),
+    );
+    print('[StatisticsService] Total revenue: \$${totalRevenue.toStringAsFixed(2)}');
+    
+    // Query expenses for expense calculation
+    // Query uses: driverId filter + optional date range
+    Query expensesQuery = _db.collection('expenses')
+        .where('driverId', isEqualTo: driverId);
+    
+    if (startDate != null) {
+      expensesQuery = expensesQuery.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+    }
+    if (endDate != null) {
+      expensesQuery = expensesQuery.where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+    }
+    
+    print('[StatisticsService] Executing expenses query');
+    print('  Collection: expenses');
+    print('  Where: driverId == $driverId');
+    if (startDate != null) {
+      print('  Where: date >= $startDate');
+    }
+    if (endDate != null) {
+      print('  Where: date <= $endDate');
+    }
+    if (startDate != null || endDate != null) {
+      print('  ✅ Using composite index: driverId ASC + date ASC (already exists in firestore.indexes.json)');
+    }
+    
+    final expensesSnapshot = await expensesQuery.get();
+    print('[StatisticsService] Expenses query returned ${expensesSnapshot.docs.length} documents');
+    
+    // Calculate total expenses
+    final totalExpenses = expensesSnapshot.docs.fold<double>(
+      0.0,
+      (sum, doc) => sum + (((doc.data() as Map<String, dynamic>)['amount'] ?? 0) as num).toDouble(),
+    );
+    print('[StatisticsService] Total expenses: \$${totalExpenses.toStringAsFixed(2)}');
+    
+    // Calculate net earnings
+    final netEarnings = totalRevenue - totalExpenses;
+    print('[StatisticsService] Net earnings: \$${netEarnings.toStringAsFixed(2)}');
+    
+    return netEarnings;
+  }
 }
