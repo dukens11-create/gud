@@ -142,7 +142,7 @@ class ExpenseService {
     print('  Collection: expenses');
     print('  Where: driverId == $driverId');
     print('  OrderBy: date DESC');
-    print('  ⚠️  REQUIRES COMPOSITE INDEX: driverId ASC + date DESC');
+    print('  ✅ Using composite index: driverId ASC + date DESC (added in firestore.indexes.json)');
     
     return _db
         .collection('expenses')
@@ -178,7 +178,7 @@ class ExpenseService {
     print('  Collection: expenses');
     print('  Where: loadId == $loadId');
     print('  OrderBy: date DESC');
-    print('  ⚠️  REQUIRES COMPOSITE INDEX: loadId ASC + date DESC');
+    print('  ✅ Using composite index: loadId ASC + date DESC (added in firestore.indexes.json)');
     
     return _db
         .collection('expenses')
