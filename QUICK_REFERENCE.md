@@ -330,3 +330,33 @@ flutter clean
 flutter pub get
 flutter run
 ```
+
+## Payment Dashboard Navigation
+
+### For Drivers
+1. Log in as a driver
+2. Click the **💳 Payment** icon in the app bar (top right, before the menu)
+3. View your personal payment history and status
+
+### For Admins
+1. Log in as admin
+2. Open the drawer menu (☰ icon)
+3. Select **Payment Dashboard** from the menu
+4. View all payments across all drivers
+5. Filter by driver, status, or date range
+6. Mark pending payments as paid
+
+### Payment Dashboard Features
+- **Summary Cards**: View totals for pending, paid, average payments
+- **Status Filters**: Filter by All, Pending, or Paid
+- **Date Range**: Select custom date ranges
+- **Search**: Search by load number or payment ID
+- **Driver Filter** (Admin only): Filter by specific driver
+- **Mark as Paid** (Admin only): Mark pending payments as paid
+- **Bulk Actions** (Admin only): Select multiple payments to mark as paid
+- **Pull-to-Refresh**: Swipe down to refresh payment data
+
+### Understanding Payment Status
+- **🟠 Pending**: Payment has been calculated but not yet paid to driver
+- **🟢 Paid**: Payment has been completed and driver has been compensated
+

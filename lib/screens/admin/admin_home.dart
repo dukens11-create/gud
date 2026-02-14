@@ -956,6 +956,14 @@ class _AdminHomeState extends State<AdminHome> {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.payment),
+            title: const Text('Payment Dashboard'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/payments');
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.notification_important),
             title: const Text('Expiration Alerts'),
             trailing: StreamBuilder<List<ExpirationAlert>>(

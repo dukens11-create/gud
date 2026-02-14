@@ -37,6 +37,7 @@ import 'screens/create_invoice_screen.dart';
 import 'screens/load_history_screen.dart';
 import 'screens/password_reset_screen.dart';
 import 'screens/export_screen.dart';
+import 'screens/payment_dashboard_screen.dart';
 
 final Map<String, WidgetBuilder> routes = {
   '/login': (_) => const LoginScreen(),
@@ -53,6 +54,7 @@ final Map<String, WidgetBuilder> routes = {
   '/admin/expiration-alerts': (_) => const ExpirationAlertsScreen(),
   '/driver/earnings': (_) => const EarningsScreen(),
   '/driver/expenses': (_) => const DriverExpensesScreen(),
+  '/payments': (_) => const PaymentDashboardScreen(),
   
   // Profile routes
   '/profile': (_) => const ProfileScreen(),
