@@ -42,15 +42,39 @@ class StatisticsService {
     final loads = loadsSnapshot.docs;
     
     // Get expenses
+    // 🔴 COMPOSITE INDEX REQUIRED when driverId filter is present
+    // Query: where('date', >=) + where('date', <=) + optional where('driverId', ==)
+    //
+    // When driverId is provided, required composite index:
+    // {
+    //   "collectionGroup": "expenses",
+    //   "queryScope": "COLLECTION",
+    //   "fields": [
+    //     {"fieldPath": "driverId", "order": "ASCENDING"},
+    //     {"fieldPath": "date", "order": "ASCENDING"}
+    //   ]
+    // }
+    //
+    // ISSUE: This index does NOT exist in firestore.indexes.json
+    print('[StatisticsService] Executing expense query for statistics');
+    print('  Collection: expenses');
+    print('  Where: date >= $startDate');
+    print('  Where: date <= $endDate');
+    
     Query expensesQuery = _db.collection('expenses')
         .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
         .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
     
     if (driverId != null) {
+      print('  Where: driverId == $driverId');
+      print('  ⚠️  REQUIRES COMPOSITE INDEX: driverId ASC + date ASC');
       expensesQuery = expensesQuery.where('driverId', isEqualTo: driverId);
+    } else {
+      print('  Date range only: uses single-field index');
     }
     
     final expensesSnapshot = await expensesQuery.get();
+    print('[StatisticsService] Expense query returned ${expensesSnapshot.docs.length} documents');
     final expenses = expensesSnapshot.docs;
     
     // Calculate totals
