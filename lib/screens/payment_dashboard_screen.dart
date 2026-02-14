@@ -181,6 +181,7 @@ class _PaymentDashboardScreenState extends State<PaymentDashboardScreen> {
   Future<void> _markMultipleAsPaid() async {
     if (_selectedPayments.isEmpty) return;
 
+    final count = _selectedPayments.length;
     try {
       for (final paymentId in _selectedPayments) {
         await _paymentService.markAsPaid(paymentId);
@@ -191,7 +192,7 @@ class _PaymentDashboardScreenState extends State<PaymentDashboardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('${_selectedPayments.length} payments marked as paid')),
+              content: Text('$count payments marked as paid')),
         );
       }
     } catch (e) {
