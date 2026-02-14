@@ -113,7 +113,6 @@ class _PaymentDashboardScreenState extends State<PaymentDashboardScreen> {
 
     if (_isAdmin) {
       // Admin sees all payments or filtered by driver
-      final driverId = _selectedDriverId ?? _currentUserId!;
       if (_selectedDriverId == null) {
         // Stream all payments for admin
         return FirebaseFirestore.instance
@@ -124,7 +123,7 @@ class _PaymentDashboardScreenState extends State<PaymentDashboardScreen> {
                 snapshot.docs.map((doc) => Payment.fromDoc(doc)).toList());
       } else {
         // Stream payments for selected driver
-        return _paymentService.streamDriverPayments(driverId);
+        return _paymentService.streamDriverPayments(_selectedDriverId!);
       }
     } else {
       // Driver sees only their own payments
