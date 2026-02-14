@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../models/driver.dart';
 import '../models/load.dart';
 import '../models/pod.dart';
+import 'payment_service.dart';
 
 /// Firestore database service for managing all database operations.
 /// 
@@ -696,9 +697,66 @@ TROUBLESHOOTING:
     try {
       await _db.collection('loads').doc(loadId).update(updates);
       print('✅ Load status updated successfully');
+      
+      // Auto-create payment when load is delivered or completed
+      if (status == 'delivered' || status == 'completed') {
+        await _createPaymentForLoad(loadId);
+      }
     } catch (e) {
       print('❌ Error updating load status: $e');
       rethrow;
+    }
+  }
+
+  /// Create payment record for a delivered load
+  /// 
+  /// This method is called automatically when a load status is updated to 'delivered' or 'completed'.
+  /// It checks if a payment already exists before creating a new one.
+  /// 
+  /// Parameters:
+  /// - [loadId]: Load's document ID
+  Future<void> _createPaymentForLoad(String loadId) async {
+    try {
+      print('💰 Checking payment status for load: $loadId');
+      
+      // Get load document to check payment status
+      final loadDoc = await _db.collection('loads').doc(loadId).get();
+      if (!loadDoc.exists) {
+        print('⚠️  Load not found: $loadId');
+        return;
+      }
+      
+      final loadData = loadDoc.data() as Map<String, dynamic>;
+      final paymentStatus = loadData['paymentStatus'] as String?;
+      
+      // Check if payment already exists
+      if (paymentStatus == 'paid' || paymentStatus == 'unpaid') {
+        print('ℹ️  Payment already exists for load $loadId (status: $paymentStatus)');
+        return;
+      }
+      
+      // Create payment using PaymentService
+      final paymentService = PaymentService();
+      final driverId = loadData['driverId'] as String;
+      final loadRate = (loadData['rate'] ?? 0).toDouble();
+      
+      final paymentId = await paymentService.createPayment(
+        driverId: driverId,
+        loadId: loadId,
+        loadRate: loadRate,
+        notes: 'Auto-generated payment for delivered load',
+      );
+      
+      // Update load with payment reference
+      await _db.collection('loads').doc(loadId).update({
+        'paymentId': paymentId,
+        'paymentStatus': 'unpaid',
+      });
+      
+      print('✅ Payment created for load $loadId: $paymentId');
+    } catch (e) {
+      print('❌ Error creating payment for load: $e');
+      // Don't rethrow - payment creation failure shouldn't prevent status update
     }
   }
 
