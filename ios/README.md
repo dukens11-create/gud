@@ -85,7 +85,7 @@ This means you need to configure your development team. Choose one of the method
 1. **Find your Team ID:**
    - Go to https://developer.apple.com/account
    - Navigate to **Membership** section
-   - Copy your Team ID (10-character string like `ABCDE12345`)
+   - Copy your Team ID (10-character alphanumeric string like `ABCD1234EF`)
 
 2. **Set the environment variable:**
    ```bash
