@@ -61,7 +61,7 @@ class Payment {
       loadRate: (d['loadRate'] ?? 0).toDouble(),
       status: (d['status'] ?? 'pending') as String,
       paymentDate: DateTimeUtils.parseDateTime(d['paymentDate']),
-      createdAt: DateTimeUtils.parseDateTime(d['createdAt']),
+      createdAt: DateTimeUtils.parseDateTime(d['createdAt']) ?? DateTime.now(),
       createdBy: (d['createdBy'] ?? '') as String,
       notes: d['notes'] as String?,
     );
