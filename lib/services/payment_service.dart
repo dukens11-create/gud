@@ -159,7 +159,7 @@ class PaymentService {
         .handleError((error) {
           print('❌ Error streaming commission rate: $error');
           // Error will propagate to stream listeners
-        });
+        }) as Stream<double>;
   }
 
   /// Update commission rate (admin only)
