@@ -317,5 +317,96 @@ void main() {
       expect(load.bolUploadedAt, testDate);
       expect(load.podUploadedAt, testDate.add(Duration(hours: 2)));
     });
+
+    test('handles payment fields correctly', () {
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'delivered',
+        paymentStatus: 'unpaid',
+        paymentId: 'payment-123',
+      );
+
+      expect(load.paymentStatus, 'unpaid');
+      expect(load.paymentId, 'payment-123');
+    });
+
+    test('toMap includes payment fields when present', () {
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'delivered',
+        paymentStatus: 'paid',
+        paymentId: 'payment-456',
+      );
+
+      final map = load.toMap();
+
+      expect(map['paymentStatus'], 'paid');
+      expect(map['paymentId'], 'payment-456');
+    });
+
+    test('toMap omits payment fields when null', () {
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'assigned',
+      );
+
+      final map = load.toMap();
+
+      expect(map.containsKey('paymentStatus'), false);
+      expect(map.containsKey('paymentId'), false);
+    });
+
+    test('fromMap deserializes payment fields correctly', () {
+      final testDate = DateTime(2024, 1, 1);
+      final map = {
+        'loadNumber': 'LD-001',
+        'driverId': 'driver-1',
+        'pickupAddress': '123 Main St',
+        'deliveryAddress': '456 Oak Ave',
+        'rate': 1500.0,
+        'status': 'delivered',
+        'createdAt': testDate.toIso8601String(),
+        'paymentStatus': 'unpaid',
+        'paymentId': 'payment-789',
+      };
+
+      final load = LoadModel.fromMap('test-id', map);
+
+      expect(load.paymentStatus, 'unpaid');
+      expect(load.paymentId, 'payment-789');
+    });
+
+    test('fromMap handles missing payment fields', () {
+      final testDate = DateTime(2024, 1, 1);
+      final map = {
+        'loadNumber': 'LD-001',
+        'driverId': 'driver-1',
+        'pickupAddress': '123 Main St',
+        'deliveryAddress': '456 Oak Ave',
+        'rate': 1500.0,
+        'status': 'assigned',
+        'createdAt': testDate.toIso8601String(),
+      };
+
+      final load = LoadModel.fromMap('test-id', map);
+
+      expect(load.paymentStatus, null);
+      expect(load.paymentId, null);
+    });
   });
 }
