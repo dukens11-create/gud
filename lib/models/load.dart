@@ -35,6 +35,8 @@ class LoadModel {
   final DateTime? bolUploadedAt;  // When BOL was uploaded
   final DateTime? podUploadedAt;  // When POD was uploaded
   final DateTime? acceptedAt;     // When driver accepted the load
+  final String? paymentStatus;    // Payment status: 'unpaid', 'paid', 'partial'
+  final String? paymentId;        // Reference to payment document
 
   LoadModel({
     required this.id,
@@ -58,6 +60,8 @@ class LoadModel {
     this.bolUploadedAt,
     this.podUploadedAt,
     this.acceptedAt,
+    this.paymentStatus,
+    this.paymentId,
   }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
@@ -81,6 +85,8 @@ class LoadModel {
     if (bolUploadedAt != null) 'bolUploadedAt': bolUploadedAt!.toIso8601String(),
     if (podUploadedAt != null) 'podUploadedAt': podUploadedAt!.toIso8601String(),
     if (acceptedAt != null) 'acceptedAt': acceptedAt!.toIso8601String(),
+    if (paymentStatus != null) 'paymentStatus': paymentStatus,
+    if (paymentId != null) 'paymentId': paymentId,
   };
 
   static LoadModel fromDoc(DocumentSnapshot doc) {
@@ -115,6 +121,8 @@ class LoadModel {
         bolUploadedAt: DateTimeUtils.parseDateTime(d['bolUploadedAt']),
         podUploadedAt: DateTimeUtils.parseDateTime(d['podUploadedAt']),
         acceptedAt: DateTimeUtils.parseDateTime(d['acceptedAt']),
+        paymentStatus: d['paymentStatus'] as String?,
+        paymentId: d['paymentId'] as String?,
       );
     } catch (e) {
       throw FormatException(
