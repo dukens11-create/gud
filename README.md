@@ -361,6 +361,7 @@ See [AAB_BUILD_GUIDE.md](AAB_BUILD_GUIDE.md) for Android deployment instructions
 - Delivery management
 - Driver and truck information
 - Expense tracking
+- Payment Dashboard - Track driver compensation and payment status
 - Profile management with photo upload
 - Push notifications
 - Firebase integration

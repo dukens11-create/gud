@@ -301,6 +301,11 @@ class _DriverHomeState extends State<DriverHome> {
               );
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.payment),
+            onPressed: () => Navigator.pushNamed(context, '/payments'),
+            tooltip: 'My Payments',
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             tooltip: 'More options',
