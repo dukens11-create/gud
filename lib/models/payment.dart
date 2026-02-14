@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/datetime_utils.dart';
+import '../services/payment_service.dart';
 
 /// Payment model for tracking driver compensation
 /// 
@@ -63,7 +64,7 @@ class Payment {
       loadId: (d['loadId'] ?? '') as String,
       amount: (d['amount'] ?? 0).toDouble(),
       loadRate: (d['loadRate'] ?? 0).toDouble(),
-      commissionRate: (d['commissionRate'] ?? 0.85).toDouble(), // Default to 85% for backward compatibility
+      commissionRate: (d['commissionRate'] ?? PaymentService.DEFAULT_COMMISSION_RATE).toDouble(), // Use constant for backward compatibility
       status: (d['status'] ?? 'pending') as String,
       paymentDate: DateTimeUtils.parseDateTime(d['paymentDate']),
       createdAt: DateTimeUtils.parseDateTime(d['createdAt']) ?? DateTime.now(),
