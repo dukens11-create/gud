@@ -101,13 +101,13 @@ class ExpenseService {
   Stream<List<Expense>> streamAllExpenses() {
     _requireAuth();
     
-    // QUERY ANALYSIS: This query only uses orderBy, no composite index needed
+    // 🟢 SIMPLE QUERY - No composite index needed
     // Query: collection('expenses').orderBy('date', descending: true)
     // Index requirement: Single-field index on 'date' (auto-created by Firestore)
     print('[ExpenseService] Executing query: streamAllExpenses()');
     print('  Collection: expenses');
     print('  OrderBy: date DESC');
-    print('  Index required: Single-field (auto-created)');
+    print('  Index: Single-field (auto-created)');
     
     return _db
         .collection('expenses')
@@ -123,7 +123,7 @@ class ExpenseService {
   Stream<List<Expense>> streamDriverExpenses(String driverId) {
     _requireAuth();
     
-    // 🔴 COMPOSITE INDEX REQUIRED - This query WILL FAIL without proper index
+    // 🟢 COMPOSITE INDEX ADDED - This query now has proper index support
     // Query: collection('expenses').where('driverId', ==).orderBy('date', descending: true)
     // 
     // Required composite index:
@@ -136,8 +136,8 @@ class ExpenseService {
     //   ]
     // }
     //
-    // ISSUE: This index does NOT exist in firestore.indexes.json
-    // ERROR: User will see "The query requires an index" error
+    // Status: ✅ ADDED to firestore.indexes.json
+    // After deployment, this query will work without errors
     print('[ExpenseService] Executing query: streamDriverExpenses(driverId: $driverId)');
     print('  Collection: expenses');
     print('  Where: driverId == $driverId');
@@ -159,7 +159,7 @@ class ExpenseService {
   Stream<List<Expense>> streamLoadExpenses(String loadId) {
     _requireAuth();
     
-    // 🔴 COMPOSITE INDEX REQUIRED - This query WILL FAIL without proper index
+    // 🟢 COMPOSITE INDEX ADDED - This query now has proper index support
     // Query: collection('expenses').where('loadId', ==).orderBy('date', descending: true)
     // 
     // Required composite index:
@@ -172,8 +172,8 @@ class ExpenseService {
     //   ]
     // }
     //
-    // ISSUE: This index does NOT exist in firestore.indexes.json
-    // ERROR: User will see "The query requires an index" error
+    // Status: ✅ ADDED to firestore.indexes.json
+    // After deployment, this query will work without errors
     print('[ExpenseService] Executing query: streamLoadExpenses(loadId: $loadId)');
     print('  Collection: expenses');
     print('  Where: loadId == $loadId');
@@ -211,7 +211,7 @@ class ExpenseService {
   }) async {
     _requireAuth();
     
-    // QUERY ANALYSIS: This method builds dynamic queries with multiple filters
+    // 🟢 COMPOSITE INDEX ADDED - Dynamic query builder with multiple filter combinations
     // Depending on parameters, different composite indexes may be required
     print('[ExpenseService] Executing query: getExpensesByCategory()');
     print('  Collection: expenses');
@@ -219,7 +219,7 @@ class ExpenseService {
     Query query = _db.collection('expenses');
     
     if (driverId != null) {
-      // 🔴 COMPOSITE INDEX REQUIRED when combined with date filters
+      // 🟢 COMPOSITE INDEX ADDED when combined with date filters
       // Query: where('driverId', ==) + where('date', >=) and/or where('date', <=)
       // 
       // Required composite index:
@@ -231,6 +231,8 @@ class ExpenseService {
       //     {"fieldPath": "date", "order": "ASCENDING"}
       //   ]
       // }
+      //
+      // Status: ✅ ADDED to firestore.indexes.json
       print('  Where: driverId == $driverId');
       query = query.where('driverId', isEqualTo: driverId);
     }
@@ -244,9 +246,11 @@ class ExpenseService {
     }
     
     if (driverId != null && (startDate != null || endDate != null)) {
-      print('  ⚠️  REQUIRES COMPOSITE INDEX: driverId ASC + date ASC');
-    } else if (startDate != null && endDate != null) {
-      print('  ⚠️  Date range queries on same field are allowed (uses single-field index)');
+      print('  ✅ Using composite index: driverId ASC + date ASC');
+    } else if (startDate != null && endDate != null && driverId == null) {
+      print('  ✅ Date range only: uses single-field index');
+    } else if (driverId != null) {
+      print('  ✅ DriverId only: uses single-field index');
     }
     
     final snapshot = await query.get();

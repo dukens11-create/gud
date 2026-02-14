@@ -42,7 +42,7 @@ class StatisticsService {
     final loads = loadsSnapshot.docs;
     
     // Get expenses
-    // 🔴 COMPOSITE INDEX REQUIRED when driverId filter is present
+    // 🟢 COMPOSITE INDEX ADDED when driverId filter is present
     // Query: where('date', >=) + where('date', <=) + optional where('driverId', ==)
     //
     // When driverId is provided, required composite index:
@@ -55,7 +55,7 @@ class StatisticsService {
     //   ]
     // }
     //
-    // ISSUE: This index does NOT exist in firestore.indexes.json
+    // Status: ✅ ADDED to firestore.indexes.json
     print('[StatisticsService] Executing expense query for statistics');
     print('  Collection: expenses');
     print('  Where: date >= $startDate');
@@ -67,10 +67,10 @@ class StatisticsService {
     
     if (driverId != null) {
       print('  Where: driverId == $driverId');
-      print('  ⚠️  REQUIRES COMPOSITE INDEX: driverId ASC + date ASC');
+      print('  ✅ Using composite index: driverId ASC + date ASC');
       expensesQuery = expensesQuery.where('driverId', isEqualTo: driverId);
     } else {
-      print('  Date range only: uses single-field index');
+      print('  ✅ Date range only: uses single-field index');
     }
     
     final expensesSnapshot = await expensesQuery.get();
