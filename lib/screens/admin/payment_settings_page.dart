@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/payment_service.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Payment Settings Screen - Admin page to configure driver commission rates
 /// 
@@ -289,10 +290,10 @@ class _PaymentSettingsPageState extends State<PaymentSettingsPage> {
                     if (changedAt != null) {
                       try {
                         DateTime date;
-                        if (changedAt is DateTime) {
-                          date = changedAt;
-                        } else if (changedAt.runtimeType.toString().contains('Timestamp')) {
+                        if (changedAt is Timestamp) {
                           date = changedAt.toDate();
+                        } else if (changedAt is DateTime) {
+                          date = changedAt;
                         } else {
                           date = DateTime.now();
                         }

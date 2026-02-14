@@ -158,7 +158,7 @@ class PaymentService {
         })
         .handleError((error) {
           print('❌ Error streaming commission rate: $error');
-          return DEFAULT_COMMISSION_RATE;
+          // Error will propagate to stream listeners
         });
   }
 
@@ -284,15 +284,21 @@ class PaymentService {
   // PAYMENT CALCULATIONS
   // ============================================================================
 
-  /// Calculate driver payment amount using current commission rate
+  /// Calculate driver payment amount using specified or current commission rate
   /// 
   /// Parameters:
   /// - [loadRate]: The total rate for the load
-  /// - [commissionRate]: Optional commission rate override. If not provided, uses current rate from settings.
+  /// - [commissionRate]: Commission rate to use. If not provided, fetches current rate from settings.
   /// 
   /// Returns: Driver's payment amount (loadRate * commissionRate)
   Future<double> calculateDriverPayment(double loadRate, {double? commissionRate}) async {
-    final rate = commissionRate ?? await getCommissionRate();
+    if (commissionRate != null) {
+      // Use provided rate directly
+      return loadRate * commissionRate;
+    }
+    
+    // Fetch current rate from settings
+    final rate = await getCommissionRate();
     return loadRate * rate;
   }
 
