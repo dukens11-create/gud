@@ -4,14 +4,6 @@ import 'package:gud_app/services/payment_service.dart';
 void main() {
   group('PaymentService', () {
     group('calculateDriverPayment', () {
-      test('calculates correct payment for standard load rate', () {
-        final service = PaymentService();
-        
-        final payment = service.calculateDriverPayment(1000.0);
-        
-        expect(payment, 850.0);
-      });
-
       test('calculates correct payment for various load rates', () {
         final service = PaymentService();
         
@@ -71,17 +63,14 @@ void main() {
     });
 
     group('Constants', () {
-      test('DRIVER_COMMISSION_RATE is 0.85', () {
+      test('DRIVER_COMMISSION_RATE is 0.85 (85%)', () {
         expect(PaymentService.DRIVER_COMMISSION_RATE, 0.85);
-      });
-
-      test('commission represents 85 percent', () {
+        
+        // Verify commission represents 85% and company keeps 15%
         final percentageValue = PaymentService.DRIVER_COMMISSION_RATE * 100;
-        expect(percentageValue, 85.0);
-      });
-
-      test('company keeps 15 percent', () {
         final companyPercentage = (1 - PaymentService.DRIVER_COMMISSION_RATE) * 100;
+        
+        expect(percentageValue, 85.0);
         expect(companyPercentage, 15.0);
       });
     });

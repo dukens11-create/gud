@@ -160,6 +160,10 @@ class PaymentService {
   ///   * driverId (Ascending)
   ///   * createdAt (Descending)
   /// 
+  /// **Note:** Authentication is checked once when the stream is created.
+  /// If the user signs out while the stream is active, Firestore security rules
+  /// will prevent further emissions, but the stream will not automatically close.
+  /// 
   /// Parameters:
   /// - [driverId]: Driver's user ID
   Stream<List<Payment>> streamDriverPayments(String driverId) {
