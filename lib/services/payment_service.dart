@@ -5,11 +5,38 @@ import '../models/load.dart';
 
 /// Payment service for managing driver compensation.
 /// 
-/// Drivers receive 85% of the load revenue for each delivery.
+/// Drivers receive a configurable percentage (default 85%) of the load revenue for each delivery.
+/// The commission rate is admin-configurable and stored in Firestore settings.
 /// Payment records are created automatically when loads are marked as delivered.
 /// 
 /// **Security**: All methods verify user authentication before executing queries.
 /// Throws [FirebaseAuthException] if user is not authenticated.
+///
+/// ============================================================================
+/// RECOMMENDED FIRESTORE SECURITY RULES
+/// ============================================================================
+/// 
+/// Add these rules to firestore.rules to secure payment settings:
+/// 
+/// ```
+/// // Settings collection (commission rate configuration)
+/// match /settings/{document=**} {
+///   allow read: if request.auth != null;
+///   allow write: if request.auth != null && 
+///                  get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+/// }
+/// 
+/// // Payments collection
+/// match /payments/{paymentId} {
+///   allow read: if request.auth != null && 
+///                  (request.auth.uid == resource.data.driverId || 
+///                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+///   allow create: if request.auth != null && 
+///                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+///   allow update: if request.auth != null && 
+///                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+/// }
+/// ```
 ///
 /// ============================================================================
 /// FIRESTORE COMPOSITE INDEX REQUIREMENTS
@@ -53,7 +80,12 @@ class PaymentService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   
-  /// Commission rate for drivers (85% of load rate)
+  /// Default commission rate for drivers (85% of load rate)
+  /// Used as fallback when no rate is configured in Firestore
+  static const double DEFAULT_COMMISSION_RATE = 0.85;
+  
+  /// Legacy constant maintained for backward compatibility
+  @Deprecated('Use DEFAULT_COMMISSION_RATE instead')
   static const double DRIVER_COMMISSION_RATE = 0.85;
   
   /// Verify user is authenticated before executing Firestore operations
@@ -68,17 +100,219 @@ class PaymentService {
     }
   }
 
-  /// Calculate driver payment amount (85% of load rate)
+  // ============================================================================
+  // COMMISSION RATE MANAGEMENT
+  // ============================================================================
+
+  /// Get current commission rate from Firestore settings
+  /// 
+  /// Returns the configured commission rate or DEFAULT_COMMISSION_RATE (0.85) if not set
+  /// 
+  /// **Firestore Path**: settings/payment_config
+  Future<double> getCommissionRate() async {
+    _requireAuth();
+    
+    print('📊 Fetching commission rate from settings');
+    
+    try {
+      final doc = await _db.collection('settings').doc('payment_config').get();
+      
+      if (!doc.exists || doc.data() == null) {
+        print('ℹ️  No commission rate configured, using default: $DEFAULT_COMMISSION_RATE');
+        return DEFAULT_COMMISSION_RATE;
+      }
+      
+      final rate = (doc.data()!['driverCommissionRate'] ?? DEFAULT_COMMISSION_RATE).toDouble();
+      print('✅ Commission rate loaded: $rate (${(rate * 100).toStringAsFixed(0)}%)');
+      return rate;
+    } catch (e) {
+      print('❌ Error fetching commission rate: $e');
+      print('   Falling back to default: $DEFAULT_COMMISSION_RATE');
+      return DEFAULT_COMMISSION_RATE;
+    }
+  }
+
+  /// Stream commission rate for real-time updates
+  /// 
+  /// Provides real-time updates when commission rate changes in Firestore
+  /// 
+  /// **Firestore Path**: settings/payment_config
+  Stream<double> streamCommissionRate() {
+    _requireAuth();
+    
+    print('🔄 Streaming commission rate from settings');
+    
+    return _db
+        .collection('settings')
+        .doc('payment_config')
+        .snapshots()
+        .map((snapshot) {
+          if (!snapshot.exists || snapshot.data() == null) {
+            print('ℹ️  No commission rate configured, using default: $DEFAULT_COMMISSION_RATE');
+            return DEFAULT_COMMISSION_RATE;
+          }
+          
+          final rate = (snapshot.data()!['driverCommissionRate'] ?? DEFAULT_COMMISSION_RATE).toDouble();
+          print('📊 Commission rate update: $rate (${(rate * 100).toStringAsFixed(0)}%)');
+          return rate;
+        })
+        .handleError((error) {
+          print('❌ Error streaming commission rate: $error');
+          return DEFAULT_COMMISSION_RATE;
+        });
+  }
+
+  /// Update commission rate (admin only)
+  /// 
+  /// **Security**: This method should only be accessible to admin users.
+  /// Implement additional role checks in your UI layer.
+  /// 
+  /// Parameters:
+  /// - [newRate]: New commission rate (must be between 0.0 and 1.0)
+  /// - [notes]: Optional notes about the rate change
+  /// 
+  /// Throws [ArgumentError] if rate is not between 0 and 1
+  Future<void> updateCommissionRate(double newRate, {String? notes}) async {
+    _requireAuth();
+    
+    // Validate rate is between 0 and 1
+    if (newRate < 0.0 || newRate > 1.0) {
+      throw ArgumentError(
+        'Commission rate must be between 0.0 and 1.0 (got $newRate)'
+      );
+    }
+    
+    print('💰 Updating commission rate to $newRate (${(newRate * 100).toStringAsFixed(0)}%)');
+    
+    try {
+      final currentUser = _auth.currentUser!;
+      
+      await _db.collection('settings').doc('payment_config').set({
+        'driverCommissionRate': newRate,
+        'lastUpdatedBy': currentUser.uid,
+        'lastUpdatedAt': FieldValue.serverTimestamp(),
+        if (notes != null) 'notes': notes,
+      }, SetOptions(merge: true));
+      
+      print('✅ Commission rate updated successfully');
+    } catch (e) {
+      print('❌ Error updating commission rate: $e');
+      rethrow;
+    }
+  }
+
+  /// Update commission rate and save change to history subcollection
+  /// 
+  /// This method updates the rate and creates a historical record of the change.
+  /// 
+  /// Parameters:
+  /// - [newRate]: New commission rate (must be between 0.0 and 1.0)
+  /// - [notes]: Optional notes about the rate change
+  Future<void> updateCommissionRateWithHistory(double newRate, {String? notes}) async {
+    _requireAuth();
+    
+    // Validate rate is between 0 and 1
+    if (newRate < 0.0 || newRate > 1.0) {
+      throw ArgumentError(
+        'Commission rate must be between 0.0 and 1.0 (got $newRate)'
+      );
+    }
+    
+    print('💰 Updating commission rate with history tracking');
+    
+    try {
+      final currentUser = _auth.currentUser!;
+      
+      // Get current rate
+      final oldRate = await getCommissionRate();
+      
+      // Update rate
+      await _db.collection('settings').doc('payment_config').set({
+        'driverCommissionRate': newRate,
+        'lastUpdatedBy': currentUser.uid,
+        'lastUpdatedAt': FieldValue.serverTimestamp(),
+        if (notes != null) 'notes': notes,
+      }, SetOptions(merge: true));
+      
+      // Save to history
+      await _db
+          .collection('settings')
+          .doc('payment_config')
+          .collection('history')
+          .add({
+        'oldRate': oldRate,
+        'newRate': newRate,
+        'changedBy': currentUser.uid,
+        'changedAt': FieldValue.serverTimestamp(),
+        if (notes != null) 'notes': notes,
+      });
+      
+      print('✅ Commission rate updated: $oldRate → $newRate (${(newRate * 100).toStringAsFixed(0)}%)');
+    } catch (e) {
+      print('❌ Error updating commission rate with history: $e');
+      rethrow;
+    }
+  }
+
+  /// Stream history of commission rate changes
+  /// 
+  /// Returns historical rate changes ordered by date (newest first)
+  /// 
+  /// **Firestore Path**: settings/payment_config/history/{changeId}
+  Stream<List<Map<String, dynamic>>> streamCommissionRateHistory() {
+    _requireAuth();
+    
+    print('📜 Streaming commission rate history');
+    
+    return _db
+        .collection('settings')
+        .doc('payment_config')
+        .collection('history')
+        .orderBy('changedAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          print('📊 Received ${snapshot.docs.length} history records');
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return data;
+          }).toList();
+        });
+  }
+
+  // ============================================================================
+  // PAYMENT CALCULATIONS
+  // ============================================================================
+
+  /// Calculate driver payment amount using current commission rate
+  /// 
+  /// Parameters:
+  /// - [loadRate]: The total rate for the load
+  /// - [commissionRate]: Optional commission rate override. If not provided, uses current rate from settings.
+  /// 
+  /// Returns: Driver's payment amount (loadRate * commissionRate)
+  Future<double> calculateDriverPayment(double loadRate, {double? commissionRate}) async {
+    final rate = commissionRate ?? await getCommissionRate();
+    return loadRate * rate;
+  }
+
+  /// Calculate driver payment amount synchronously using default commission rate
+  /// 
+  /// **Deprecated**: Use async version calculateDriverPayment() for dynamic rates
   /// 
   /// Parameters:
   /// - [loadRate]: The total rate for the load
   /// 
-  /// Returns: Driver's payment amount (85% of load rate)
-  double calculateDriverPayment(double loadRate) {
-    return loadRate * DRIVER_COMMISSION_RATE;
+  /// Returns: Driver's payment amount using DEFAULT_COMMISSION_RATE
+  @Deprecated('Use async calculateDriverPayment() instead')
+  double calculateDriverPaymentSync(double loadRate) {
+    return loadRate * DEFAULT_COMMISSION_RATE;
   }
 
   /// Create a payment record when a load is delivered
+  /// 
+  /// This method fetches the current commission rate and creates a payment record
+  /// with that rate stored in the document for historical accuracy.
   /// 
   /// Parameters:
   /// - [driverId]: Driver's user ID
@@ -98,12 +332,16 @@ class PaymentService {
     _requireAuth();
     
     final currentUser = _auth.currentUser!;
-    final amount = calculateDriverPayment(loadRate);
+    
+    // Get current commission rate
+    final commissionRate = await getCommissionRate();
+    final amount = await calculateDriverPayment(loadRate, commissionRate: commissionRate);
     
     print('💰 Creating payment for driver $driverId');
     print('   Load ID: $loadId');
     print('   Load Rate: \$$loadRate');
-    print('   Driver Payment (85%): \$$amount');
+    print('   Commission Rate: ${(commissionRate * 100).toStringAsFixed(0)}%');
+    print('   Driver Payment: \$$amount');
     
     try {
       final docRef = await _db.collection('payments').add({
@@ -111,6 +349,7 @@ class PaymentService {
         'loadId': loadId,
         'amount': amount,
         'loadRate': loadRate,
+        'commissionRate': commissionRate, // Store rate used for this payment
         'status': 'pending',
         'paymentDate': null,
         'createdAt': FieldValue.serverTimestamp(),
@@ -347,6 +586,8 @@ class PaymentService {
 
   /// Create payments for multiple loads at once
   /// 
+  /// Uses the current commission rate for all payments in the batch.
+  /// 
   /// Parameters:
   /// - [loadIds]: List of load document IDs
   /// 
@@ -358,6 +599,10 @@ class PaymentService {
     
     final paymentIds = <String>[];
     final currentUser = _auth.currentUser!;
+    
+    // Get current commission rate (same for all payments in batch)
+    final commissionRate = await getCommissionRate();
+    print('   Using commission rate: ${(commissionRate * 100).toStringAsFixed(0)}%');
     
     try {
       // Fetch all loads
@@ -377,7 +622,7 @@ class PaymentService {
         final loadData = loadDoc.data() as Map<String, dynamic>;
         final driverId = loadData['driverId'] as String;
         final loadRate = (loadData['rate'] ?? 0).toDouble();
-        final amount = calculateDriverPayment(loadRate);
+        final amount = await calculateDriverPayment(loadRate, commissionRate: commissionRate);
         
         // Check if payment already exists
         final existingPayment = await _db
@@ -398,6 +643,7 @@ class PaymentService {
           'loadId': loadDoc.id,
           'amount': amount,
           'loadRate': loadRate,
+          'commissionRate': commissionRate, // Store rate used for this payment
           'status': 'pending',
           'paymentDate': null,
           'createdAt': FieldValue.serverTimestamp(),
