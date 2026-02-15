@@ -203,6 +203,60 @@ class _PaymentDashboardScreenState extends State<PaymentDashboardScreen> {
     }
   }
 
+  Future<void> _deletePayment(String paymentId) async {
+    try {
+      await _paymentService.deletePayment(paymentId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting payment: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeletePayment(Payment payment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Payment?'),
+        content: Text(
+          'Are you sure you want to delete this payment?\n\n'
+          'Amount: \$${payment.amount.toStringAsFixed(2)}\n'
+          'Load: ${payment.loadId}\n'
+          'Status: ${payment.status}\n\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deletePayment(payment.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -719,22 +773,32 @@ class _PaymentDashboardScreenState extends State<PaymentDashboardScreen> {
                 ),
               ],
               // Admin actions
-              if (_isAdmin && payment.status == 'pending') ...[
+              if (_isAdmin) ...[
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    if (isSelected)
+                    if (isSelected && payment.status == 'pending')
                       const Icon(Icons.check_box, color: Colors.blue),
                     const Spacer(),
-                    ElevatedButton.icon(
-                      onPressed: () => _markAsPaid(payment.id),
-                      icon: const Icon(Icons.check_circle, size: 18),
-                      label: const Text('Mark as Paid'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
+                    // Delete button (shown for all payments)
+                    IconButton(
+                      onPressed: () => _confirmDeletePayment(payment),
+                      icon: const Icon(Icons.delete_outline),
+                      color: Colors.red,
+                      tooltip: 'Delete Payment',
                     ),
+                    const SizedBox(width: 8),
+                    // Mark as paid button (only for pending)
+                    if (payment.status == 'pending')
+                      ElevatedButton.icon(
+                        onPressed: () => _markAsPaid(payment.id),
+                        icon: const Icon(Icons.check_circle, size: 18),
+                        label: const Text('Mark as Paid'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
                   ],
                 ),
               ],
