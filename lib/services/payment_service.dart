@@ -35,6 +35,8 @@ import '../models/load.dart';
 ///                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
 ///   allow update: if request.auth != null && 
 ///                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+///   allow delete: if request.auth != null && 
+///                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
 /// }
 /// ```
 ///
@@ -391,6 +393,34 @@ class PaymentService {
       print('✅ Payment marked as paid');
     } catch (e) {
       print('❌ Error marking payment as paid: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete a payment record (admin only)
+  /// 
+  /// This method should only be called by admin users. Frontend should verify
+  /// admin role before showing delete option.
+  /// 
+  /// Parameters:
+  /// - [paymentId]: The payment document ID to delete
+  /// 
+  /// Throws [FirebaseAuthException] if user is not authenticated
+  /// 
+  /// **Security**: Backend security rules should enforce admin-only access
+  Future<void> deletePayment(String paymentId) async {
+    _requireAuth();
+    
+    final currentUser = _auth.currentUser!;
+    
+    print('🗑️ Deleting payment: $paymentId');
+    print('   Deleted by: ${currentUser.uid}');
+    
+    try {
+      await _db.collection('payments').doc(paymentId).delete();
+      print('✅ Payment deleted successfully');
+    } catch (e) {
+      print('❌ Error deleting payment: $e');
       rethrow;
     }
   }
