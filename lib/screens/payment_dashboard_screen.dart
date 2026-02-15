@@ -92,7 +92,7 @@ class _PaymentDashboardScreenState extends State<PaymentDashboardScreen> {
 
   Future<void> _loadDriverNames() async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('users').get();
+      final snapshot = await FirebaseFirestore.instance.collection('drivers').get();
       final names = <String, String>{};
       for (final doc in snapshot.docs) {
         final data = doc.data();
@@ -505,8 +505,7 @@ class _PaymentDashboardScreenState extends State<PaymentDashboardScreen> {
 
   void _showDriverFilter() async {
     final drivers = await FirebaseFirestore.instance
-        .collection('users')
-        .where('role', isEqualTo: 'driver')
+        .collection('drivers')
         .get();
 
     if (!mounted) return;
