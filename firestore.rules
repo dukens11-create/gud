@@ -148,6 +148,28 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
+    // Payments collection - stores driver payment records
+    match /payments/{paymentId} {
+      // Drivers can read their own payments, admins can read all
+      allow read: if request.auth != null && 
+                     (isOwner(resource.data.driverId) || isAdmin());
+      
+      // Only admins can create payments
+      allow create: if isAdmin();
+      
+      // Only admins can update payments
+      allow update: if isAdmin();
+      
+      // Only admins can delete payments
+      allow delete: if isAdmin();
+    }
+    
+    // Settings collection (commission rate configuration)
+    match /settings/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
     // Default deny for all other collections
     match /{document=**} {
       allow read, write: if false;
