@@ -124,7 +124,7 @@ class _AddDriverExpenseScreenState extends State<AddDriverExpenseScreen> {
                     children: [
                       Icon(_getCategoryIcon(category)),
                       const SizedBox(width: 12),
-                      Text(category[0].toUpperCase() + category.substring(1)),
+                      Text(toBeginningOfSentenceCase(category) ?? category),
                     ],
                   ),
                 );
