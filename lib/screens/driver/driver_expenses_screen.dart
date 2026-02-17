@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/expense_service.dart';
 import '../../models/expense.dart';
+import 'add_driver_expense_screen.dart';
 
 /// Driver expenses screen - View driver's expense history
 class DriverExpensesScreen extends StatelessWidget {
@@ -145,6 +146,18 @@ class DriverExpensesScreen extends StatelessWidget {
             ],
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddDriverExpenseScreen(),
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
+        tooltip: 'Add Expense',
       ),
     );
   }

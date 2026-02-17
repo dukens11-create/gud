@@ -18,6 +18,7 @@ import 'screens/admin/manage_trucks_screen.dart';
 import 'screens/driver/driver_home.dart';
 import 'screens/driver/earnings_screen.dart';
 import 'screens/driver/driver_expenses_screen.dart';
+import 'screens/driver/add_driver_expense_screen.dart';
 
 // Profile management screens
 import 'screens/profile_screen.dart';
@@ -54,6 +55,7 @@ final Map<String, WidgetBuilder> routes = {
   '/admin/expiration-alerts': (_) => const ExpirationAlertsScreen(),
   '/driver/earnings': (_) => const EarningsScreen(),
   '/driver/expenses': (_) => const DriverExpensesScreen(),
+  '/driver/add-expense': (_) => const AddDriverExpenseScreen(),
   '/payments': (_) => const PaymentDashboardScreen(),
   
   // Profile routes
