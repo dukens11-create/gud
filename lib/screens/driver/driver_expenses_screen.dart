@@ -148,6 +148,7 @@ class DriverExpensesScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        tooltip: 'Add Expense',
         onPressed: () async {
           await Navigator.push(
             context,
@@ -157,7 +158,6 @@ class DriverExpensesScreen extends StatelessWidget {
           );
         },
         child: const Icon(Icons.add),
-        tooltip: 'Add Expense',
       ),
     );
   }

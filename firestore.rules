@@ -131,9 +131,11 @@ service cloud.firestore {
                         (isDriver() && request.resource.data.driverId == request.auth.uid));
       
       // Admins can update/delete any expense
-      // Drivers can update/delete only their own expenses (createdBy matches)
+      // Drivers can update/delete only their own expenses (driverId and createdBy match)
       allow update, delete: if isAdmin() || 
-                               (isAuthenticated() && resource.data.createdBy == request.auth.uid);
+                               (isAuthenticated() && 
+                                resource.data.driverId == request.auth.uid &&
+                                resource.data.createdBy == request.auth.uid);
     }
     
     // Invoices collection - stores invoice information
