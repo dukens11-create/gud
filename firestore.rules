@@ -119,15 +119,23 @@ service cloud.firestore {
     
     // Expenses collection - stores expense tracking
     match /expenses/{expenseId} {
-      // Authenticated users can read expenses
-      allow read: if isAuthenticated();
+      // Admins can read all expenses
+      // Drivers can only read expenses where they are the assigned driver
+      allow read: if isAuthenticated() && 
+                     (isAdmin() || resource.data.driverId == request.auth.uid);
       
-      // Authenticated users can create expenses
-      allow create: if isAuthenticated();
+      // Admins can create any expense
+      // Drivers can create expenses only for themselves (driverId must match auth.uid)
+      allow create: if isAuthenticated() && 
+                       (isAdmin() || 
+                        (isDriver() && request.resource.data.driverId == request.auth.uid));
       
-      // Admins can update/delete any expense, users can update their own
+      // Admins can update/delete any expense
+      // Drivers can update/delete only their own expenses (driverId and createdBy match)
       allow update, delete: if isAdmin() || 
-                               (isAuthenticated() && resource.data.createdBy == request.auth.uid);
+                               (isAuthenticated() && 
+                                resource.data.driverId == request.auth.uid &&
+                                resource.data.createdBy == request.auth.uid);
     }
     
     // Invoices collection - stores invoice information
