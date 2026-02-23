@@ -12,6 +12,7 @@ class Expense {
   final String? receiptUrl;
   final String createdBy;
   final DateTime createdAt;
+  final double? gallons; // gallons of fuel (only for 'fuel' category)
 
   Expense({
     required this.id,
@@ -24,6 +25,7 @@ class Expense {
     this.receiptUrl,
     required this.createdBy,
     DateTime? createdAt,
+    this.gallons,
   }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
@@ -36,6 +38,7 @@ class Expense {
     if (receiptUrl != null) 'receiptUrl': receiptUrl,
     'createdBy': createdBy,
     'createdAt': createdAt.toIso8601String(),
+    if (gallons != null) 'gallons': gallons,
   };
 
   static Expense fromDoc(DocumentSnapshot doc) {
@@ -54,6 +57,7 @@ class Expense {
       receiptUrl: d['receiptUrl'] as String?,
       createdBy: (d['createdBy'] ?? '') as String,
       createdAt: DateTimeUtils.parseDateTime(d['createdAt']),
+      gallons: d['gallons'] != null ? (d['gallons'] as num).toDouble() : null,
     );
   }
 }

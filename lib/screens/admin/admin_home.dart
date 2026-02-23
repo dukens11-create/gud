@@ -1018,6 +1018,14 @@ class _AdminHomeState extends State<AdminHome> {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.local_gas_station),
+            title: const Text('IFTA Report'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/admin/ifta');
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.file_download),
             title: const Text('Export & Reports'),
             onTap: () {
