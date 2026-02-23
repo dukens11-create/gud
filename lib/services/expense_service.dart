@@ -81,6 +81,7 @@ class ExpenseService {
     String? loadId,
     String? receiptUrl,
     required String createdBy,
+    double? gallons,
   }) async {
     _requireAuth();
     final docRef = await _db.collection('expenses').add({
@@ -93,6 +94,7 @@ class ExpenseService {
       if (receiptUrl != null) 'receiptUrl': receiptUrl,
       'createdBy': createdBy,
       'createdAt': FieldValue.serverTimestamp(),
+      if (gallons != null) 'gallons': gallons,
     });
     return docRef.id;
   }
@@ -276,6 +278,7 @@ class ExpenseService {
     String? description,
     DateTime? date,
     String? receiptUrl,
+    double? gallons,
   }) async {
     _requireAuth();
     final Map<String, dynamic> updates = {};
@@ -284,6 +287,7 @@ class ExpenseService {
     if (description != null) updates['description'] = description;
     if (date != null) updates['date'] = Timestamp.fromDate(date);
     if (receiptUrl != null) updates['receiptUrl'] = receiptUrl;
+    if (gallons != null) updates['gallons'] = gallons;
     
     if (updates.isNotEmpty) {
       await _db.collection('expenses').doc(expenseId).update(updates);

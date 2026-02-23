@@ -16,6 +16,7 @@ class _AddDriverExpenseScreenState extends State<AddDriverExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _gallonsController = TextEditingController();
   final ExpenseService _expenseService = ExpenseService();
   
   String _selectedCategory = 'fuel';
@@ -34,6 +35,7 @@ class _AddDriverExpenseScreenState extends State<AddDriverExpenseScreen> {
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
+    _gallonsController.dispose();
     super.dispose();
   }
 
@@ -61,6 +63,9 @@ class _AddDriverExpenseScreenState extends State<AddDriverExpenseScreen> {
         date: _selectedDate,
         driverId: driverId, // Automatically assign to current driver
         createdBy: createdBy,
+        gallons: _selectedCategory == 'fuel' && _gallonsController.text.isNotEmpty
+            ? double.tryParse(_gallonsController.text)
+            : null,
       );
 
       if (mounted) {
@@ -131,7 +136,12 @@ class _AddDriverExpenseScreenState extends State<AddDriverExpenseScreen> {
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
-                  setState(() => _selectedCategory = value);
+                  setState(() {
+                    _selectedCategory = value;
+                    if (value != 'fuel') {
+                      _gallonsController.clear();
+                    }
+                  });
                 }
               },
               validator: (value) {
@@ -166,6 +176,29 @@ class _AddDriverExpenseScreenState extends State<AddDriverExpenseScreen> {
               },
             ),
             const SizedBox(height: 16),
+            if (_selectedCategory == 'fuel')
+              TextFormField(
+                controller: _gallonsController,
+                decoration: const InputDecoration(
+                  labelText: 'Gallons',
+                  suffixText: 'gal',
+                  border: OutlineInputBorder(),
+                  helperText: 'Enter gallons of fuel purchased',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return null;
+                  final gallons = double.tryParse(value);
+                  if (gallons == null) {
+                    return 'Please enter a valid number';
+                  }
+                  if (gallons <= 0) {
+                    return 'Gallons must be greater than 0';
+                  }
+                  return null;
+                },
+              ),
+            if (_selectedCategory == 'fuel') const SizedBox(height: 16),
             TextFormField(
               controller: _descriptionController,
               decoration: const InputDecoration(
