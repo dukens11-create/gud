@@ -898,3 +898,99 @@ exports.sendMessageNotification = functions.firestore
       return null;
     }
   });
+
+// 13. Notify admin(s) when driver uploads a Bill of Lading (BOL)
+exports.sendBOLNotification = functions.firestore
+  .document('loads/{loadId}')
+  .onUpdate(async (change, context) => {
+    const newData = change.after.data();
+    const oldData = change.before.data();
+    const loadId = context.params.loadId;
+
+    // Only trigger when bolPhotoUrl is newly set or changed
+    if (!newData.bolPhotoUrl || newData.bolPhotoUrl === oldData.bolPhotoUrl) {
+      return null;
+    }
+
+    const loadNumber = newData.loadNumber || loadId;
+    const driverName = newData.driverName || newData.driverId || 'Driver';
+    console.log(`\ud83d\udcc4 BOL uploaded for load ${loadId} by driver, notifying admins...`);
+
+    try {
+      const adminsSnap = await admin.firestore()
+        .collection('users')
+        .where('role', '==', 'admin')
+        .get();
+
+      const notifications = adminsSnap.docs
+        .map(doc => ({ data: doc.data() }))
+        .filter(({ data }) => data.fcmToken)
+        .map(({ data }) => admin.messaging().send({
+          notification: {
+            title: `\ud83d\udcc4 BOL Uploaded – Load ${loadNumber}`,
+            body: `${driverName} uploaded a Bill of Lading for load ${loadNumber}`,
+          },
+          data: {
+            type: 'bol_uploaded',
+            loadId,
+            loadNumber,
+          },
+          token: data.fcmToken,
+        }));
+
+      if (notifications.length > 0) await Promise.all(notifications);
+      console.log(`\u2705 BOL notifications sent to ${notifications.length} admin(s) for load ${loadId}`);
+      return null;
+    } catch (error) {
+      console.error('\u274C Error in sendBOLNotification:', error);
+      return null;
+    }
+  });
+
+// 14. Notify admin(s) when driver uploads a Proof of Delivery (POD)
+exports.sendPODNotification = functions.firestore
+  .document('loads/{loadId}')
+  .onUpdate(async (change, context) => {
+    const newData = change.after.data();
+    const oldData = change.before.data();
+    const loadId = context.params.loadId;
+
+    // Only trigger when podPhotoUrl is newly set or changed
+    if (!newData.podPhotoUrl || newData.podPhotoUrl === oldData.podPhotoUrl) {
+      return null;
+    }
+
+    const loadNumber = newData.loadNumber || loadId;
+    const driverName = newData.driverName || newData.driverId || 'Driver';
+    console.log(`\ud83d\udcc4 POD uploaded for load ${loadId} by driver, notifying admins...`);
+
+    try {
+      const adminsSnap = await admin.firestore()
+        .collection('users')
+        .where('role', '==', 'admin')
+        .get();
+
+      const notifications = adminsSnap.docs
+        .map(doc => ({ data: doc.data() }))
+        .filter(({ data }) => data.fcmToken)
+        .map(({ data }) => admin.messaging().send({
+          notification: {
+            title: `\ud83d\udcc4 POD Uploaded – Load ${loadNumber}`,
+            body: `${driverName} uploaded a Proof of Delivery for load ${loadNumber}`,
+          },
+          data: {
+            type: 'pod_uploaded',
+            loadId,
+            loadNumber,
+          },
+          token: data.fcmToken,
+        }));
+
+      if (notifications.length > 0) await Promise.all(notifications);
+      console.log(`\u2705 POD notifications sent to ${notifications.length} admin(s) for load ${loadId}`);
+      return null;
+    } catch (error) {
+      console.error('\u274C Error in sendPODNotification:', error);
+      return null;
+    }
+  });
