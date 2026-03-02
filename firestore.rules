@@ -103,6 +103,26 @@ service cloud.firestore {
       
       // Only admins can delete loads
       allow delete: if isAdmin();
+
+      // Messages subcollection — scoped to the load's participants
+      match /messages/{messageId} {
+        // Only the admin and the assigned driver can read messages for this load
+        allow read: if isAuthenticated() &&
+                       (isAdmin() ||
+                        get(/databases/$(database)/documents/loads/$(loadId)).data.driverId == request.auth.uid);
+
+        // Only the admin and the assigned driver can send messages
+        allow create: if isAuthenticated() &&
+                         (isAdmin() ||
+                          get(/databases/$(database)/documents/loads/$(loadId)).data.driverId == request.auth.uid) &&
+                         request.resource.data.senderId == request.auth.uid &&
+                         request.resource.data.text is string &&
+                         request.resource.data.text.size() > 0 &&
+                         request.resource.data.text.size() <= 2000;
+
+        // Messages cannot be edited or deleted
+        allow update, delete: if false;
+      }
     }
     
     // POD (Proof of Delivery) collection

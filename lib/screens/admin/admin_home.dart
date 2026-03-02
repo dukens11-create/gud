@@ -8,6 +8,7 @@ import '../../services/mock_data_service.dart';
 import '../../models/load.dart';
 import '../../models/driver_extended.dart';
 import '../login_screen.dart';
+import '../load_chat_screen.dart';
 import 'upload_ratecon_screen.dart';
 
 class AdminHome extends StatefulWidget {
@@ -829,6 +830,24 @@ class _AdminHomeState extends State<AdminHome> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => UploadRateconScreen(load: load),
+                  ),
+                );
+              },
+            ),
+            const Divider(height: 0),
+            ListTile(
+              leading: const Icon(Icons.chat, color: Colors.blueAccent),
+              title: const Text('Chat with Driver'),
+              subtitle: const Text('Send & receive messages for this load'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LoadChatScreen(
+                      load: load,
+                      senderRole: 'admin',
+                    ),
                   ),
                 );
               },

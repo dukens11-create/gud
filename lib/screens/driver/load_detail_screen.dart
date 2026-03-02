@@ -8,6 +8,7 @@ import '../../services/firestore_service.dart';
 import '../../services/navigation_service.dart';
 import 'upload_pod_screen.dart';
 import 'upload_bol_screen.dart';
+import '../load_chat_screen.dart';
 
 class LoadDetailScreen extends StatefulWidget {
   final LoadModel load;
@@ -559,6 +560,25 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
                   ],
                 ],
               ),
+            const SizedBox(height: 16),
+
+            // Chat button — available for all load statuses
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LoadChatScreen(
+                      load: load,
+                      senderRole: 'driver',
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.chat),
+                label: const Text('Chat with Admin'),
+              ),
+            ),
           ],
         ),
       ),
