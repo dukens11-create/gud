@@ -820,3 +820,81 @@ exports.sendRateconNotification = functions.firestore
   });
 
 
+
+// 12. Notify the other participant when a new chat message is sent on a load
+exports.sendMessageNotification = functions.firestore
+  .document('loads/{loadId}/messages/{messageId}')
+  .onCreate(async (snap, context) => {
+    const messageData = snap.data();
+    const loadId = context.params.loadId;
+    const senderRole = messageData.senderRole; // 'admin' or 'driver'
+    const MAX_NOTIFICATION_TEXT_LENGTH = 100;
+    const text = messageData.text || '';
+
+    try {
+      const loadDoc = await admin.firestore().collection('loads').doc(loadId).get();
+      if (!loadDoc.exists) return null;
+      const loadData = loadDoc.data();
+      const loadNumber = loadData.loadNumber || loadId;
+
+      let recipientId;
+      let notificationTitle;
+
+      if (senderRole === 'admin') {
+        // Message from admin → notify the assigned driver
+        recipientId = loadData.driverId;
+        notificationTitle = `New message on load ${loadNumber}`;
+      } else {
+        // Message from driver → notify the admin(s)
+        const adminsSnap = await admin.firestore()
+          .collection('users')
+          .where('role', '==', 'admin')
+          .get();
+
+        const notifications = adminsSnap.docs
+          .filter(doc => doc.data().fcmToken)
+          .map(doc => admin.messaging().send({
+            notification: {
+              title: `Driver message on load ${loadNumber}`,
+              body: text.length > MAX_NOTIFICATION_TEXT_LENGTH ? text.substring(0, MAX_NOTIFICATION_TEXT_LENGTH) + '\u2026' : text,
+            },
+            data: {
+              type: 'chat_message',
+              loadId,
+              loadNumber,
+            },
+            token: doc.data().fcmToken,
+          }));
+
+        if (notifications.length > 0) await Promise.all(notifications);
+        return null;
+      }
+
+      if (!recipientId) return null;
+
+      const userDoc = await admin.firestore().collection('users').doc(recipientId).get();
+      if (!userDoc.exists) return null;
+
+      const userData = userDoc.data();
+      if (!userData.fcmToken) return null;
+
+      await admin.messaging().send({
+        notification: {
+          title: notificationTitle,
+          body: text.length > MAX_NOTIFICATION_TEXT_LENGTH ? text.substring(0, MAX_NOTIFICATION_TEXT_LENGTH) + '\u2026' : text,
+        },
+        data: {
+          type: 'chat_message',
+          loadId,
+          loadNumber,
+        },
+        token: userData.fcmToken,
+      });
+
+      console.log(`\u2705 Chat notification sent for load ${loadId}`);
+      return null;
+    } catch (error) {
+      console.error('\u274C Error in sendMessageNotification:', error);
+      return null;
+    }
+  });

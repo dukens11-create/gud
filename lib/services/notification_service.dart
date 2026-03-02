@@ -156,6 +156,16 @@ class NotificationService {
       enableVibration: true,
     );
 
+    // High priority channel for chat messages
+    const AndroidNotificationChannel chatMessagesChannel = AndroidNotificationChannel(
+      'chat_messages',
+      'Chat Messages',
+      description: 'Notifications for new load chat messages',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
     // Create channels
     await _localNotifications
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
@@ -177,6 +187,10 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(expirationAlertsChannel);
 
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(chatMessagesChannel);
+
     print('✅ Android notification channels created');
   }
 
@@ -196,6 +210,8 @@ class NotificationService {
       channelId = 'announcements';
     } else if (message.data['type'] == 'expiration_alert') {
       channelId = 'expiration_alerts';
+    } else if (message.data['type'] == 'chat_message') {
+      channelId = 'chat_messages';
     }
     
     // Display local notification with appropriate channel
@@ -301,6 +317,11 @@ class NotificationService {
     } else if (channelId == 'expiration_alerts') {
       channelName = 'Document Expiration Alerts';
       channelDescription = 'Notifications for expiring driver and truck documents';
+      importance = Importance.high;
+      priority = Priority.high;
+    } else if (channelId == 'chat_messages') {
+      channelName = 'Chat Messages';
+      channelDescription = 'Notifications for new load chat messages';
       importance = Importance.high;
       priority = Priority.high;
     }
