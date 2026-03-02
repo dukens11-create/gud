@@ -717,3 +717,106 @@ exports.sendLoadReassignmentEmail = functions.firestore
     return null;
   });
 
+// Helper function to generate ratecon email HTML
+function generateRateconEmailHtml(loadData, driverData) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #2563eb;">📄 Rate Confirmation Available</h2>
+      <p>Hi ${driverData.name || 'Driver'},</p>
+      <p>A rate confirmation (ratecon) has been uploaded for your load assignment. Please review it in the app.</p>
+      
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <p><strong>Load Number:</strong> ${loadData.loadNumber}</p>
+        <p><strong>Rate:</strong> $${(loadData.rate || 0).toFixed(2)}</p>
+        <p><strong>Pickup:</strong> ${loadData.pickupAddress}</p>
+        <p><strong>Delivery:</strong> ${loadData.deliveryAddress}</p>
+        ${loadData.rateconFileName ? `<p><strong>Document:</strong> ${loadData.rateconFileName}</p>` : ''}
+      </div>
+      
+      <p>Please open the GUD Express app to view the full rate confirmation document in your load details.</p>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 12px;">
+        This is an automated notification from GUD Express. Please do not reply to this email.
+      </p>
+    </div>
+  `;
+}
+
+// 11. Send notification when admin uploads ratecon for a load
+exports.sendRateconNotification = functions.firestore
+  .document('loads/{loadId}')
+  .onUpdate(async (change, context) => {
+    const newData = change.after.data();
+    const oldData = change.before.data();
+    const loadId = context.params.loadId;
+
+    // Only trigger when rateconUrl is newly set or changed
+    if (!newData.rateconUrl || newData.rateconUrl === oldData.rateconUrl) {
+      return null;
+    }
+
+    console.log(`📄 Ratecon uploaded for load ${loadId}, notifying driver...`);
+
+    const driverId = newData.driverId;
+    if (!driverId) {
+      console.warn('⚠️ No driver assigned to this load, skipping notification');
+      return null;
+    }
+
+    try {
+      // Send FCM push notification to driver
+      const userDoc = await admin.firestore().collection('users').doc(driverId).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        if (userData.fcmToken) {
+          await admin.messaging().send({
+            notification: {
+              title: '📄 Rate Confirmation Available',
+              body: `Ratecon for load ${newData.loadNumber} is ready to view`,
+            },
+            data: {
+              type: 'ratecon',
+              loadId: loadId,
+            },
+            token: userData.fcmToken,
+          });
+          console.log(`✅ FCM notification sent to driver ${driverId}`);
+        }
+      }
+
+      // Send email notification to driver
+      const driverDoc = await admin.firestore().collection('drivers').doc(driverId).get();
+      if (!driverDoc.exists) {
+        console.warn(`⚠️ Driver ${driverId} not found in drivers collection`);
+        return null;
+      }
+
+      const driverData = driverDoc.data();
+      const driverEmail = driverData.email;
+
+      if (!driverEmail) {
+        console.warn(`⚠️ Driver ${driverId} has no email address`);
+        return null;
+      }
+
+      const subject = `📄 Rate Confirmation for Load ${newData.loadNumber}`;
+      const htmlContent = generateRateconEmailHtml(newData, driverData);
+      const result = await sendEmail(driverEmail, subject, htmlContent);
+
+      if (result.success) {
+        console.log(`✅ Ratecon email sent to ${driverEmail} for load ${newData.loadNumber}`);
+      } else if (result.mode === 'test') {
+        console.log(`📧 Test mode: Ratecon email logged for ${driverEmail}`);
+      } else {
+        console.error(`❌ Failed to send ratecon email: ${result.error}`);
+      }
+
+      return result;
+    } catch (error) {
+      console.error('❌ Error in sendRateconNotification:', error);
+      return null;
+    }
+  });
+
+

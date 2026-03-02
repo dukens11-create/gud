@@ -408,5 +408,139 @@ void main() {
       expect(load.paymentStatus, null);
       expect(load.paymentId, null);
     });
+
+    test('constructor handles ratecon fields', () {
+      final rateconDate = DateTime(2024, 6, 15, 10, 30);
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'pending',
+        rateconUrl: 'https://storage.example.com/ratecon.pdf',
+        rateconFileName: 'ratecon_load001.pdf',
+        rateconUploadedAt: rateconDate,
+        rateconSentAt: rateconDate,
+        rateconSentStatus: 'sent',
+      );
+
+      expect(load.rateconUrl, 'https://storage.example.com/ratecon.pdf');
+      expect(load.rateconFileName, 'ratecon_load001.pdf');
+      expect(load.rateconUploadedAt, rateconDate);
+      expect(load.rateconSentAt, rateconDate);
+      expect(load.rateconSentStatus, 'sent');
+    });
+
+    test('ratecon fields default to null when not provided', () {
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'pending',
+      );
+
+      expect(load.rateconUrl, null);
+      expect(load.rateconFileName, null);
+      expect(load.rateconUploadedAt, null);
+      expect(load.rateconSentAt, null);
+      expect(load.rateconSentStatus, null);
+    });
+
+    test('toMap includes ratecon fields when present', () {
+      final rateconDate = DateTime(2024, 6, 15, 10, 30);
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'pending',
+        rateconUrl: 'https://storage.example.com/ratecon.pdf',
+        rateconFileName: 'ratecon_load001.pdf',
+        rateconUploadedAt: rateconDate,
+        rateconSentAt: rateconDate,
+        rateconSentStatus: 'sent',
+      );
+
+      final map = load.toMap();
+
+      expect(map['rateconUrl'], 'https://storage.example.com/ratecon.pdf');
+      expect(map['rateconFileName'], 'ratecon_load001.pdf');
+      expect(map['rateconUploadedAt'], rateconDate.toIso8601String());
+      expect(map['rateconSentAt'], rateconDate.toIso8601String());
+      expect(map['rateconSentStatus'], 'sent');
+    });
+
+    test('toMap omits ratecon fields when null', () {
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'pending',
+      );
+
+      final map = load.toMap();
+
+      expect(map.containsKey('rateconUrl'), false);
+      expect(map.containsKey('rateconFileName'), false);
+      expect(map.containsKey('rateconUploadedAt'), false);
+      expect(map.containsKey('rateconSentAt'), false);
+      expect(map.containsKey('rateconSentStatus'), false);
+    });
+
+    test('fromMap deserializes ratecon fields correctly', () {
+      final rateconDate = DateTime(2024, 6, 15, 10, 30);
+      final map = {
+        'loadNumber': 'LD-001',
+        'driverId': 'driver-1',
+        'pickupAddress': '123 Main St',
+        'deliveryAddress': '456 Oak Ave',
+        'rate': 1500.0,
+        'status': 'pending',
+        'createdAt': testDate.toIso8601String(),
+        'rateconUrl': 'https://storage.example.com/ratecon.pdf',
+        'rateconFileName': 'ratecon_load001.pdf',
+        'rateconUploadedAt': rateconDate.toIso8601String(),
+        'rateconSentAt': rateconDate.toIso8601String(),
+        'rateconSentStatus': 'sent',
+      };
+
+      final load = LoadModel.fromMap('test-id', map);
+
+      expect(load.rateconUrl, 'https://storage.example.com/ratecon.pdf');
+      expect(load.rateconFileName, 'ratecon_load001.pdf');
+      expect(load.rateconUploadedAt, rateconDate);
+      expect(load.rateconSentAt, rateconDate);
+      expect(load.rateconSentStatus, 'sent');
+    });
+
+    test('fromMap handles missing ratecon fields', () {
+      final map = {
+        'loadNumber': 'LD-001',
+        'driverId': 'driver-1',
+        'pickupAddress': '123 Main St',
+        'deliveryAddress': '456 Oak Ave',
+        'rate': 1500.0,
+        'status': 'pending',
+        'createdAt': testDate.toIso8601String(),
+      };
+
+      final load = LoadModel.fromMap('test-id', map);
+
+      expect(load.rateconUrl, null);
+      expect(load.rateconFileName, null);
+      expect(load.rateconUploadedAt, null);
+      expect(load.rateconSentAt, null);
+      expect(load.rateconSentStatus, null);
+    });
   });
 }

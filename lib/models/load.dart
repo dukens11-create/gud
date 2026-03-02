@@ -37,6 +37,11 @@ class LoadModel {
   final DateTime? acceptedAt;     // When driver accepted the load
   final String? paymentStatus;    // Payment status: 'unpaid', 'paid', 'partial'
   final String? paymentId;        // Reference to payment document
+  final String? rateconUrl;       // Rate confirmation file URL
+  final String? rateconFileName;  // Original filename of the rate confirmation
+  final DateTime? rateconUploadedAt; // When ratecon was uploaded by admin
+  final DateTime? rateconSentAt;  // When ratecon notification was sent to driver
+  final String? rateconSentStatus; // Delivery status: 'sent'
 
   LoadModel({
     required this.id,
@@ -62,6 +67,11 @@ class LoadModel {
     this.acceptedAt,
     this.paymentStatus,
     this.paymentId,
+    this.rateconUrl,
+    this.rateconFileName,
+    this.rateconUploadedAt,
+    this.rateconSentAt,
+    this.rateconSentStatus,
   }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
@@ -87,6 +97,11 @@ class LoadModel {
     if (acceptedAt != null) 'acceptedAt': acceptedAt!.toIso8601String(),
     if (paymentStatus != null) 'paymentStatus': paymentStatus,
     if (paymentId != null) 'paymentId': paymentId,
+    if (rateconUrl != null) 'rateconUrl': rateconUrl,
+    if (rateconFileName != null) 'rateconFileName': rateconFileName,
+    if (rateconUploadedAt != null) 'rateconUploadedAt': rateconUploadedAt!.toIso8601String(),
+    if (rateconSentAt != null) 'rateconSentAt': rateconSentAt!.toIso8601String(),
+    if (rateconSentStatus != null) 'rateconSentStatus': rateconSentStatus,
   };
 
   static LoadModel fromDoc(DocumentSnapshot doc) {
@@ -123,6 +138,11 @@ class LoadModel {
         acceptedAt: DateTimeUtils.parseDateTime(d['acceptedAt']),
         paymentStatus: d['paymentStatus'] as String?,
         paymentId: d['paymentId'] as String?,
+        rateconUrl: d['rateconUrl'] as String?,
+        rateconFileName: d['rateconFileName'] as String?,
+        rateconUploadedAt: DateTimeUtils.parseDateTime(d['rateconUploadedAt']),
+        rateconSentAt: DateTimeUtils.parseDateTime(d['rateconSentAt']),
+        rateconSentStatus: d['rateconSentStatus'] as String?,
       );
     } catch (e) {
       throw FormatException(

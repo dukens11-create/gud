@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../models/load.dart';
 import '../../services/mock_data_service.dart';
 import '../../services/firestore_service.dart';
@@ -381,6 +382,44 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
             ),
             const SizedBox(height: 24),
 
+            // Ratecon Section (Rate Confirmation)
+            if (load.rateconUrl != null)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Rate Confirmation (Ratecon)',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const Icon(Icons.check_circle, color: Colors.amber),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (load.rateconFileName != null)
+                        Text(
+                          'File: ${load.rateconFileName}',
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      if (load.rateconSentAt != null)
+                        Text(
+                          'Received: ${dateFormat.format(load.rateconSentAt!)}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      const SizedBox(height: 12),
+                      _buildRateconContent(context, load),
+                    ],
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 24),
+
             // Action Buttons (only for assigned driver and not delivered/declined)
             if (load.driverId == currentUserId && 
                 load.status != 'delivered' && 
@@ -680,6 +719,73 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  /// Build the ratecon content widget (image preview or document link)
+  Widget _buildRateconContent(BuildContext context, LoadModel load) {
+    final url = load.rateconUrl!;
+    final fileName = load.rateconFileName ?? '';
+    final isImage = fileName.toLowerCase().endsWith('.jpg') ||
+        fileName.toLowerCase().endsWith('.jpeg') ||
+        fileName.toLowerCase().endsWith('.png');
+
+    if (isImage) {
+      return Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              url,
+              height: 200,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Text(
+                'Unable to load image preview',
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton.icon(
+            onPressed: () => _viewFullPhoto(context, url),
+            icon: const Icon(Icons.fullscreen),
+            label: const Text('View Full Size'),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Icon(
+          Icons.insert_drive_file,
+          size: 40,
+          color: Colors.blue.shade700,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                fileName.isNotEmpty ? fileName : 'Rate Confirmation Document',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 4),
+              TextButton.icon(
+                onPressed: () async {
+                  await Share.shareUri(Uri.parse(url));
+                },
+                icon: const Icon(Icons.open_in_new, size: 16),
+                label: const Text('Open / Share Document'),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildDetailRow(String label, String value) {

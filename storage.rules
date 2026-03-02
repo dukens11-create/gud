@@ -21,6 +21,15 @@ service firebase.storage {
       allow delete: if isAuthenticated();
     }
     
+    // Rate confirmation (ratecon) files - uploaded by admins
+    // Path structure: /loads/{loadId}/ratecon/{fileName}
+    // Supports images and documents (PDF, DOCX) up to 20MB
+    match /loads/{loadId}/ratecon/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && request.resource.size < 20 * 1024 * 1024;
+      allow delete: if isAdmin();
+    }
+    
     // POD images - in loads/{loadId}/pods/{fileName} (legacy path)
     match /loads/{loadId}/pods/{fileName} {
       allow read: if isAuthenticated();
