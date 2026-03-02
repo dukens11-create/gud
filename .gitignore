@@ -48,6 +48,9 @@ app.*.map.json
 *.apk
 !gradle-wrapper.jar
 
+# iOS build outputs
+*.ipa
+
 # Android local configuration
 android/local.properties
 android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java

@@ -353,6 +353,139 @@ Key documentation:
 - Building IPA and deploying to App Store Connect
 - Using GitHub Actions for automated builds
 
+---
+
+## 📦 Building and Exporting the iOS IPA
+
+This section provides step-by-step instructions for building and exporting the iOS IPA file for testing or release.
+
+> ⚠️ **Never commit `.ipa` files to the repository.** IPA binaries are excluded via `.gitignore`. Only upload IPAs through TestFlight, App Store Connect, or CI/CD artifacts.
+
+### Prerequisites
+
+| Requirement | Details |
+|---|---|
+| **macOS** | macOS 12 (Monterey) or later |
+| **Xcode** | 14.0 or later ([Download from Mac App Store](https://apps.apple.com/us/app/xcode/id497799835)) |
+| **Xcode Command Line Tools** | `xcode-select --install` |
+| **CocoaPods** | `sudo gem install cocoapods` (or `brew install cocoapods`) |
+| **Flutter SDK** | 3.0.0 or later ([Install guide](https://docs.flutter.dev/get-started/install/macos)) |
+| **Apple Developer Account** | Paid membership ($99/year) required for distribution; free account sufficient for development/simulator |
+
+### 1. Environment Setup
+
+```bash
+# Verify all prerequisites are met
+./scripts/check_ios_setup.sh
+
+# Install Flutter dependencies
+flutter pub get
+
+# Install iOS CocoaPods dependencies
+cd ios && pod install && cd ..
+```
+
+### 2. Code Signing Setup
+
+Before building an IPA you must configure code signing. **Choose one option:**
+
+**Option A – Automatic signing (recommended for development):**
+1. Open the project workspace:
+   ```bash
+   cd ios && open Runner.xcworkspace
+   ```
+2. Select the **Runner** target → **Signing & Capabilities** tab.
+3. Check **Automatically manage signing** and select your **Team**.
+
+**Option B – Manual signing (required for App Store / Ad Hoc distribution):**
+1. Create an **iOS Distribution** certificate and an **App Store** (or **Ad Hoc**) provisioning profile in the [Apple Developer Portal](https://developer.apple.com/account/resources).
+2. Download and install both in Xcode or Keychain Access.
+3. In `ios/ExportOptions.plist`, set `teamID` and `provisioningProfiles` to match your certificate and profile.
+4. Refer to [IOS_BUILD_AND_DEPLOY_GUIDE.md](IOS_BUILD_AND_DEPLOY_GUIDE.md#certificate-and-provisioning-profile-setup) for the full certificate-export walkthrough.
+
+> See also: [iOS Code Signing Setup Guide](docs/ios_codesign_setup.md) for a detailed visual walkthrough.
+
+### 3. Generate the IPA
+
+#### For Testing / Ad Hoc distribution
+
+```bash
+# Build the app in release mode and export an IPA
+flutter build ipa --release \
+  --export-options-plist=ios/ExportOptions.plist
+
+# The IPA is written to:
+#   build/ios/ipa/gud_app.ipa
+```
+
+#### For App Store / TestFlight
+
+```bash
+# Same command – ExportOptions.plist controls the export method
+flutter build ipa --release \
+  --export-options-plist=ios/ExportOptions.plist
+
+# Upload to TestFlight via Fastlane (see §4 below)
+```
+
+#### For Simulator (no code signing required)
+
+```bash
+# Build and run on the iOS Simulator
+flutter run
+# or
+./scripts/build_ios_simulator.sh
+```
+
+### 4. Automation Scripts and Fastlane
+
+We provide helper scripts in `scripts/` and a Fastlane setup in `ios/fastlane/`:
+
+| Tool | Purpose | Usage |
+|---|---|---|
+| `scripts/check_ios_setup.sh` | Validate the build environment | `./scripts/check_ios_setup.sh` |
+| `scripts/build_ios_simulator.sh` | Build for the iOS Simulator (no signing) | `./scripts/build_ios_simulator.sh` |
+| `scripts/build_ios_device.sh` | Build for a physical device | `./scripts/build_ios_device.sh` |
+| `scripts/configure_team.sh` | Set the Apple Developer Team ID | `./scripts/configure_team.sh` |
+| Fastlane `upload_testflight` | Upload the IPA to TestFlight | `cd ios && bundle exec fastlane upload_testflight` |
+
+**Fastlane quick start:**
+
+```bash
+# Install Ruby bundler dependencies (first time only)
+cd ios && bundle install
+
+# Build IPA and upload to TestFlight in one step
+bundle exec fastlane upload_testflight
+```
+
+**GitHub Actions (CI/CD):** The workflow at `.github/workflows/build-ios.yml` automates the full build-and-upload pipeline. Trigger it manually from the **Actions** tab or by pushing a version tag (e.g., `git tag v2.2.0 && git push origin v2.2.0`). See [IOS_BUILD_QUICK_START.md](IOS_BUILD_QUICK_START.md) for the required GitHub Secrets.
+
+### 5. Locating the Exported IPA
+
+After a successful build the IPA is placed at:
+
+```
+build/ios/ipa/gud_app.ipa
+```
+
+Install it on a device via [Apple Configurator](https://apps.apple.com/app/apple-configurator-2/id1037126344), [Diawi](https://www.diawi.com/), or TestFlight.
+
+### 6. Troubleshooting
+
+| Problem | Quick Fix |
+|---|---|
+| `No signing certificate "iOS Distribution" found` | Verify certificate is installed; check `IOS_CERTIFICATE_BASE64` secret if using CI. |
+| `No provisioning profile found` | Bundle ID must be `com.gudexpress.gud_app`; ensure profile is "App Store" type. |
+| `Pod install fails` | Run `cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install`. |
+| `flutter build ipa` fails after `flutter clean` | Re-run `flutter pub get` then `cd ios && pod install`. |
+| `Build number already exists` in App Store Connect | Increment the build number in `pubspec.yaml` (e.g., `2.1.0+3`). |
+| Keychain locked / `User interaction not allowed` | Run `security unlock-keychain ~/Library/Keychains/login.keychain-db` before building. |
+
+For a complete troubleshooting reference see [IOS_BUILD_AND_DEPLOY_GUIDE.md#troubleshooting](IOS_BUILD_AND_DEPLOY_GUIDE.md#troubleshooting).
+
+---
+
 ### Android
 See [AAB_BUILD_GUIDE.md](AAB_BUILD_GUIDE.md) for Android deployment instructions.
 
