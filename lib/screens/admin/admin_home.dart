@@ -8,6 +8,7 @@ import '../../services/mock_data_service.dart';
 import '../../models/load.dart';
 import '../../models/driver_extended.dart';
 import '../login_screen.dart';
+import 'upload_ratecon_screen.dart';
 
 class AdminHome extends StatefulWidget {
   const AdminHome({super.key});
@@ -581,6 +582,7 @@ class _AdminHomeState extends State<AdminHome> {
                           child: Card(
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             child: ListTile(
+                              onTap: () => _showLoadActions(context, load),
                               title: Text(
                                 load.loadNumber.isNotEmpty ? load.loadNumber : 'Unknown Load',
                                 style: const TextStyle(fontWeight: FontWeight.bold),
@@ -657,6 +659,39 @@ class _AdminHomeState extends State<AdminHome> {
                                             ),
                                           ),
                                         ),
+                                      if (load.rateconUrl != null) ...[
+                                        if (load.bolPhotoUrl != null || load.podPhotoUrl != null)
+                                          const SizedBox(width: 6),
+                                        Tooltip(
+                                          message: 'Ratecon Uploaded',
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.amber.shade100,
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.receipt_long,
+                                                  size: 14,
+                                                  color: Colors.amber.shade800,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'RC',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: Colors.amber.shade800,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ],
@@ -749,6 +784,60 @@ class _AdminHomeState extends State<AdminHome> {
       return load.driverId;
     }
     return 'Unassigned';
+  }
+
+  void _showLoadActions(BuildContext context, LoadModel load) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Load ${load.loadNumber.isNotEmpty ? load.loadNumber : "Unknown"}',
+                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ),
+            const Divider(height: 0),
+            ListTile(
+              leading: Icon(
+                load.rateconUrl == null ? Icons.upload_file : Icons.refresh,
+                color: Colors.amber.shade700,
+              ),
+              title: Text(
+                load.rateconUrl == null
+                    ? 'Upload Rate Confirmation (Ratecon)'
+                    : 'Replace Rate Confirmation',
+              ),
+              subtitle: load.rateconUrl == null
+                  ? const Text('Send ratecon to driver')
+                  : Text(
+                      load.rateconSentStatus == 'sent'
+                          ? 'Currently sent to driver'
+                          : 'Not yet sent',
+                    ),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => UploadRateconScreen(load: load),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   Color _getStatusColor(String status) {

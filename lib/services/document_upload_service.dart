@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 
 /// Document Upload Service
 /// 
@@ -144,6 +145,66 @@ class DocumentUploadService {
     await _firestore.collection('loads').doc(loadId).update({
       'podPhotoUrl': photoUrl,
       'podUploadedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Pick a document file (PDF, DOCX, etc.) from device storage
+  /// 
+  /// Returns [PlatformFile] if selected, null if cancelled
+  Future<PlatformFile?> pickDocumentFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+    );
+    if (result == null || result.files.isEmpty) return null;
+    return result.files.first;
+  }
+
+  /// Upload rate confirmation (ratecon) file
+  /// 
+  /// Supports images and documents (PDF, DOCX)
+  /// 
+  /// Parameters:
+  /// - [loadId]: Associated load ID
+  /// - [file]: File to upload
+  /// - [fileName]: Original filename (used to determine extension)
+  /// - [onProgress]: Optional callback for upload progress (0.0 to 1.0)
+  /// 
+  /// Returns the public download URL
+  Future<String> uploadRatecon({
+    required String loadId,
+    required File file,
+    required String fileName,
+    Function(double)? onProgress,
+  }) async {
+    final extension = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : 'file';
+    return await _uploadPhoto(
+      photo: file,
+      storagePath: 'loads/$loadId/ratecon',
+      fileName: 'ratecon_${DateTime.now().millisecondsSinceEpoch}.$extension',
+      onProgress: onProgress,
+    );
+  }
+
+  /// Update load with ratecon file URL and mark as sent to driver
+  /// 
+  /// Parameters:
+  /// - [loadId]: Load document ID
+  /// - [fileUrl]: Download URL of uploaded ratecon file
+  /// - [fileName]: Original filename of the ratecon document
+  Future<void> updateLoadRatecon({
+    required String loadId,
+    required String fileUrl,
+    required String fileName,
+  }) async {
+    await _firestore.collection('loads').doc(loadId).update({
+      'rateconUrl': fileUrl,
+      'rateconFileName': fileName,
+      'rateconUploadedAt': FieldValue.serverTimestamp(),
+      'rateconSentAt': FieldValue.serverTimestamp(),
+      'rateconSentStatus': 'sent',
     });
   }
 
