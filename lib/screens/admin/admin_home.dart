@@ -10,6 +10,7 @@ import '../../models/driver_extended.dart';
 import '../login_screen.dart';
 import '../load_chat_screen.dart';
 import 'upload_ratecon_screen.dart';
+import 'admin_map_dashboard_screen.dart';
 
 class AdminHome extends StatefulWidget {
   const AdminHome({super.key});
@@ -1066,6 +1067,14 @@ class _AdminHomeState extends State<AdminHome> {
             leading: const Icon(Icons.dashboard),
             title: const Text('Dashboard'),
             onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.map),
+            title: const Text('Live Driver Map'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/admin/map');
+            },
           ),
           ListTile(
             leading: const Icon(Icons.people),
