@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/analytics_service.dart';
+import '../services/cache_recovery_service.dart';
 
 /// Notification Preferences Screen - Manage notification settings
 class NotificationPreferencesScreen extends StatefulWidget {
@@ -30,27 +31,71 @@ class _NotificationPreferencesScreenState
   }
 
   Future<void> _loadPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _loadUpdates = prefs.getBool('notif_load_updates') ?? true;
-      _deliveryAlerts = prefs.getBool('notif_delivery_alerts') ?? true;
-      _podReminders = prefs.getBool('notif_pod_reminders') ?? true;
-      _earningsUpdates = prefs.getBool('notif_earnings_updates') ?? true;
-      _systemNotifications = prefs.getBool('notif_system') ?? true;
-      _emailNotifications = prefs.getBool('notif_email') ?? true;
-      _smsNotifications = prefs.getBool('notif_sms') ?? false;
-      _isLoading = false;
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _loadUpdates = prefs.getBool('notif_load_updates') ?? true;
+        _deliveryAlerts = prefs.getBool('notif_delivery_alerts') ?? true;
+        _podReminders = prefs.getBool('notif_pod_reminders') ?? true;
+        _earningsUpdates = prefs.getBool('notif_earnings_updates') ?? true;
+        _systemNotifications = prefs.getBool('notif_system') ?? true;
+        _emailNotifications = prefs.getBool('notif_email') ?? true;
+        _smsNotifications = prefs.getBool('notif_sms') ?? false;
+        _isLoading = false;
+      });
+    } catch (e, stackTrace) {
+      // Cache read failed – recover and inform the user
+      await CacheRecoveryService.instance.recoverFromCacheError(
+        e,
+        stackTrace,
+        context: 'NotificationPreferencesScreen._loadPreferences',
+      );
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Notification preferences could not be loaded. '
+              'Cache was cleared and defaults have been restored.',
+            ),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _savePreference(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
-    
-    await AnalyticsService.instance.logEvent('notification_preference_changed', parameters: {
-      'preference': key,
-      'value': value.toString(),
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(key, value);
+
+      await AnalyticsService.instance.logEvent(
+        'notification_preference_changed',
+        parameters: {
+          'preference': key,
+          'value': value.toString(),
+        },
+      );
+    } catch (e, stackTrace) {
+      // Cache write failed – recover and inform the user
+      await CacheRecoveryService.instance.recoverFromCacheError(
+        e,
+        stackTrace,
+        context: 'NotificationPreferencesScreen._savePreference($key)',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not save preference. '
+              'Cache was cleared; please restart the app to continue.',
+            ),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    }
   }
 
   @override

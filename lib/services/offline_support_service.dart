@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+import 'cache_recovery_service.dart';
 
 /// Offline Support Service
 /// 
@@ -22,6 +23,10 @@ class OfflineSupportService {
   bool _isOfflineMode = false;
 
   /// Initialize the offline support service
+  ///
+  /// On cache corruption the service automatically clears all stored
+  /// preferences via [CacheRecoveryService] and continues with a clean
+  /// state rather than crashing.
   Future<void> initialize() async {
     if (_initialized) return;
 
@@ -33,9 +38,16 @@ class OfflineSupportService {
       
       _initialized = true;
       debugPrint('✅ Offline Support Service initialized');
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('⚠️ Error initializing Offline Support Service: $e');
-      rethrow;
+      // Attempt automatic cache recovery instead of crashing
+      await CacheRecoveryService.instance.recoverFromCacheError(
+        e,
+        stackTrace,
+        context: 'OfflineSupportService.initialize',
+      );
+      // Continue with a degraded (in-memory only) state
+      _initialized = true;
     }
   }
 

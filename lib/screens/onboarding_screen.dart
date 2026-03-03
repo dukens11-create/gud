@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/cache_recovery_service.dart';
 
 /// App Onboarding Screen
 /// 
@@ -123,9 +124,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
-    // Mark onboarding as complete
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_complete', true);
+    try {
+      // Mark onboarding as complete
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_complete', true);
+    } catch (e, stackTrace) {
+      // Non-critical – log and continue so the user is not stuck
+      await CacheRecoveryService.instance.recoverFromCacheError(
+        e,
+        stackTrace,
+        context: 'OnboardingScreen._completeOnboarding',
+      );
+    }
 
     if (!mounted) return;
 
@@ -295,14 +305,32 @@ class OnboardingPage {
 
 /// Helper function to check if onboarding should be shown
 Future<bool> shouldShowOnboarding() async {
-  final prefs = await SharedPreferences.getInstance();
-  return !(prefs.getBool('onboarding_complete') ?? false);
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    return !(prefs.getBool('onboarding_complete') ?? false);
+  } catch (e, stackTrace) {
+    await CacheRecoveryService.instance.recoverFromCacheError(
+      e,
+      stackTrace,
+      context: 'shouldShowOnboarding',
+    );
+    // Default to showing onboarding if we cannot read preferences
+    return true;
+  }
 }
 
 /// Helper function to reset onboarding (for testing)
 Future<void> resetOnboarding() async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.remove('onboarding_complete');
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('onboarding_complete');
+  } catch (e, stackTrace) {
+    await CacheRecoveryService.instance.recoverFromCacheError(
+      e,
+      stackTrace,
+      context: 'resetOnboarding',
+    );
+  }
 }
 
 // TODO: Add animated illustrations
