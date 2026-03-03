@@ -55,6 +55,12 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   // Selected driver id for the info card
   String? _selectedDriverId;
 
+  // True while waiting for the first Firestore snapshot
+  bool _isLoading = true;
+
+  // Non-null when the Firestore stream last emitted an error
+  String? _errorMessage;
+
   // Initial map centre (geographic centre of the contiguous USA)
   static const LatLng _initialCenter = LatLng(39.8283, -98.5795);
   static const double _initialZoom = 4.0;
@@ -85,18 +91,43 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   /// Subscribe to active driver documents in Firestore and rebuild on change.
   void _subscribeToDriverLocations() {
     _driversSubscription?.cancel();
+    // Clear stale data and reset selection immediately so the UI reflects
+    // that a fresh load is in progress.
+    setState(() {
+      _driverData.clear();
+      _selectedDriverId = null;
+      _isLoading = true;
+      _errorMessage = null;
+    });
     _driversSubscription = _firestore
         .collection('drivers')
         .where('status', whereIn: ['available', 'on_duty', 'in_transit'])
         .snapshots()
-        .listen((snapshot) {
-      setState(() {
-        _driverData.clear();
-        for (final doc in snapshot.docs) {
-          _driverData[doc.id] = doc.data();
-        }
-      });
-    });
+        .listen(
+      (snapshot) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = null;
+          _driverData.clear();
+          for (final doc in snapshot.docs) {
+            _driverData[doc.id] = doc.data();
+          }
+          // Dismiss the selected card if that driver is no longer in the list
+          if (_selectedDriverId != null &&
+              !_driverData.containsKey(_selectedDriverId)) {
+            _selectedDriverId = null;
+          }
+        });
+      },
+      onError: (Object error) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Could not load driver locations. '
+              'Check your connection and retry.';
+        });
+        debugPrint('⚠️ AdminMapDashboard stream error: $error');
+      },
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -337,6 +368,48 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
               ),
             ),
           ),
+          // Loading indicator while waiting for the first snapshot
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator()),
+          // Error banner shown when the Firestore stream emits an error
+          if (_errorMessage != null)
+            Positioned(
+              bottom: 16,
+              left: 16,
+              right: 16,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.red.shade700,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.white),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        tooltip: 'Retry',
+                        onPressed: _subscribeToDriverLocations,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        tooltip: 'Dismiss',
+                        onPressed: () =>
+                            setState(() => _errorMessage = null),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

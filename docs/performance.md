@@ -735,9 +735,82 @@ For performance issues:
 
 ---
 
+---
+
+## Cache Error Recovery
+
+### Overview
+
+The app uses `SharedPreferences` for local/offline storage. If this storage
+becomes corrupted (e.g. due to a filesystem error, insufficient storage, or an
+OS-level bug), the app must not crash. Instead it recovers automatically and
+informs the user.
+
+### Recovery Architecture
+
+All cache/SharedPreferences operations are wrapped in `try/catch` blocks. On
+failure the code delegates to `CacheRecoveryService` (see
+`lib/services/cache_recovery_service.dart`), which:
+
+1. **Logs the error to Crashlytics** via `CrashReportingService.logError()` so
+   it appears in the Firebase Crashlytics dashboard as a non-fatal error.
+2. **Clears all SharedPreferences** via `SharedPreferences.clear()` to remove
+   any corrupted data.
+3. **Sets `wasCacheCleared = true`** so calling widgets can display an
+   in-app message (SnackBar / banner) instead of crashing.
+
+### Affected Locations
+
+| File | Method | Behaviour on error |
+|------|--------|--------------------|
+| `lib/services/offline_support_service.dart` | `initialize()` | Clears cache, continues with in-memory state |
+| `lib/screens/notification_preferences_screen.dart` | `_loadPreferences()` | Clears cache, resets to defaults, shows SnackBar |
+| `lib/screens/notification_preferences_screen.dart` | `_savePreference()` | Clears cache, shows SnackBar |
+| `lib/screens/onboarding_screen.dart` | `_completeOnboarding()` | Clears cache, navigates forward (non-blocking) |
+| `lib/screens/onboarding_screen.dart` | `shouldShowOnboarding()` | Clears cache, defaults to showing onboarding |
+| `lib/screens/onboarding_screen.dart` | `resetOnboarding()` | Clears cache, swallows error |
+
+### In-App User Notification
+
+When a cache error is detected and cleared, the affected screen shows a
+`SnackBar` with a human-readable message so the user understands what happened
+without seeing a crash dialog. For example:
+
+```
+"Notification preferences could not be loaded. Cache was cleared and defaults
+have been restored."
+```
+
+### Crashlytics Reporting
+
+Errors are reported as **non-fatal** events so they appear in the
+*Non-fatal issues* section of the Firebase Crashlytics dashboard. Each report
+includes:
+- The original exception and stack trace.
+- A `reason` field: `"Cache/SharedPreferences corruption detected"`.
+- A custom key `cache_context` describing which method triggered the error.
+
+### Troubleshooting
+
+If users report that their notification preferences or onboarding state were
+reset unexpectedly, check the Crashlytics dashboard for
+`"Cache/SharedPreferences corruption detected"` events. Common causes:
+- Device storage is almost full.
+- App was force-killed during a write operation.
+- OS-level SharedPreferences file corruption.
+
+**Resolution steps for users:**
+1. Ensure the device has sufficient free storage (at least 100 MB).
+2. Restart the app – the cache was automatically cleared, so the app will
+   work normally with default settings.
+3. Re-configure notification preferences if they were reset.
+
+---
+
 ## Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.1 | 2024-03 | Added cache error recovery documentation |
 | 2.0 | 2024-02 | Added image caching, lazy loading optimizations |
 | 1.0 | 2024-01 | Initial performance guidelines |
