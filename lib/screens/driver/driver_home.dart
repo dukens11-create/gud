@@ -12,6 +12,7 @@ import '../../models/load.dart';
 import '../../models/driver_extended.dart';
 import '../../models/truck.dart';
 import 'load_detail_screen.dart';
+import '../load_chat_screen.dart';
 import '../login_screen.dart';
 
 class DriverHome extends StatefulWidget {
@@ -1085,44 +1086,91 @@ class _DriverHomeState extends State<DriverHome> {
                                     ),
                                   ],
                                 ),
-                                trailing: ExcludeSemantics(
-                                  child: Column(
+                                trailing: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _getStatusColor(load.status),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          load.status.isNotEmpty ? load.status : 'unknown',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
+                                      ExcludeSemantics(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _getStatusColor(load.status),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            load.status.isNotEmpty ? load.status : 'unknown',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      Tooltip(
-                                        message: load.driverUnreadCount > 0
-                                            ? '${load.driverUnreadCount} unread message${load.driverUnreadCount == 1 ? '' : 's'}'
-                                            : 'No unread messages',
-                                        child: Icon(
-                                          Icons.mail,
-                                          size: 18,
-                                          color: load.driverUnreadCount > 0
-                                              ? Colors.red
-                                              : Colors.green,
+                                      Semantics(
+                                        label: load.driverUnreadCount > 0
+                                            ? 'Chat with Admin, ${load.driverUnreadCount} unread message${load.driverUnreadCount == 1 ? '' : 's'}'
+                                            : 'Chat with Admin',
+                                        button: true,
+                                        excludeSemantics: true,
+                                        child: Tooltip(
+                                          message: load.driverUnreadCount > 0
+                                              ? '${load.driverUnreadCount} unread message${load.driverUnreadCount == 1 ? '' : 's'}'
+                                              : 'Chat with Admin',
+                                          child: GestureDetector(
+                                            behavior: HitTestBehavior.opaque,
+                                            onTap: () async {
+                                              await Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => LoadChatScreen(
+                                                    load: load,
+                                                    senderRole: 'driver',
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            child: Stack(
+                                              clipBehavior: Clip.none,
+                                              children: [
+                                                Icon(
+                                                  Icons.chat,
+                                                  size: 22,
+                                                  color: load.driverUnreadCount > 0
+                                                      ? Colors.red
+                                                      : Colors.green,
+                                                ),
+                                                if (load.driverUnreadCount > 0)
+                                                  Positioned(
+                                                    top: -4,
+                                                    right: -4,
+                                                    child: Container(
+                                                      padding: const EdgeInsets.all(2),
+                                                      decoration: const BoxDecoration(
+                                                        color: Colors.red,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      constraints: const BoxConstraints(
+                                                          minWidth: 14, minHeight: 14),
+                                                      child: Text(
+                                                        '${load.driverUnreadCount}',
+                                                        style: const TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 9),
+                                                        textAlign: TextAlign.center,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
                                 isThreeLine: true,
                               ),
                               // Action buttons based on load status

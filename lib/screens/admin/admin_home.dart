@@ -728,16 +728,63 @@ class _AdminHomeState extends State<AdminHome> {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  Tooltip(
-                                    message: load.adminUnreadCount > 0
-                                        ? '${load.adminUnreadCount} unread message${load.adminUnreadCount == 1 ? '' : 's'}'
-                                        : 'No unread messages',
-                                    child: Icon(
-                                      Icons.mail,
-                                      size: 18,
-                                      color: load.adminUnreadCount > 0
-                                          ? Colors.red
-                                          : Colors.green,
+                                  Semantics(
+                                    label: load.adminUnreadCount > 0
+                                        ? '${load.adminUnreadCount} unread message${load.adminUnreadCount == 1 ? '' : 's'} – tap to chat'
+                                        : 'Chat with Driver',
+                                    button: true,
+                                    excludeSemantics: true,
+                                    child: Tooltip(
+                                      message: load.adminUnreadCount > 0
+                                          ? '${load.adminUnreadCount} unread message${load.adminUnreadCount == 1 ? '' : 's'} – tap to chat'
+                                          : 'Chat with Driver',
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: () async {
+                                          await Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => LoadChatScreen(
+                                                load: load,
+                                                senderRole: 'admin',
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            Icon(
+                                              Icons.chat,
+                                              size: 22,
+                                              color: load.adminUnreadCount > 0
+                                                  ? Colors.red
+                                                  : Colors.green,
+                                            ),
+                                            if (load.adminUnreadCount > 0)
+                                              Positioned(
+                                                top: -4,
+                                                right: -4,
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(2),
+                                                  decoration: const BoxDecoration(
+                                                    color: Colors.red,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  constraints: const BoxConstraints(
+                                                      minWidth: 14, minHeight: 14),
+                                                  child: Text(
+                                                    '${load.adminUnreadCount}',
+                                                    style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 9),
+                                                    textAlign: TextAlign.center,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
