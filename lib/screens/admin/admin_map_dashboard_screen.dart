@@ -1,28 +1,43 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../../utils/datetime_utils.dart';
 
 /// Live Map Dashboard for Admin
-/// 
-/// Displays real-time driver locations on Google Maps:
-/// - Shows all active drivers with markers
-/// - Updates locations in real-time
+///
+/// Displays real-time driver locations using flutter_map (OpenStreetMap):
+/// - Shows all active drivers with colour-coded markers
+/// - Streams location updates from Firestore in real-time
 /// - Shows driver info cards on marker tap
-/// - Filters drivers by status
-/// - Tracks driver routes (optional)
-/// 
-/// Setup Requirements:
-/// 1. Enable Google Maps API in Google Cloud Console
-/// 2. Add API keys to Android/iOS configurations
-/// 3. Enable required Google Maps APIs (Maps SDK, Geocoding, etc.)
-/// 
-/// TODO: Add driver route history display
-/// TODO: Implement cluster markers for multiple drivers
-/// TODO: Add traffic layer toggle
-/// TODO: Implement driver search and filtering
-/// TODO: Add distance calculations and ETAs
+/// - No Google Maps API key or setup required
+///
+/// Dependencies:
+///   flutter_map: ^8.2.2  (pub.dev/packages/flutter_map)
+///   latlong2: ^0.9.1     (pub.dev/packages/latlong2)
+///   cloud_firestore: (already in project)
+///
+/// Firestore data shape expected on each driver document:
+/// ```
+/// {
+///   "name": "John Doe",
+///   "truckNumber": "T-42",
+///   "phone": "+1 555-0100",
+///   "status": "available" | "on_duty" | "in_transit" | ...,
+///   "lastLocation": {
+///     "lat": 39.8,
+///     "lng": -98.5,
+///     "accuracy": 10.0,          // optional, metres
+///     "timestamp": <Timestamp>   // optional
+///   }
+/// }
+/// ```
+///
+/// Navigation:
+///   Named route '/admin/map' defined in lib/routes.dart.
+///   Accessible from the Admin Home drawer under "Live Driver Map".
+///   Only reachable after admin login (routing enforced by LoginScreen).
 class AdminMapDashboardScreen extends StatefulWidget {
   const AdminMapDashboardScreen({super.key});
 
@@ -31,123 +46,162 @@ class AdminMapDashboardScreen extends StatefulWidget {
 }
 
 class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
-  // Map markers for drivers
-  final Map<String, Marker> _markers = {};
-  
-  // Driver data
-  final Map<String, Map<String, dynamic>> _driverData = {};
-  
-  // Selected driver
-  String? _selectedDriverId;
-  
-  // Map camera position
-  static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(39.8283, -98.5795), // Center of USA
-    zoom: 4,
-  );
 
-  // Stream subscriptions
-  final List<StreamSubscription> _subscriptions = [];
+  // Driver location data: driverId → {lat, lng, ...driverDoc}
+  final Map<String, Map<String, dynamic>> _driverData = {};
+
+  // Selected driver id for the info card
+  String? _selectedDriverId;
+
+  // Initial map centre (geographic centre of the contiguous USA)
+  static const LatLng _initialCenter = LatLng(39.8283, -98.5795);
+  static const double _initialZoom = 4.0;
+
+  // Package name used as the OSM tile layer user-agent identifier
+  static const String _tileUserAgent = 'com.gudexpress.app';
+
+  // Active Firestore subscription
+  StreamSubscription<QuerySnapshot>? _driversSubscription;
 
   @override
   void initState() {
     super.initState();
-    _loadDriverLocations();
+    _subscribeToDriverLocations();
   }
 
   @override
   void dispose() {
-    _mapController?.dispose();
-    for (final subscription in _subscriptions) {
-      subscription.cancel();
-    }
+    _driversSubscription?.cancel();
+    _mapController.dispose();
     super.dispose();
   }
 
-  /// Load and stream driver locations
-  void _loadDriverLocations() {
-    // Stream all active drivers
-    final driversStream = _firestore
+  // ---------------------------------------------------------------------------
+  // Data
+  // ---------------------------------------------------------------------------
+
+  /// Subscribe to active driver documents in Firestore and rebuild on change.
+  void _subscribeToDriverLocations() {
+    _driversSubscription?.cancel();
+    _driversSubscription = _firestore
         .collection('drivers')
         .where('status', whereIn: ['available', 'on_duty', 'in_transit'])
-        .snapshots();
-
-    final subscription = driversStream.listen((snapshot) {
+        .snapshots()
+        .listen((snapshot) {
       setState(() {
-        _markers.clear();
         _driverData.clear();
-
         for (final doc in snapshot.docs) {
-          final data = doc.data();
-          final driverId = doc.id;
-          
-          // Store driver data
-          _driverData[driverId] = data;
-
-          // Create marker if driver has location
-          final lastLocation = data['lastLocation'];
-          if (lastLocation != null && 
-              lastLocation['lat'] != null && 
-              lastLocation['lng'] != null) {
-            
-            final marker = Marker(
-              markerId: MarkerId(driverId),
-              position: LatLng(
-                lastLocation['lat'].toDouble(),
-                lastLocation['lng'].toDouble(),
-              ),
-              infoWindow: InfoWindow(
-                title: data['name'] ?? 'Unknown Driver',
-                snippet: 'Truck: ${data['truckNumber'] ?? 'N/A'}',
-              ),
-              icon: BitmapDescriptor.defaultMarkerWithHue(
-                _getMarkerColor(data['status']),
-              ),
-              onTap: () => _onMarkerTapped(driverId),
-            );
-
-            _markers[driverId] = marker;
-          }
+          _driverData[doc.id] = doc.data();
         }
       });
-
-      // Center map on first driver if available
-      if (_markers.isNotEmpty && _mapController != null) {
-        final firstMarker = _markers.values.first;
-        _mapController!.animateCamera(
-          CameraUpdate.newLatLngZoom(firstMarker.position, 10),
-        );
-      }
     });
-
-    _subscriptions.add(subscription);
   }
 
-  /// Get marker color based on driver status
-  double _getMarkerColor(String? status) {
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  /// Returns the [LatLng] for a driver, or null if no location data exists.
+  LatLng? _latLngForDriver(Map<String, dynamic> data) {
+    final loc = data['lastLocation'];
+    if (loc == null) return null;
+    final lat = loc['lat'];
+    final lng = loc['lng'];
+    if (lat == null || lng == null) return null;
+    return LatLng((lat as num).toDouble(), (lng as num).toDouble());
+  }
+
+  /// Returns the icon colour for a driver's status.
+  Color _markerColor(String? status) {
     switch (status) {
       case 'available':
-        return BitmapDescriptor.hueGreen;
+        return Colors.green;
       case 'on_duty':
-        return BitmapDescriptor.hueBlue;
+        return Colors.blue;
       case 'in_transit':
-        return BitmapDescriptor.hueOrange;
+        return Colors.orange;
       default:
-        return BitmapDescriptor.hueRed;
+        return Colors.red;
     }
   }
 
-  /// Handle marker tap
-  void _onMarkerTapped(String driverId) {
-    setState(() {
-      _selectedDriverId = driverId;
-    });
+  String _formatStatus(String? status) {
+    if (status == null) return 'Unknown';
+    return status.split('_').map((w) => w.isNotEmpty ? w[0].toUpperCase() + w.substring(1) : '').join(' ').trim();
   }
 
-  /// Build driver info card
+  Color _getStatusColor(String? status) => _markerColor(status);
+
+  String _formatTime(DateTime dateTime) {
+    final diff = DateTime.now().difference(dateTime);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Map marker list
+  // ---------------------------------------------------------------------------
+
+  List<Marker> _buildMarkers() {
+    final markers = <Marker>[];
+    for (final entry in _driverData.entries) {
+      final driverId = entry.key;
+      final data = entry.value;
+      final point = _latLngForDriver(data);
+      if (point == null) continue;
+
+      final color = _markerColor(data['status'] as String?);
+      markers.add(
+        Marker(
+          point: point,
+          width: 40,
+          height: 40,
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedDriverId = driverId),
+            child: Icon(Icons.location_pin, color: color, size: 40),
+          ),
+        ),
+      );
+    }
+    return markers;
+  }
+
+  // ---------------------------------------------------------------------------
+  // UI helpers
+  // ---------------------------------------------------------------------------
+
+  void _centerOnDriver(String driverId) {
+    final data = _driverData[driverId];
+    if (data == null) return;
+    final point = _latLngForDriver(data);
+    if (point != null) {
+      _mapController.move(point, 15.0);
+    }
+  }
+
+  Widget _buildInfoRow(IconData icon, String text, {Color? statusColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: statusColor ?? Colors.grey),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: TextStyle(color: statusColor)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Driver info card (shown when a marker is tapped)
+  // ---------------------------------------------------------------------------
+
   Widget _buildDriverInfoCard() {
     if (_selectedDriverId == null || !_driverData.containsKey(_selectedDriverId)) {
       return const SizedBox.shrink();
@@ -155,13 +209,13 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
 
     final driver = _driverData[_selectedDriverId]!;
     final lastLocation = driver['lastLocation'];
-    
+
     DateTime? lastUpdate;
     if (lastLocation?['timestamp'] != null) {
       try {
         lastUpdate = DateTimeUtils.parseDateTime(lastLocation['timestamp']);
-      } catch (e) {
-        // Handle parse error
+      } catch (_) {
+        // Ignore parse errors
       }
     }
 
@@ -181,39 +235,29 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    driver['name'] ?? 'Unknown Driver',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    driver['name'] as String? ?? 'Unknown Driver',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () {
-                      setState(() {
-                        _selectedDriverId = null;
-                      });
-                    },
+                    onPressed: () => setState(() => _selectedDriverId = null),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               _buildInfoRow(Icons.local_shipping, 'Truck: ${driver['truckNumber'] ?? 'N/A'}'),
-              _buildInfoRow(Icons.phone, driver['phone'] ?? 'N/A'),
+              _buildInfoRow(Icons.phone, driver['phone'] as String? ?? 'N/A'),
               _buildInfoRow(
                 Icons.circle,
-                'Status: ${_formatStatus(driver['status'])}',
-                statusColor: _getStatusColor(driver['status']),
+                'Status: ${_formatStatus(driver['status'] as String?)}',
+                statusColor: _getStatusColor(driver['status'] as String?),
               ),
               if (lastUpdate != null)
-                _buildInfoRow(
-                  Icons.access_time,
-                  'Last update: ${_formatTime(lastUpdate)}',
-                ),
+                _buildInfoRow(Icons.access_time, 'Last update: ${_formatTime(lastUpdate)}'),
               if (lastLocation?['accuracy'] != null)
                 _buildInfoRow(
                   Icons.my_location,
-                  'Accuracy: ${lastLocation['accuracy'].toStringAsFixed(0)}m',
+                  'Accuracy: ${(lastLocation['accuracy'] as num).toStringAsFixed(0)}m',
                 ),
               const SizedBox(height: 12),
               Row(
@@ -225,14 +269,6 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
                       label: const Text('Center'),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _viewDriverDetails(_selectedDriverId!),
-                      icon: const Icon(Icons.info),
-                      label: const Text('Details'),
-                    ),
-                  ),
                 ],
               ),
             ],
@@ -242,107 +278,42 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text, {Color? statusColor}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: statusColor ?? Colors.grey),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: statusColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatStatus(String? status) {
-    if (status == null) return 'Unknown';
-    return status.split('_').map((word) {
-      return word[0].toUpperCase() + word.substring(1);
-    }).join(' ');
-  }
-
-  Color _getStatusColor(String? status) {
-    switch (status) {
-      case 'available':
-        return Colors.green;
-      case 'on_duty':
-        return Colors.blue;
-      case 'in_transit':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${difference.inDays}d ago';
-    }
-  }
-
-  void _centerOnDriver(String driverId) {
-    final marker = _markers[driverId];
-    if (marker != null && _mapController != null) {
-      _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(marker.position, 15),
-      );
-    }
-  }
-
-  void _viewDriverDetails(String driverId) {
-    // TODO: Navigate to driver details screen
-    print('View details for driver: $driverId');
-  }
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
+    final markerCount = _driverData.values
+        .where((d) => _latLngForDriver(d) != null)
+        .length;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Live Driver Map'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadDriverLocations,
+            onPressed: _subscribeToDriverLocations,
             tooltip: 'Refresh',
-          ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Show filter dialog
-            },
-            tooltip: 'Filter',
           ),
         ],
       ),
       body: Stack(
         children: [
-          GoogleMap(
-            initialCameraPosition: _initialPosition,
-            markers: Set<Marker>.of(_markers.values),
-            onMapCreated: (controller) {
-              _mapController = controller;
-            },
-            myLocationEnabled: false,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: true,
-            mapToolbarEnabled: false,
+          FlutterMap(
+            mapController: _mapController,
+            options: const MapOptions(
+              initialCenter: _initialCenter,
+              initialZoom: _initialZoom,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: _tileUserAgent,
+              ),
+              MarkerLayer(markers: _buildMarkers()),
+            ],
           ),
           _buildDriverInfoCard(),
           Positioned(
@@ -354,16 +325,13 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
                 child: Column(
                   children: [
                     Text(
-                      '${_markers.length}',
+                      '$markerCount',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Text(
-                      'Active Drivers',
-                      style: TextStyle(fontSize: 12),
-                    ),
+                    const Text('Active Drivers', style: TextStyle(fontSize: 12)),
                   ],
                 ),
               ),
@@ -374,40 +342,3 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
     );
   }
 }
-
-// TODO: Add map controls
-// - Toggle traffic layer
-// - Toggle satellite view
-// - Show/hide driver names
-// - Filter by status
-// - Search drivers
-
-// TODO: Implement driver route history
-// Show breadcrumb trail of recent locations
-// Display route polylines
-// Show stops and waypoints
-
-// TODO: Add clustering for many drivers
-// Use marker clustering when zoomed out
-// Show driver count in cluster
-// Expand cluster on zoom
-
-// TODO: Implement geofence visualization
-// Show pickup/delivery zone circles
-// Highlight active geofences
-// Display geofence events
-
-// TODO: Add distance and ETA calculations
-// Calculate distance from driver to destination
-// Show estimated time of arrival
-// Display route optimization suggestions
-
-// TODO: Implement heat map layer
-// Show driver density
-// Highlight busy areas
-// Visualize coverage gaps
-
-// TODO: Add real-time notifications
-// Alert when driver enters/exits zones
-// Notify on location updates
-// Show connection status
