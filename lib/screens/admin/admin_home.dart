@@ -727,6 +727,19 @@ class _AdminHomeState extends State<AdminHome> {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(height: 4),
+                                  Tooltip(
+                                    message: load.adminUnreadCount > 0
+                                        ? '${load.adminUnreadCount} unread message${load.adminUnreadCount == 1 ? '' : 's'}'
+                                        : 'No unread messages',
+                                    child: Icon(
+                                      Icons.mail,
+                                      size: 18,
+                                      color: load.adminUnreadCount > 0
+                                          ? Colors.red
+                                          : Colors.green,
+                                    ),
+                                  ),
                                 ],
                               ),
                               isThreeLine: true,

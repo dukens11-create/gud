@@ -356,6 +356,24 @@ class NotificationService {
     );
   }
 
+  /// Show a chat message notification with sound.
+  ///
+  /// Call this when a new message arrives in a load chat while the app is
+  /// running in the foreground so that the notification sound still plays.
+  Future<void> showChatMessageNotification({
+    required String title,
+    required String body,
+    required String loadId,
+  }) async {
+    if (!_initialized) return;
+    await _showLocalNotification(
+      title: title,
+      body: body,
+      payload: 'chat_message:$loadId',
+      channelId: 'chat_messages',
+    );
+  }
+
   /// Subscribe user to topic for targeted notifications
   Future<void> subscribeToTopic(String topic) async {
     await _fcm.subscribeToTopic(topic);

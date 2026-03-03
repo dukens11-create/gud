@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/load.dart';
 import '../models/message.dart';
 import '../services/message_service.dart';
+import '../services/notification_service.dart';
 
 /// Real-time chat screen for a specific load.
 ///
@@ -26,13 +27,25 @@ class LoadChatScreen extends StatefulWidget {
 
 class _LoadChatScreenState extends State<LoadChatScreen> {
   final _messageService = MessageService();
+  final _notificationService = NotificationService();
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   bool _isSending = false;
   int _previousMessageCount = 0;
+  bool _hasReceivedFirstSnapshot = false;
 
   String get _currentUserId =>
       FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Clear unread counter for current user's role when chat is opened.
+    _messageService.resetUnreadCount(
+      loadId: widget.load.id,
+      role: widget.senderRole,
+    );
+  }
 
   @override
   void dispose() {
@@ -80,6 +93,49 @@ class _LoadChatScreenState extends State<LoadChatScreen> {
     });
   }
 
+  /// Called every time the message stream emits a new list.
+  ///
+  /// Plays a notification sound when a message from the other party arrives
+  /// and resets the unread counter so the badge on the calling screen clears.
+  void _onMessagesUpdated(List<MessageModel> messages) {
+    final previousCount = _previousMessageCount;
+    final isNewMessage =
+        _hasReceivedFirstSnapshot && messages.length > previousCount;
+
+    _previousMessageCount = messages.length;
+    _hasReceivedFirstSnapshot = true;
+
+    if (isNewMessage) {
+      // New messages arrived – check if any are from the other party.
+      final incoming = messages.sublist(previousCount);
+      final hasIncoming = incoming.any((m) => m.senderId != _currentUserId);
+      if (hasIncoming) {
+        final load = widget.load;
+        final senderLabel =
+            widget.senderRole == 'admin' ? 'Driver' : 'Admin';
+        _notificationService.showChatMessageNotification(
+          title: 'New message - ${load.loadNumber.isNotEmpty ? load.loadNumber : "Load"}',
+          body: '$senderLabel sent you a message',
+          loadId: load.id,
+        );
+        // Reset counter again in case messages came in while screen is open.
+        _messageService.resetUnreadCount(
+          loadId: load.id,
+          role: widget.senderRole,
+        );
+      }
+    }
+
+    // Scroll to the latest message.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(
+          _scrollController.position.maxScrollExtent,
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final load = widget.load;
@@ -116,6 +172,16 @@ class _LoadChatScreenState extends State<LoadChatScreen> {
 
                 final messages = snapshot.data ?? [];
 
+                // Always track the snapshot count so that the first message
+                // to arrive (even into a previously empty chat) triggers sound.
+                if (!_hasReceivedFirstSnapshot ||
+                    messages.length != _previousMessageCount) {
+                  // Defer side-effects (sound, reset) to after the build phase.
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => _onMessagesUpdated(messages),
+                  );
+                }
+
                 if (messages.isEmpty) {
                   return const Center(
                     child: Text(
@@ -124,18 +190,6 @@ class _LoadChatScreenState extends State<LoadChatScreen> {
                       style: TextStyle(color: Colors.grey),
                     ),
                   );
-                }
-
-                // Scroll to bottom only when new messages arrive.
-                if (messages.length != _previousMessageCount) {
-                  _previousMessageCount = messages.length;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (_scrollController.hasClients) {
-                      _scrollController.jumpTo(
-                        _scrollController.position.maxScrollExtent,
-                      );
-                    }
-                  });
                 }
 
                 return ListView.builder(

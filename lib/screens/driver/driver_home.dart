@@ -1086,23 +1086,41 @@ class _DriverHomeState extends State<DriverHome> {
                                   ],
                                 ),
                                 trailing: ExcludeSemantics(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getStatusColor(load.status),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      load.status.isNotEmpty ? load.status : 'unknown',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _getStatusColor(load.status),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          load.status.isNotEmpty ? load.status : 'unknown',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(height: 4),
+                                      Tooltip(
+                                        message: load.driverUnreadCount > 0
+                                            ? '${load.driverUnreadCount} unread message${load.driverUnreadCount == 1 ? '' : 's'}'
+                                            : 'No unread messages',
+                                        child: Icon(
+                                          Icons.mail,
+                                          size: 18,
+                                          color: load.driverUnreadCount > 0
+                                              ? Colors.red
+                                              : Colors.green,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 isThreeLine: true,

@@ -542,5 +542,90 @@ void main() {
       expect(load.rateconSentAt, null);
       expect(load.rateconSentStatus, null);
     });
+
+    test('adminUnreadCount and driverUnreadCount default to 0', () {
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'pending',
+      );
+
+      expect(load.adminUnreadCount, 0);
+      expect(load.driverUnreadCount, 0);
+    });
+
+    test('adminUnreadCount and driverUnreadCount can be set', () {
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'pending',
+        adminUnreadCount: 3,
+        driverUnreadCount: 5,
+      );
+
+      expect(load.adminUnreadCount, 3);
+      expect(load.driverUnreadCount, 5);
+    });
+
+    test('toMap always includes unread count fields', () {
+      final load = LoadModel(
+        id: 'test-id',
+        loadNumber: 'LD-001',
+        driverId: 'driver-1',
+        pickupAddress: '123 Main St',
+        deliveryAddress: '456 Oak Ave',
+        rate: 1500.0,
+        status: 'pending',
+        adminUnreadCount: 2,
+        driverUnreadCount: 4,
+      );
+
+      final map = load.toMap();
+
+      expect(map['adminUnreadCount'], 2);
+      expect(map['driverUnreadCount'], 4);
+    });
+
+    test('fromMap deserializes unread count fields', () {
+      final map = {
+        'loadNumber': 'LD-001',
+        'driverId': 'driver-1',
+        'pickupAddress': '123 Main St',
+        'deliveryAddress': '456 Oak Ave',
+        'rate': 1500.0,
+        'status': 'pending',
+        'adminUnreadCount': 7,
+        'driverUnreadCount': 2,
+      };
+
+      final load = LoadModel.fromMap('test-id', map);
+
+      expect(load.adminUnreadCount, 7);
+      expect(load.driverUnreadCount, 2);
+    });
+
+    test('fromMap defaults unread counts to 0 when missing', () {
+      final map = {
+        'loadNumber': 'LD-001',
+        'driverId': 'driver-1',
+        'pickupAddress': '123 Main St',
+        'deliveryAddress': '456 Oak Ave',
+        'rate': 1500.0,
+        'status': 'pending',
+      };
+
+      final load = LoadModel.fromMap('test-id', map);
+
+      expect(load.adminUnreadCount, 0);
+      expect(load.driverUnreadCount, 0);
+    });
   });
 }
