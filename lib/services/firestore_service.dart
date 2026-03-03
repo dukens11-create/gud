@@ -241,21 +241,25 @@ class FirestoreService {
   }
 
   /// Update driver's last known location
+  ///
+  /// [loadId] is optional — when provided it tags the location to the active load.
   Future<void> updateDriverLocation({
     required String driverId,
     required double latitude,
     required double longitude,
-    required DateTime timestamp,
     double? accuracy,
+    String? loadId,
   }) async {
     _requireAuth();
     await _db.collection('drivers').doc(driverId).update({
       'lastLocation': {
         'lat': latitude,
         'lng': longitude,
-        'timestamp': timestamp.toIso8601String(),
+        'timestamp': FieldValue.serverTimestamp(),
         if (accuracy != null) 'accuracy': accuracy,
+        if (loadId != null) 'loadId': loadId,
       },
+      'lastLocationUpdate': FieldValue.serverTimestamp(),
     });
   }
 

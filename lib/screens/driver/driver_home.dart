@@ -33,21 +33,37 @@ class _DriverHomeState extends State<DriverHome> {
   String _searchQuery = '';
   String _statusFilter = 'all';
   Timer? _debounce;
+  Timer? _locationTimer;
   bool _isSendingLocation = false;
   bool _isLoading = false;
+  String? _activeLoadId;
+
+  static const Duration _locationUpdateInterval = Duration(minutes: 5);
 
   @override
   void initState() {
     super.initState();
     // Log screen view
     AnalyticsService.instance.logScreenView(screenName: 'driver_home');
+    // Start automatic 5-minute location tracking
+    _startLocationTracking();
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _locationTimer?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _startLocationTracking() {
+    _locationTimer?.cancel();
+    // Send an initial location update immediately, then repeat every 5 minutes
+    _sendLocation(silent: true);
+    _locationTimer = Timer.periodic(_locationUpdateInterval, (_) {
+      _sendLocation(silent: true);
+    });
   }
 
   void _onSearchChanged(String query) {
@@ -181,17 +197,24 @@ class _DriverHomeState extends State<DriverHome> {
     });
   }
 
-  Future<void> _sendLocation() async {
-    setState(() {
-      _isSendingLocation = true;
-    });
+  /// Send current GPS location to Firestore.
+  ///
+  /// When [silent] is true (used by the automatic 5-minute timer) the method
+  /// skips UI state changes and SnackBar messages so the user is not
+  /// interrupted during background tracking.
+  Future<void> _sendLocation({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _isSendingLocation = true;
+      });
+    }
 
     try {
       // Get current location
       final position = await _locationService.getCurrentLocation();
 
       if (position == null) {
-        if (mounted) {
+        if (!silent && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Unable to get location. Please enable location services and grant permission.'),
@@ -202,22 +225,23 @@ class _DriverHomeState extends State<DriverHome> {
         return;
       }
 
-      // Update driver location in Firestore
+      // Update driver location in Firestore, tagged to the active load when available
       await _firestoreService.updateDriverLocation(
         driverId: widget.driverId,
         latitude: position.latitude,
         longitude: position.longitude,
-        timestamp: position.timestamp ?? DateTime.now(),
         accuracy: position.accuracy,
+        loadId: _activeLoadId,
       );
 
       // Log location update
       await AnalyticsService.instance.logEvent('location_updated', parameters: {
         'driver_id': widget.driverId,
         'accuracy': position.accuracy,
+        if (_activeLoadId != null) 'load_id': _activeLoadId!,
       });
 
-      if (mounted) {
+      if (!silent && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Location sent successfully!'),
@@ -226,7 +250,7 @@ class _DriverHomeState extends State<DriverHome> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (!silent && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error sending location: $e'),
@@ -235,7 +259,7 @@ class _DriverHomeState extends State<DriverHome> {
         );
       }
     } finally {
-      if (mounted) {
+      if (!silent && mounted) {
         setState(() {
           _isSendingLocation = false;
         });
@@ -910,6 +934,15 @@ class _DriverHomeState extends State<DriverHome> {
                 }
 
                 final loads = snapshot.data ?? [];
+
+                // Track the active in_transit load for location tagging
+                final inTransitLoads = loads.where((l) => l.status == 'in_transit');
+                final activeLoadId = inTransitLoads.isEmpty ? null : inTransitLoads.first.id;
+                if (activeLoadId != _activeLoadId) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() => _activeLoadId = activeLoadId);
+                  });
+                }
 
                 if (loads.isEmpty) {
                   // Show different messages based on filters with helpful debug info

@@ -15,6 +15,7 @@ import 'screens/admin/maintenance_tracking_screen.dart';
 import 'screens/admin/expiration_alerts_screen.dart';
 import 'screens/admin/manage_trucks_screen.dart';
 import 'screens/admin/ifta_report_screen.dart';
+import 'screens/admin/admin_map_dashboard_screen.dart';
 
 import 'screens/driver/driver_home.dart';
 import 'screens/driver/earnings_screen.dart';
@@ -55,6 +56,7 @@ final Map<String, WidgetBuilder> routes = {
   '/admin/maintenance': (_) => const MaintenanceTrackingScreen(),
   '/admin/expiration-alerts': (_) => const ExpirationAlertsScreen(),
   '/admin/ifta': (_) => const IftaReportScreen(),
+  '/admin/map': (_) => const AdminMapDashboardScreen(),
   '/driver/earnings': (_) => const EarningsScreen(),
   '/driver/expenses': (_) => const DriverExpensesScreen(),
   '/driver/add-expense': (_) => const AddDriverExpenseScreen(),
