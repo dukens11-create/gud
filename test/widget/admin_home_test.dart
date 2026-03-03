@@ -9,6 +9,7 @@ void main() {
       return MaterialApp(
         home: child,
         routes: {
+          '/admin/map': (context) => const Scaffold(body: Text('Live Driver Map Screen')),
           '/admin/statistics': (context) => const Scaffold(body: Text('Statistics Screen')),
           '/admin/expenses': (context) => const Scaffold(body: Text('Expenses Screen')),
           '/admin/drivers': (context) => const Scaffold(body: Text('Manage Drivers Screen')),

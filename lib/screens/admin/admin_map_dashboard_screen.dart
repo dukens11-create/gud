@@ -69,6 +69,12 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
 
   /// Load and stream driver locations
   void _loadDriverLocations() {
+    // Cancel any existing subscriptions before creating new ones
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
+    _subscriptions.clear();
+
     // Stream all active drivers
     final driversStream = _firestore
         .collection('drivers')
@@ -307,8 +313,7 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   }
 
   void _viewDriverDetails(String driverId) {
-    // TODO: Navigate to driver details screen
-    print('View details for driver: $driverId');
+    Navigator.pushNamed(context, '/admin/drivers', arguments: driverId);
   }
 
   @override
