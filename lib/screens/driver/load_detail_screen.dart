@@ -60,6 +60,59 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(load.loadNumber.isNotEmpty ? load.loadNumber : 'Load Details'),
+        actions: [
+          Semantics(
+            label: load.driverUnreadCount > 0
+                ? 'Chat with Admin, ${load.driverUnreadCount} unread message${load.driverUnreadCount == 1 ? '' : 's'}'
+                : 'Chat with Admin',
+            button: true,
+            excludeSemantics: true,
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chat),
+                  tooltip: load.driverUnreadCount > 0
+                      ? 'Chat with Admin (${load.driverUnreadCount} new)'
+                      : 'Chat with Admin',
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LoadChatScreen(
+                          load: load,
+                          senderRole: 'driver',
+                        ),
+                      ),
+                    );
+                    _refreshLoadData();
+                  },
+                ),
+                if (load.driverUnreadCount > 0)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints:
+                          const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        '${load.driverUnreadCount}',
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 10),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -560,57 +613,7 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
                   ],
                 ],
               ),
-            const SizedBox(height: 16),
 
-            // Chat button — available for all load statuses
-            Semantics(
-              label: load.driverUnreadCount > 0
-                  ? 'Chat with Admin, ${load.driverUnreadCount} unread message${load.driverUnreadCount == 1 ? '' : 's'}'
-                  : 'Chat with Admin',
-              button: true,
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => LoadChatScreen(
-                          load: load,
-                          senderRole: 'driver',
-                        ),
-                      ),
-                    );
-                    // Refresh load data so the unread badge updates after chat.
-                    _refreshLoadData();
-                  },
-                  icon: ExcludeSemantics(
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        const Icon(Icons.chat),
-                        Positioned(
-                          top: -4,
-                          right: -4,
-                          child: Icon(
-                            Icons.mail,
-                            size: 12,
-                            color: load.driverUnreadCount > 0
-                                ? Colors.red
-                                : Colors.green,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  label: load.driverUnreadCount > 0
-                      ? Text(
-                          'Chat with Admin (${load.driverUnreadCount} new)',
-                        )
-                      : const Text('Chat with Admin'),
-                ),
-              ),
-            ),
           ],
         ),
       ),
