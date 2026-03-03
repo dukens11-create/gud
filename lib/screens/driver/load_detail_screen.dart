@@ -563,20 +563,52 @@ class _LoadDetailScreenState extends State<LoadDetailScreen> {
             const SizedBox(height: 16),
 
             // Chat button — available for all load statuses
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LoadChatScreen(
-                      load: load,
-                      senderRole: 'driver',
+            Semantics(
+              label: load.driverUnreadCount > 0
+                  ? 'Chat with Admin, ${load.driverUnreadCount} unread message${load.driverUnreadCount == 1 ? '' : 's'}'
+                  : 'Chat with Admin',
+              button: true,
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LoadChatScreen(
+                          load: load,
+                          senderRole: 'driver',
+                        ),
+                      ),
+                    );
+                    // Refresh load data so the unread badge updates after chat.
+                    _refreshLoadData();
+                  },
+                  icon: ExcludeSemantics(
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(Icons.chat),
+                        Positioned(
+                          top: -4,
+                          right: -4,
+                          child: Icon(
+                            Icons.mail,
+                            size: 12,
+                            color: load.driverUnreadCount > 0
+                                ? Colors.red
+                                : Colors.green,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  label: load.driverUnreadCount > 0
+                      ? Text(
+                          'Chat with Admin (${load.driverUnreadCount} new)',
+                        )
+                      : const Text('Chat with Admin'),
                 ),
-                icon: const Icon(Icons.chat),
-                label: const Text('Chat with Admin'),
               ),
             ),
           ],

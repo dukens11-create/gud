@@ -42,6 +42,8 @@ class LoadModel {
   final DateTime? rateconUploadedAt; // When ratecon was uploaded by admin
   final DateTime? rateconSentAt;  // When ratecon notification was sent to driver
   final String? rateconSentStatus; // Delivery status: 'sent'
+  final int adminUnreadCount;     // Unread chat messages for admin
+  final int driverUnreadCount;    // Unread chat messages for driver
 
   LoadModel({
     required this.id,
@@ -72,6 +74,8 @@ class LoadModel {
     this.rateconUploadedAt,
     this.rateconSentAt,
     this.rateconSentStatus,
+    this.adminUnreadCount = 0,
+    this.driverUnreadCount = 0,
   }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
@@ -102,6 +106,8 @@ class LoadModel {
     if (rateconUploadedAt != null) 'rateconUploadedAt': rateconUploadedAt!.toIso8601String(),
     if (rateconSentAt != null) 'rateconSentAt': rateconSentAt!.toIso8601String(),
     if (rateconSentStatus != null) 'rateconSentStatus': rateconSentStatus,
+    'adminUnreadCount': adminUnreadCount,
+    'driverUnreadCount': driverUnreadCount,
   };
 
   static LoadModel fromDoc(DocumentSnapshot doc) {
@@ -143,6 +149,8 @@ class LoadModel {
         rateconUploadedAt: DateTimeUtils.parseDateTime(d['rateconUploadedAt']),
         rateconSentAt: DateTimeUtils.parseDateTime(d['rateconSentAt']),
         rateconSentStatus: d['rateconSentStatus'] as String?,
+        adminUnreadCount: ((d['adminUnreadCount'] ?? 0) as num).toInt(),
+        driverUnreadCount: ((d['driverUnreadCount'] ?? 0) as num).toInt(),
       );
     } catch (e) {
       throw FormatException(
