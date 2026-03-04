@@ -148,7 +148,73 @@ For issues or questions, please create an issue in the GitHub repository.
 # android/app/google-services.json
 ```
 
-## Step 5: Register Your iOS App (Optional)
+## iOS Code Signing Setup
+
+> **⚠️ TODO for each developer:** Apple code signing requires your personal Apple Developer account and cannot be committed to source control. Follow these steps on your Mac before building for a real device.
+
+### Prerequisites
+
+- A Mac running macOS with Xcode installed (Xcode 14+)
+- An [Apple Developer account](https://developer.apple.com/account) (free accounts can deploy to personal devices; paid accounts required for App Store distribution)
+
+### Step 1: Open the Xcode Workspace
+
+Always open the **workspace** file, never the `.xcodeproj` directly:
+
+```bash
+open ios/Runner.xcworkspace
+```
+
+Or in Xcode: **File → Open…** and select `ios/Runner.xcworkspace`.
+
+### Step 2: Sign in with Your Apple ID
+
+1. In Xcode, go to **Xcode → Settings → Accounts** (or ⌘,)
+2. Click **+** in the bottom-left corner
+3. Select **Apple ID** and click **Continue**
+4. Sign in with your Apple ID credentials
+
+### Step 3: Select a Development Team
+
+1. In the Xcode Project Navigator (left sidebar), select **Runner** (the blue icon at the top)
+2. Select the **Runner** target under **TARGETS**
+3. Click the **Signing & Capabilities** tab
+4. Ensure **Automatically manage signing** is checked ✓
+5. Under **Team**, select your Apple Developer team from the dropdown
+
+> **TODO:** Replace the placeholder `DEVELOPMENT_TEAM` value in `ios/Runner.xcodeproj/project.pbxproj` with your actual 10-character Team ID (e.g. `ABCDE12345`), or let Xcode manage it automatically via the UI above.
+
+### Step 4: Register Your Device (for real device builds)
+
+1. Connect your iPhone/iPad via USB
+2. In Xcode, go to **Window → Devices and Simulators** (⇧⌘2)
+3. If prompted, click **Register Device** to add your device to your Apple Developer account
+
+### Step 5: Build and Run
+
+```bash
+# Build for iOS simulator
+flutter run
+
+# Build for a connected real device
+flutter build ios
+```
+
+Or press **⌘R** in Xcode to build and run directly on a connected device.
+
+### Troubleshooting Code Signing
+
+| Error | Solution |
+|-------|----------|
+| `No accounts with iTunes Connect access` | Sign in to Xcode → Settings → Accounts |
+| `No certificate for team` | Xcode → Settings → Accounts → Manage Certificates → + (Apple Development) |
+| `Provisioning profile doesn't include the entitlement` | In Signing & Capabilities, click the refresh icon next to the provisioning profile |
+| `Could not find any available provisioning profiles` | Ensure your device is registered (Step 4) and re-select your team |
+| `Signing requires a development team` | Complete Step 3 above |
+
+For CI/CD signing setup, see [ios/CODE_SIGNING_SETUP.md](ios/CODE_SIGNING_SETUP.md).
+
+
 
 If you plan to support iOS:
 
