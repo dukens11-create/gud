@@ -25,6 +25,7 @@ dependencies:
   geolocator: ^10.1.0
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
+  http: ^1.2.0
   flutter_background_service: ^5.0.5
   geofence_service: ^6.0.0
   

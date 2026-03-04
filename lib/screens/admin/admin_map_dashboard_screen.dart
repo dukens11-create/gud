@@ -5,6 +5,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../../utils/datetime_utils.dart';
 
 /// Live Map Dashboard for Admin
@@ -72,6 +74,18 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   // Non-null when the Firestore stream last emitted an error
   String? _errorMessage;
 
+  // Reverse-geocoded address for the currently selected driver
+  String? _selectedDriverAddress;
+
+  // True while a reverse geocoding request is in flight
+  bool _isLoadingAddress = false;
+
+  // Cache of reverse-geocoded addresses keyed by "lat,lng" (4 decimal places)
+  final Map<String, String> _addressCache = {};
+
+  // Timestamp of the last geocoding request; enforces Nominatim's 1 req/s limit
+  DateTime? _lastGeocodingRequest;
+
   // Initial map centre (geographic centre of the contiguous USA)
   static const LatLng _initialCenter = LatLng(39.8283, -98.5795);
   static const double _initialZoom = 4.0;
@@ -79,8 +93,17 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   // Package name used as the OSM tile layer user-agent identifier
   static const String _tileUserAgent = 'com.gudexpress.app';
 
+  // Tile URL templates
+  static const String _osmTileUrl =
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  static const String _satelliteTileUrl =
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+
   // Drivers who logged out within this window are shown with an orange marker.
   static const Duration _recentlyOffThreshold = Duration(minutes: 10);
+
+  // Whether the map is currently showing satellite imagery
+  bool _isSatelliteMode = false;
 
   // Active Firestore subscriptions
   StreamSubscription<QuerySnapshot>? _driversSubscription;
@@ -162,6 +185,7 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
               !_driverData.containsKey(_selectedDriverId) &&
               !_inactiveDriverData.containsKey(_selectedDriverId)) {
             _selectedDriverId = null;
+            _selectedDriverAddress = null;
           }
         });
       },
@@ -205,6 +229,7 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
               !_driverData.containsKey(_selectedDriverId) &&
               !_inactiveDriverData.containsKey(_selectedDriverId)) {
             _selectedDriverId = null;
+            _selectedDriverAddress = null;
           }
         });
       },
@@ -239,6 +264,100 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   void _refreshAll() {
     _subscribeToDriverLocations();
     _subscribeToInactiveDrivers();
+  }
+
+  /// Fetches the reverse-geocoded address for [driverId] using the OpenStreetMap
+  /// Nominatim API and updates [_selectedDriverAddress].
+  ///
+  /// Results are cached in [_addressCache] (keyed by "lat,lng" rounded to 4
+  /// decimal places) to avoid redundant network requests for drivers that
+  /// haven't moved since the last lookup.
+  Future<void> _fetchAddressForDriver(String driverId) async {
+    final data = _driverData[driverId] ?? _recentlyOffDriverData[driverId];
+    if (data == null) return;
+    final point = _latLngForDriver(data);
+    if (point == null) return;
+
+    final cacheKey =
+        '${point.latitude.toStringAsFixed(4)},${point.longitude.toStringAsFixed(4)}';
+
+    // Serve from cache when available.
+    if (_addressCache.containsKey(cacheKey)) {
+      if (mounted) {
+        setState(() => _selectedDriverAddress = _addressCache[cacheKey]);
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingAddress = true;
+        _selectedDriverAddress = null;
+      });
+    }
+
+    try {
+      // Respect Nominatim's usage policy: no more than 1 request per second.
+      final now = DateTime.now();
+      if (_lastGeocodingRequest != null) {
+        final elapsed = now.difference(_lastGeocodingRequest!);
+        if (elapsed < const Duration(seconds: 1)) {
+          await Future<void>.delayed(
+              const Duration(seconds: 1) - elapsed);
+        }
+      }
+      _lastGeocodingRequest = DateTime.now();
+
+      final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
+        'lat': point.latitude.toString(),
+        'lon': point.longitude.toString(),
+        'format': 'json',
+      });
+      final response = await http.get(
+        uri,
+        headers: {'User-Agent': _tileUserAgent},
+      );
+
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body) as Map<String, dynamic>;
+        final addr = body['address'] as Map<String, dynamic>?;
+        if (addr != null) {
+          final road = (addr['road'] ??
+                  addr['pedestrian'] ??
+                  addr['suburb'] ??
+                  addr['neighbourhood'])
+              ?.toString() ??
+              '';
+          final city = (addr['city'] ??
+                  addr['town'] ??
+                  addr['village'] ??
+                  addr['county'])
+              ?.toString() ??
+              '';
+          final country = addr['country']?.toString() ?? '';
+          final parts =
+              [road, city, country].where((p) => p.isNotEmpty).toList();
+          final address = parts.join(', ');
+          _addressCache[cacheKey] = address;
+          if (mounted) {
+            setState(() {
+              _isLoadingAddress = false;
+              _selectedDriverAddress = address.isNotEmpty ? address : null;
+            });
+          }
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ AdminMapDashboard geocoding error: $e');
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingAddress = false;
+        _selectedDriverAddress = null;
+      });
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -344,7 +463,13 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
           width: 40,
           height: 40,
           child: GestureDetector(
-            onTap: () => setState(() => _selectedDriverId = driverId),
+            onTap: () {
+              setState(() {
+                _selectedDriverId = driverId;
+                _selectedDriverAddress = null;
+              });
+              _fetchAddressForDriver(driverId);
+            },
             child: Icon(Icons.location_pin, color: color, size: 40),
           ),
         ),
@@ -364,7 +489,13 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
           width: 40,
           height: 40,
           child: GestureDetector(
-            onTap: () => setState(() => _selectedDriverId = driverId),
+            onTap: () {
+              setState(() {
+                _selectedDriverId = driverId;
+                _selectedDriverAddress = null;
+              });
+              _fetchAddressForDriver(driverId);
+            },
             child: const Icon(
               Icons.location_off,
               color: _recentlyOffMarkerColor,
@@ -479,7 +610,10 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => setState(() => _selectedDriverId = null),
+                    onPressed: () => setState(() {
+                      _selectedDriverId = null;
+                      _selectedDriverAddress = null;
+                    }),
                   ),
                 ],
               ),
@@ -508,6 +642,27 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
                 _buildInfoRow(
                   Icons.my_location,
                   'Accuracy: ${(lastLocation['accuracy'] as num).toStringAsFixed(0)}m',
+                ),
+              if (_isLoadingAddress)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('Fetching address…',
+                          style: TextStyle(color: Colors.grey)),
+                    ],
+                  ),
+                )
+              else if (_selectedDriverAddress != null)
+                _buildInfoRow(
+                  Icons.place,
+                  _selectedDriverAddress!,
                 ),
               const SizedBox(height: 12),
               Row(
@@ -588,6 +743,13 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
         title: const Text('Live Driver Map'),
         actions: [
           IconButton(
+            icon: Icon(
+              _isSatelliteMode ? Icons.map : Icons.satellite_alt,
+            ),
+            onPressed: () => setState(() => _isSatelliteMode = !_isSatelliteMode),
+            tooltip: _isSatelliteMode ? 'Street map' : 'Satellite',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refreshAll,
             tooltip: 'Refresh',
@@ -604,7 +766,7 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: _isSatelliteMode ? _satelliteTileUrl : _osmTileUrl,
                 userAgentPackageName: _tileUserAgent,
               ),
               MarkerLayer(markers: _buildMarkers(recentlyOff)),
