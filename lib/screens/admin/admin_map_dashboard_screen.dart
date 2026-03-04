@@ -10,10 +10,15 @@ import '../../utils/datetime_utils.dart';
 /// Live Map Dashboard for Admin
 ///
 /// Displays real-time driver locations using flutter_map (OpenStreetMap):
-/// - Shows all active drivers with colour-coded markers
-/// - Streams location updates from Firestore in real-time
-/// - Shows driver info cards on marker tap
-/// - No Google Maps API key or setup required
+/// - Shows currently active drivers (status: available / on_trip) with
+///   colour-coded markers (green = available, blue = on trip).
+/// - Shows recently off-duty drivers — those with status "inactive" whose
+///   lastLocation.timestamp is within the last 10 minutes — with an orange
+///   marker so admins can see drivers who just logged off.
+/// - Streams location updates from Firestore in real-time using two parallel
+///   subscriptions (active drivers + inactive drivers).
+/// - Shows driver info cards on marker tap.
+/// - No Google Maps API key or setup required.
 ///
 /// Dependencies:
 ///   flutter_map: ^8.2.2  (pub.dev/packages/flutter_map)
@@ -51,8 +56,12 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   final MapController _mapController = MapController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Driver location data: driverId → {lat, lng, ...driverDoc}
+  // Active driver location data: driverId → {lat, lng, ...driverDoc}
   final Map<String, Map<String, dynamic>> _driverData = {};
+
+  // All inactive driver docs (status == 'inactive').
+  // Filtered to a 10-minute window in [_recentlyOffDriverData].
+  final Map<String, Map<String, dynamic>> _inactiveDriverData = {};
 
   // Selected driver id for the info card
   String? _selectedDriverId;
@@ -70,19 +79,37 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   // Package name used as the OSM tile layer user-agent identifier
   static const String _tileUserAgent = 'com.gudexpress.app';
 
-  // Active Firestore subscription
+  // Drivers who logged out within this window are shown with an orange marker.
+  static const Duration _recentlyOffThreshold = Duration(minutes: 10);
+
+  // Active Firestore subscriptions
   StreamSubscription<QuerySnapshot>? _driversSubscription;
+  StreamSubscription<QuerySnapshot>? _inactiveDriversSubscription;
+
+  // Periodic timer that forces a re-render so the 10-minute window stays
+  // accurate even when no new Firestore events arrive.
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _subscribeToDriverLocations();
+    _subscribeToInactiveDrivers();
+    // Refresh the 10-minute window filter every minute without a Firestore round-trip.
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      // Empty setState forces _recentlyOffDriverData to be recomputed with the
+      // current time, keeping the 10-minute window accurate without an extra
+      // Firestore round-trip.
+      if (mounted) setState(() {});
+    });
     unawaited(_debugActiveDriversQuery());
   }
 
   @override
   void dispose() {
     _driversSubscription?.cancel();
+    _inactiveDriversSubscription?.cancel();
+    _refreshTimer?.cancel();
     _mapController.dispose();
     super.dispose();
   }
@@ -117,7 +144,8 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
           }
           // Dismiss the selected card if that driver is no longer in the list
           if (_selectedDriverId != null &&
-              !_driverData.containsKey(_selectedDriverId)) {
+              !_driverData.containsKey(_selectedDriverId) &&
+              !_inactiveDriverData.containsKey(_selectedDriverId)) {
             _selectedDriverId = null;
           }
         });
@@ -131,6 +159,62 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
         debugPrint('⚠️ AdminMapDashboard stream error: $error');
       },
     );
+  }
+
+  /// Subscribe to inactive driver documents in Firestore.
+  /// The 10-minute window filter is applied in [_recentlyOffDriverData].
+  void _subscribeToInactiveDrivers() {
+    _inactiveDriversSubscription?.cancel();
+    _inactiveDriversSubscription = _firestore
+        .collection('drivers')
+        .where('status', isEqualTo: 'inactive')
+        .snapshots()
+        .listen(
+      (snapshot) {
+        setState(() {
+          _inactiveDriverData.clear();
+          for (final doc in snapshot.docs) {
+            _inactiveDriverData[doc.id] = doc.data();
+          }
+          // Dismiss the selected card if that driver is no longer in either list
+          if (_selectedDriverId != null &&
+              !_driverData.containsKey(_selectedDriverId) &&
+              !_inactiveDriverData.containsKey(_selectedDriverId)) {
+            _selectedDriverId = null;
+          }
+        });
+      },
+      onError: (Object error) {
+        debugPrint('⚠️ AdminMapDashboard inactive-drivers stream error: $error');
+      },
+    );
+  }
+
+  /// Inactive drivers whose [lastLocation.timestamp] is within the last
+  /// [_recentlyOffThreshold] (10 minutes).  These are shown with an orange
+  /// marker so admins can see recently logged-out drivers.
+  Map<String, Map<String, dynamic>> get _recentlyOffDriverData {
+    final cutoff = DateTime.now().subtract(_recentlyOffThreshold);
+    return Map.fromEntries(
+      _inactiveDriverData.entries.where((entry) {
+        final loc = entry.value['lastLocation'];
+        if (loc == null) return false;
+        final ts = loc['timestamp'];
+        if (ts == null) return false;
+        try {
+          final dt = DateTimeUtils.parseDateTime(ts);
+          return dt != null && dt.isAfter(cutoff);
+        } catch (_) {
+          return false;
+        }
+      }),
+    );
+  }
+
+  /// Restart both Firestore subscriptions (called by the refresh button).
+  void _refreshAll() {
+    _subscribeToDriverLocations();
+    _subscribeToInactiveDrivers();
   }
 
   // ---------------------------------------------------------------------------
@@ -184,6 +268,9 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
     }
   }
 
+  /// Returns the marker colour for a recently off-duty driver.
+  static const Color _recentlyOffMarkerColor = Colors.orange;
+
   String _formatStatus(String? status) {
     if (status == null) return 'Unknown';
     return status.split('_').map((w) => w.isNotEmpty ? w[0].toUpperCase() + w.substring(1) : '').join(' ').trim();
@@ -203,8 +290,10 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   // Map marker list
   // ---------------------------------------------------------------------------
 
-  List<Marker> _buildMarkers() {
+  List<Marker> _buildMarkers(Map<String, Map<String, dynamic>> recentlyOff) {
     final markers = <Marker>[];
+
+    // Active drivers (available / on_trip)
     for (final entry in _driverData.entries) {
       final driverId = entry.key;
       final data = entry.value;
@@ -224,6 +313,31 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
         ),
       );
     }
+
+    // Recently off-duty drivers (inactive, logged out within 10 minutes)
+    for (final entry in recentlyOff.entries) {
+      final driverId = entry.key;
+      final data = entry.value;
+      final point = _latLngForDriver(data);
+      if (point == null) continue;
+
+      markers.add(
+        Marker(
+          point: point,
+          width: 40,
+          height: 40,
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedDriverId = driverId),
+            child: const Icon(
+              Icons.location_off,
+              color: _recentlyOffMarkerColor,
+              size: 40,
+            ),
+          ),
+        ),
+      );
+    }
+
     return markers;
   }
 
@@ -232,7 +346,7 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   // ---------------------------------------------------------------------------
 
   void _centerOnDriver(String driverId) {
-    final data = _driverData[driverId];
+    final data = _driverData[driverId] ?? _recentlyOffDriverData[driverId];
     if (data == null) return;
     final point = _latLngForDriver(data);
     if (point != null) {
@@ -259,12 +373,16 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   // Driver info card (shown when a marker is tapped)
   // ---------------------------------------------------------------------------
 
-  Widget _buildDriverInfoCard() {
-    if (_selectedDriverId == null || !_driverData.containsKey(_selectedDriverId)) {
-      return const SizedBox.shrink();
-    }
+  Widget _buildDriverInfoCard(Map<String, Map<String, dynamic>> recentlyOff) {
+    if (_selectedDriverId == null) return const SizedBox.shrink();
 
-    final driver = _driverData[_selectedDriverId]!;
+    final isRecentlyOff = recentlyOff.containsKey(_selectedDriverId);
+    final driver = isRecentlyOff
+        ? recentlyOff[_selectedDriverId]
+        : _driverData[_selectedDriverId];
+
+    if (driver == null) return const SizedBox.shrink();
+
     final lastLocation = driver['lastLocation'];
 
     DateTime? lastUpdate;
@@ -291,9 +409,36 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    driver['name'] as String? ?? 'Unknown Driver',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          driver['name'] as String? ?? 'Unknown Driver',
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        if (isRecentlyOff)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.orange),
+                            ),
+                            child: const Text(
+                              'Recently Off-Duty',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -302,15 +447,26 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              _buildInfoRow(Icons.local_shipping, 'Truck: ${driver['truckNumber'] ?? 'N/A'}'),
-              _buildInfoRow(Icons.phone, driver['phone'] as String? ?? 'N/A'),
+              _buildInfoRow(Icons.local_shipping,
+                  'Truck: ${driver['truckNumber'] ?? 'N/A'}'),
               _buildInfoRow(
-                Icons.circle,
-                'Status: ${_formatStatus(driver['status'] as String?)}',
-                statusColor: _getStatusColor(driver['status'] as String?),
+                  Icons.phone, driver['phone'] as String? ?? 'N/A'),
+              _buildInfoRow(
+                isRecentlyOff ? Icons.logout : Icons.circle,
+                isRecentlyOff
+                    ? 'Status: Logged Out'
+                    : 'Status: ${_formatStatus(driver['status'] as String?)}',
+                statusColor: isRecentlyOff
+                    ? Colors.orange
+                    : _getStatusColor(driver['status'] as String?),
               ),
               if (lastUpdate != null)
-                _buildInfoRow(Icons.access_time, 'Last update: ${_formatTime(lastUpdate)}'),
+                _buildInfoRow(
+                  Icons.access_time,
+                  isRecentlyOff
+                      ? 'Logged out: ${_formatTime(lastUpdate)}'
+                      : 'Last update: ${_formatTime(lastUpdate)}',
+                ),
               if (lastLocation?['accuracy'] != null)
                 _buildInfoRow(
                   Icons.my_location,
@@ -336,14 +492,59 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   }
 
   // ---------------------------------------------------------------------------
+  // Map legend
+  // ---------------------------------------------------------------------------
+
+  Widget _buildLegend() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Legend',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            const SizedBox(height: 6),
+            _buildLegendRow(Icons.location_pin, Colors.green, 'Available'),
+            _buildLegendRow(Icons.location_pin, Colors.blue, 'On Trip'),
+            _buildLegendRow(
+                Icons.location_off, Colors.orange, 'Recently Off-Duty\n(< 10 min)'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegendRow(IconData icon, Color color, String label) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
-    final markerCount = _driverData.values
-        .where((d) => _latLngForDriver(d) != null)
-        .length;
+    // Compute the recently-off map once per build to ensure a single
+    // consistent cutoff time is used across markers, info card, and counters.
+    final recentlyOff = _recentlyOffDriverData;
+    final activeCount =
+        _driverData.values.where((d) => _latLngForDriver(d) != null).length;
+    final recentlyOffCount =
+        recentlyOff.values.where((d) => _latLngForDriver(d) != null).length;
 
     return Scaffold(
       appBar: AppBar(
@@ -351,7 +552,7 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _subscribeToDriverLocations,
+            onPressed: _refreshAll,
             tooltip: 'Refresh',
           ),
         ],
@@ -369,10 +570,11 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: _tileUserAgent,
               ),
-              MarkerLayer(markers: _buildMarkers()),
+              MarkerLayer(markers: _buildMarkers(recentlyOff)),
             ],
           ),
-          _buildDriverInfoCard(),
+          _buildDriverInfoCard(recentlyOff),
+          // Stats card (top-right)
           Positioned(
             top: 16,
             right: 16,
@@ -380,19 +582,38 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      '$markerCount',
+                      '$activeCount',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
+                        color: Colors.green,
                       ),
                     ),
-                    const Text('Active Drivers', style: TextStyle(fontSize: 12)),
+                    const Text('Active', style: TextStyle(fontSize: 12)),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$recentlyOffCount',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                    const Text('Recently Off',
+                        style: TextStyle(fontSize: 12)),
                   ],
                 ),
               ),
             ),
+          ),
+          // Legend (top-left)
+          Positioned(
+            top: 16,
+            left: 16,
+            child: _buildLegend(),
           ),
           // Loading indicator while waiting for the first snapshot
           if (_isLoading)
@@ -423,7 +644,7 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
                       IconButton(
                         icon: const Icon(Icons.refresh, color: Colors.white),
                         tooltip: 'Retry',
-                        onPressed: _subscribeToDriverLocations,
+                        onPressed: _refreshAll,
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.white),
