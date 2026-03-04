@@ -119,6 +119,10 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   // ---------------------------------------------------------------------------
 
   /// Subscribe to active driver documents in Firestore and rebuild on change.
+  ///
+  /// Queries drivers where `active == true` so that all drivers marked as
+  /// active are shown regardless of their status field value.  The stream
+  /// fires on every Firestore change, keeping the map up-to-date in real time.
   void _subscribeToDriverLocations() {
     _driversSubscription?.cancel();
     // Clear stale data and reset selection immediately so the UI reflects
@@ -129,12 +133,23 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
+    // Use the `active` boolean field for real-time filtering of active drivers.
     _driversSubscription = _firestore
         .collection('drivers')
-        .where('status', whereIn: ['available', 'on_trip'])
+        .where('active', isEqualTo: true)
         .snapshots()
         .listen(
       (snapshot) {
+        // Debug: log how many active drivers were returned and their data.
+        // Wrapped in kDebugMode so sensitive driver data is never written to
+        // production logs.
+        if (kDebugMode) {
+          debugPrint(
+              '📊 [DEBUG] Active drivers fetched (active==true): ${snapshot.docs.length}');
+          for (final doc in snapshot.docs) {
+            debugPrint('📄 [DEBUG] Driver ${doc.id}: ${doc.data()}');
+          }
+        }
         setState(() {
           _isLoading = false;
           _errorMessage = null;
@@ -165,12 +180,21 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   /// The 10-minute window filter is applied in [_recentlyOffDriverData].
   void _subscribeToInactiveDrivers() {
     _inactiveDriversSubscription?.cancel();
+    // Query drivers with status == 'inactive' to detect recently logged-out
+    // drivers.  The 10-minute window is applied client-side in
+    // [_recentlyOffDriverData] because Firestore cannot filter on a nested
+    // timestamp field.
     _inactiveDriversSubscription = _firestore
         .collection('drivers')
         .where('status', isEqualTo: 'inactive')
         .snapshots()
         .listen(
       (snapshot) {
+        // Debug: log how many inactive drivers were returned.
+        if (kDebugMode) {
+          debugPrint(
+              '📊 [DEBUG] Inactive drivers fetched (status==inactive): ${snapshot.docs.length}');
+        }
         setState(() {
           _inactiveDriverData.clear();
           for (final doc in snapshot.docs) {
@@ -247,7 +271,20 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   }
 
   /// Returns the [LatLng] for a driver, or null if no location data exists.
+  ///
+  /// Supports two Firestore document shapes:
+  ///   1. Top-level fields:  `{ "lat": 39.8, "lng": -98.5, ... }`
+  ///   2. Nested sub-map:    `{ "lastLocation": { "lat": 39.8, "lng": -98.5 } }`
+  /// The top-level fields are checked first; the nested map is used as a fallback.
   LatLng? _latLngForDriver(Map<String, dynamic> data) {
+    // 1. Top-level lat/lng fields (some older driver documents use this shape).
+    final topLat = data['lat'];
+    final topLng = data['lng'];
+    if (topLat != null && topLng != null) {
+      return LatLng((topLat as num).toDouble(), (topLng as num).toDouble());
+    }
+
+    // 2. Nested lastLocation map (current standard shape).
     final loc = data['lastLocation'];
     if (loc == null) return null;
     final lat = loc['lat'];
@@ -618,6 +655,43 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
           // Loading indicator while waiting for the first snapshot
           if (_isLoading)
             const Center(child: CircularProgressIndicator()),
+          // Warning banner shown when loading is complete but no active drivers
+          // were returned.  This helps admins distinguish between "no drivers
+          // are active right now" and a misconfiguration or Firestore-rules issue.
+          if (!_isLoading && _errorMessage == null && _driverData.isEmpty)
+            Positioned(
+              bottom: 16,
+              left: 16,
+              right: 16,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.orange.shade700,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          color: Colors.white),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'No active drivers found. '
+                          'Verify that driver documents have active: true set in Firestore.',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        tooltip: 'Retry',
+                        onPressed: _refreshAll,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           // Error banner shown when the Firestore stream emits an error
           if (_errorMessage != null)
             Positioned(
