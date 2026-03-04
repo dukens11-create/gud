@@ -51,6 +51,26 @@ app.*.map.json
 # iOS build outputs
 *.ipa
 
+# iOS/Xcode generated artifacts
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/Flutter/flutter_export_environment.sh
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.h
+ios/Runner/GeneratedPluginRegistrant.m
+
+# Xcode user-specific files
+*.xcuserstate
+xcuserdata/
+**/xcuserdata/
+
 # Android local configuration
 android/local.properties
 android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
