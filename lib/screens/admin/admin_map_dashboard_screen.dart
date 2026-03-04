@@ -26,7 +26,7 @@ import '../../utils/datetime_utils.dart';
 ///   "name": "John Doe",
 ///   "truckNumber": "T-42",
 ///   "phone": "+1 555-0100",
-///   "status": "available" | "on_duty" | "in_transit" | ...,
+///   "status": "available" | "on_trip" | "inactive" | ...,
 ///   "lastLocation": {
 ///     "lat": 39.8,
 ///     "lng": -98.5,
@@ -104,7 +104,7 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
     });
     _driversSubscription = _firestore
         .collection('drivers')
-        .where('status', whereIn: ['available', 'on_duty', 'in_transit'])
+        .where('status', whereIn: ['available', 'on_trip'])
         .snapshots()
         .listen(
       (snapshot) {
@@ -137,7 +137,7 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  /// Debug helper: queries `.collection('drivers').where('active', isEqualTo: true)`
+  /// Debug helper: queries `.collection('drivers').where('isActive', isEqualTo: true)`
   /// and prints the current user UID, the returned document count, and each
   /// document's data to the console.  Call from [initState] or any button to
   /// diagnose why active drivers may not appear on the dashboard.
@@ -150,10 +150,10 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
     try {
       final snapshot = await _firestore
           .collection('drivers')
-          .where('active', isEqualTo: true)
+          .where('isActive', isEqualTo: true)
           .get();
       debugPrint(
-          '📊 [DEBUG] Active drivers (active==true) count: ${snapshot.docs.length}');
+          '📊 [DEBUG] Active drivers (isActive==true) count: ${snapshot.docs.length}');
       for (final doc in snapshot.docs) {
         debugPrint('📄 [DEBUG] Driver ${doc.id}: ${doc.data()}');
       }
@@ -177,10 +177,8 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
     switch (status) {
       case 'available':
         return Colors.green;
-      case 'on_duty':
+      case 'on_trip':
         return Colors.blue;
-      case 'in_transit':
-        return Colors.orange;
       default:
         return Colors.red;
     }
