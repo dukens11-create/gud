@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import '../../utils/datetime_utils.dart';
 
@@ -75,6 +76,7 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   void initState() {
     super.initState();
     _subscribeToDriverLocations();
+    unawaited(_debugActiveDriversQuery());
   }
 
   @override
@@ -133,6 +135,31 @@ class _AdminMapDashboardScreenState extends State<AdminMapDashboardScreen> {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /// Debug helper: queries `.collection('drivers').where('active', isEqualTo: true)`
+  /// and prints the current user UID, the returned document count, and each
+  /// document's data to the console.  Call from [initState] or any button to
+  /// diagnose why active drivers may not appear on the dashboard.
+  /// Only runs in debug builds ([kDebugMode]).
+  Future<void> _debugActiveDriversQuery() async {
+    if (!kDebugMode) return;
+    debugPrint('🔍 [DEBUG] Running active-drivers query...');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    debugPrint('🔑 [DEBUG] Current FirebaseAuth UID: $uid');
+    try {
+      final snapshot = await _firestore
+          .collection('drivers')
+          .where('active', isEqualTo: true)
+          .get();
+      debugPrint(
+          '📊 [DEBUG] Active drivers (active==true) count: ${snapshot.docs.length}');
+      for (final doc in snapshot.docs) {
+        debugPrint('📄 [DEBUG] Driver ${doc.id}: ${doc.data()}');
+      }
+    } catch (e) {
+      debugPrint('❌ [DEBUG] Error querying active drivers: $e');
+    }
+  }
 
   /// Returns the [LatLng] for a driver, or null if no location data exists.
   LatLng? _latLngForDriver(Map<String, dynamic> data) {
