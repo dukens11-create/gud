@@ -111,6 +111,22 @@ keyAlias=upload
 storeFile=C:\\Users\\john\\upload-keystore.jks
 ```
 
+### Optional: Use Environment Variables Instead of key.properties
+
+You can provide signing credentials without creating a local `android/key.properties` file:
+
+```bash
+export ANDROID_KEYSTORE_PATH=/absolute/path/to/upload-keystore.jks
+export ANDROID_KEYSTORE_PASSWORD=your-keystore-password
+export ANDROID_KEY_ALIAS=upload
+export ANDROID_KEY_PASSWORD=your-key-password
+```
+
+For non-publishing CI validation only, you can bypass the release-signing guard with:
+```bash
+export ALLOW_DEBUG_SIGNING_FOR_RELEASE=true
+```
+
 ### Step 4: Secure Your Keystore
 
 ```bash
@@ -299,6 +315,7 @@ If this is your first release:
 cp android/key.properties.template android/key.properties
 # Edit the file with your actual values
 ```
+Or set `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`.
 
 #### 2. "Keystore file not found"
 ```bash
@@ -332,7 +349,7 @@ flutter build appbundle --release
 
 #### 6. AAB upload rejected by Play Console
 - **Issue:** Version code already exists
-  - **Solution:** Increment versionCode in `android/app/build.gradle`
+  - **Solution:** Increment the build number in `pubspec.yaml` (e.g. `2.2.0+3`)
 - **Issue:** Signature mismatch
   - **Solution:** Ensure you're using the same keystore as previous releases
 - **Issue:** Missing required permissions
@@ -363,22 +380,14 @@ cd android
 
 ### Updating Version
 
-Version numbers must be updated in TWO locations:
+Version number is managed from Flutter and should be updated in one location:
 
 1. Edit `pubspec.yaml`:
    ```yaml
    version: 2.2.0+3
    ```
 
-2. Edit `android/app/build.gradle`:
-   ```gradle
-   versionCode 3
-   versionName "2.2.0"
-   ```
-
-**Important:** Keep these synchronized! The version in `build.gradle` is what Google Play uses.
-
-3. Rebuild the AAB:
+2. Rebuild the AAB:
    ```bash
    ./scripts/build_aab.sh
    ```
