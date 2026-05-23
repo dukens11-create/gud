@@ -122,6 +122,11 @@ export ANDROID_KEY_ALIAS=upload
 export ANDROID_KEY_PASSWORD=your-key-password
 ```
 
+For non-publishing CI validation only, you can bypass the release-signing guard with:
+```bash
+export ALLOW_DEBUG_SIGNING_FOR_RELEASE=true
+```
+
 ### Step 4: Secure Your Keystore
 
 ```bash
