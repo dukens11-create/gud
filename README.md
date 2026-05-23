@@ -129,6 +129,7 @@ firebase deploy --only firestore:indexes
 - [iOS Build & Deploy Guide](IOS_BUILD_AND_DEPLOY_GUIDE.md) - CI/CD and App Store
 - [iOS Provisioning Guide](IOS_PROVISIONING_GUIDE.md) - Profile management
 - [Android AAB Build Guide](AAB_BUILD_GUIDE.md) - Android builds
+- [Android AAB Quick Start](AAB_QUICK_START.md) - Fast Google Play bundle checklist
 - [Deployment Guide](DEPLOYMENT.md) - General deployment info
 
 ---

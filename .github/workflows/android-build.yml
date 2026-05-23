@@ -51,9 +51,13 @@ jobs:
       #   run: flutter test
 
       - name: Build release APK
+        env:
+          ALLOW_DEBUG_SIGNING_FOR_RELEASE: "true"
         run: flutter build apk --release
 
       - name: Build release App Bundle
+        env:
+          ALLOW_DEBUG_SIGNING_FOR_RELEASE: "true"
         run: flutter build appbundle --release
 
       - name: Upload APK artifact

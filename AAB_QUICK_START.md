@@ -8,7 +8,7 @@ This is a quick reference for building the Android App Bundle. For detailed inst
 - [ ] Android SDK installed (API 21-36)
 - [ ] Java JDK 17+ installed
 - [ ] Keystore generated
-- [ ] `android/key.properties` configured
+- [ ] Release signing configured with either `android/key.properties` or env vars (`ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`)
 
 ## Quick Build (3 Steps)
 
@@ -23,6 +23,8 @@ keytool -genkey -v -keystore ~/upload-keystore.jks \
 cp android/key.properties.template android/key.properties
 # Edit key.properties with your values
 ```
+
+> CI/CD alternative: instead of `android/key.properties`, provide the same values through environment variables.
 
 ### 2. Build AAB
 
@@ -69,18 +71,11 @@ java -jar bundletool-all-1.15.6.jar install-apks --apks=app.apks
 
 ## Version Update
 
-Update TWO files:
-
-**1. pubspec.yaml:**
+Update `pubspec.yaml`:
 ```yaml
 version: 2.2.0+3  # New version
 ```
-
-**2. android/app/build.gradle:**
-```gradle
-versionCode 3         # Increment
-versionName "2.2.0"   # Match pubspec
-```
+`android/app/build.gradle` automatically reads `versionCode` and `versionName` from this Flutter version.
 
 ## Common Issues
 
@@ -89,6 +84,7 @@ versionName "2.2.0"   # Match pubspec
 cp android/key.properties.template android/key.properties
 # Edit with your actual values
 ```
+Or set the signing env vars instead.
 
 ### "Keystore not found"
 Check path in `android/key.properties` - use absolute path.

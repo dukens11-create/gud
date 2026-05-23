@@ -28,6 +28,31 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+def getSigningValue = { String propertyKey, List<String> envKeys ->
+    def propertyValue = keystoreProperties.getProperty(propertyKey)
+    if (propertyValue != null && !propertyValue.trim().isEmpty()) {
+        return propertyValue
+    }
+
+    for (envKey in envKeys) {
+        def envValue = System.getenv(envKey)
+        if (envValue != null && !envValue.trim().isEmpty()) {
+            return envValue
+        }
+    }
+
+    return null
+}
+
+def signingStoreFilePath = getSigningValue('storeFile', ['ANDROID_KEYSTORE_PATH', 'CM_KEYSTORE_PATH', 'KEYSTORE_PATH'])
+def signingStorePassword = getSigningValue('storePassword', ['ANDROID_KEYSTORE_PASSWORD', 'CM_KEYSTORE_PASSWORD', 'KEYSTORE_PASSWORD'])
+def signingKeyAlias = getSigningValue('keyAlias', ['ANDROID_KEY_ALIAS', 'CM_KEY_ALIAS', 'KEY_ALIAS'])
+def signingKeyPassword = getSigningValue('keyPassword', ['ANDROID_KEY_PASSWORD', 'CM_KEY_PASSWORD', 'KEY_PASSWORD'])
+def hasReleaseSigningConfig = signingStoreFilePath && signingStorePassword && signingKeyAlias && signingKeyPassword
+def allowDebugSigningForRelease = (project.findProperty('allowDebugSigningForRelease')
+        ?: System.getenv('ALLOW_DEBUG_SIGNING_FOR_RELEASE')
+        ?: 'false').toBoolean()
+
 android {
     namespace "com.gudexpress.gud_app"
     compileSdk 36
@@ -51,10 +76,8 @@ android {
         applicationId "com.gudexpress.gud_app"
         minSdk 21
         targetSdk 36
-        // Version synced with pubspec.yaml (2.1.0+2)
-        // Update these when updating pubspec.yaml version
-        versionCode 2
-        versionName "2.1.0"
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
         multiDexEnabled true
         
         // Enable split APKs by ABI for smaller download sizes
@@ -65,11 +88,11 @@ android {
 
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-                storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-                storePassword keystoreProperties['storePassword']
+            if (hasReleaseSigningConfig) {
+                keyAlias signingKeyAlias
+                keyPassword signingKeyPassword
+                storeFile file(signingStoreFilePath)
+                storePassword signingStorePassword
             }
         }
     }
@@ -89,11 +112,22 @@ android {
         }
         
         release {
-            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            signingConfig hasReleaseSigningConfig ? signingConfigs.release : signingConfigs.debug
             minifyEnabled true
             shrinkResources true
             debuggable false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    if (!hasReleaseSigningConfig && !allowDebugSigningForRelease) {
+        gradle.taskGraph.whenReady { taskGraph ->
+            if (taskGraph.hasTask(':app:bundleRelease') || taskGraph.hasTask(':app:assembleRelease')) {
+                throw new GradleException(
+                        "Release signing credentials are missing. Configure android/key.properties " +
+                                "or set ANDROID_KEYSTORE_PATH, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD."
+                )
+            }
         }
     }
     
